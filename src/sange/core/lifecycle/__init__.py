@@ -51,6 +51,14 @@ from sange.core.lifecycle.schema import (
     Rejection,
     SCHEMA_VERSION,
 )
+from sange.core.lifecycle.state_machine import (
+    IllegalTransition,
+    LifecycleEngine,
+    Surface,
+    TRANSITIONS,
+    allowed_transitions_from,
+    is_terminal,
+)
 from sange.core.lifecycle.store import (
     CommitsDirectory,
     CommitStore,
@@ -71,7 +79,13 @@ __all__ = [
     "CommitStoreError",
     "CommitsDirectory",
     "CounterError",
+    "IllegalTransition",
+    "LifecycleEngine",
     "Rejection",
     "SCHEMA_VERSION",
+    "Surface",
+    "TRANSITIONS",
+    "allowed_transitions_from",
+    "is_terminal",
     "slugify_subject",
 ]
