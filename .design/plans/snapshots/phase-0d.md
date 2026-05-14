@@ -49,7 +49,7 @@ GitHub tag push (v*.*.* matches release.yml trigger)
   ↓
   docker      — buildx with platforms: linux/amd64,linux/arm64
                 + sigstore provenance + SBOM
-                → ghcr.io/simtabi/sange:<tag> + :latest
+                → ghcr.io/sangedev/sange:<tag> + :latest
   ↓
   release     — gh release create with notes from docs/CHANGELOG.md
                 → GitHub Release page with attached sdist + wheel

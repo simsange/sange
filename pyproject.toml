@@ -121,10 +121,10 @@ dev = [
 [project.urls]
 Homepage = "https://opensource.simtabi.com/products/sange"
 Documentation = "https://opensource.simtabi.com/documentation/sange"
-Repository = "https://github.com/simtabi/sange"
-Issues = "https://github.com/simtabi/sange/issues"
-Changelog = "https://github.com/simtabi/sange/blob/main/CHANGELOG.md"
-"Security Policy" = "https://github.com/simtabi/sange/security/policy"
+Repository = "https://github.com/sangedev/sange"
+Issues = "https://github.com/sangedev/sange/issues"
+Changelog = "https://github.com/sangedev/sange/blob/main/CHANGELOG.md"
+"Security Policy" = "https://github.com/sangedev/sange/security/policy"
 
 # CLI entry-points — landed in T-040. `pip install -e .` exposes `sange`
 # on PATH; the entry resolves to `sange.cli.app` which is the typer App.

@@ -54,7 +54,7 @@ and additionally `linux/arm/v7` from v2.0**. Concretely:
 
   1. **Build via `docker buildx` with multi-platform output** — CI's release
      workflow runs `docker buildx build --platform linux/amd64,linux/arm64
-     -t ghcr.io/simtabi/sanged:<tag> --push .`. The resulting image is an
+     -t ghcr.io/sangedev/sange:<tag> --push .`. The resulting image is an
      **OCI manifest list** (one tag, multiple arch manifests); `docker pull`
      selects the host's arch automatically.
   2. **Base-image pinning by digest** — `FROM python:3.12-slim@sha256:...`

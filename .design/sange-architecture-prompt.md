@@ -18,7 +18,7 @@ When forking this workbook for a non-Sange project:
 
 | Forking step | What to do |
 |---|---|
-| 1. Re-anchor | Replace "Sange" / "VCS automation toolkit" / "sange.sh" / `github.com/simtabi/sange` with the new product name and URLs |
+| 1. Re-anchor | Replace "Sange" / "VCS automation toolkit" / "sange.sh" / `github.com/sangedev/sange` with the new product name and URLs |
 | 2. Re-audit | Replace §4 codebase-audit findings with the new project's audit (or empty if greenfield) |
 | 3. Re-roadmap | Replace §14 phases with the new project's v0.1 → v3.0 |
 | 4. Re-personas | Replace §3 audience scope rows with the new project's seven personas (the count is principled, not coincidental) |
@@ -257,8 +257,8 @@ Where a tension between these constraints appears, surface it via a `⚠️ Desi
 
 - Product landing: `https://opensource.simtabi.com/products/sange`
 - Product documentation: `https://opensource.simtabi.com/documentation/sange`
-- GitHub repo: `https://github.com/simtabi/sange`
-- GitHub Issues: `https://github.com/simtabi/sange/issues`
+- GitHub repo: `https://github.com/sangedev/sange`
+- GitHub Issues: `https://github.com/sangedev/sange/issues`
 
 `sange.sh` (when acquired) is the **product-facing marketing domain** and redirects to `opensource.simtabi.com/products/sange`. The canonical metadata always uses the long form.
 
@@ -314,7 +314,7 @@ The following has been **independently verified** as of 2026-05-13. Treat as gro
 | Laravel 13 first-party AI SDK | ✓ `Laravel\Ai\…` namespace, ships in L13 core. Built atop Prism. | Laravel blog, 2026-03-17 |
 | Livewire current major | **Livewire 4** (released 2026-01-15; latest v4.3.0 at 2026-05-01). **Not** Livewire 3. | livewire/livewire releases |
 | Etymology of "sange" | **NOT the standard Swahili term for elephant shrew.** Standard term is *sengi* (Kingdon 1997). `sange` appears only as a Glosbe peripheral entry; absent from *Kamusi ya Kiswahili Sanifu*. See §3 for required framing. | Wikipedia, sengis.org, Glosbe |
-| GitHub repo (existing) | `github.com/simtabi/sange` (the v1 repo's origin) | v1 `.git/config` |
+| GitHub repo (existing) | `github.com/sangedev/sange` (the v1 repo's origin) | v1 `.git/config` |
 
 **What this means for §4.1's scope:** The audit is **not** "review a Python codebase." It is "inventory two shell/Makefile codebases that share ~95% lineage, document the regression v2 caused, and identify the small amount of logic worth porting into v3's Python core."
 
@@ -2809,7 +2809,7 @@ IDE deep integration; federation across Sange instances; on-device fine-tuning p
 | D10 | Do **not** use Laravel 13's first-party AI SDK (`Laravel\Ai\…`) in the web layer. All AI calls go through the Python core's enhancer + provider abstraction via JSON-RPC. One AI implementation, one redaction layer, one audit trail. | **ADR-003** |
 | D11 | `sanged` daemon supervision: `launchd` (macOS user agent), `systemd --user` (Linux), Windows Service via `pywin32` (preferred) with NSSM/WinSW fallback. Daemon never runs as root/admin; capabilities dropped post-start. | **ADR-013** |
 | D12 | Etymology framing: "named after the *sengi* (Swahili for elephant shrew), stylized as 'Sange' for branding." Do not assert *sange* is itself a Swahili dictionary word. | **ADR-014** |
-| D13 | URL scheme: canonical metadata uses `opensource.simtabi.com/products/sange` and `opensource.simtabi.com/documentation/sange`; `sange.sh` is the marketing redirect. Repo at `github.com/simtabi/sange`. | **ADR-015** |
+| D13 | URL scheme: canonical metadata uses `opensource.simtabi.com/products/sange` and `opensource.simtabi.com/documentation/sange`; `sange.sh` is the marketing redirect. Repo at `github.com/sangedev/sange`. | **ADR-015** |
 | D14 | Final v3 source-repo layout per §16.2. v1/v2 sub-directories are deleted post-handoff; v3 occupies the sange repository root. | **ADR-016** |
 | D15 | Documentation: one root `README.md` (index + install + tagline only) + the manual under `docs/` split per-tool, per-topic. The full consolidated `sange-architecture.md` exists *only* inside the architecture deliverable bundle and `docs/architecture.md` mirrors a condensed read of it. | **ADR-017** |
 | D16 | VCS history-purge subsystem (§6.11) is **synchronous, interactive, CLI/TUI-initiated only**. No async background workers; no scheduled / cron purges; no phased / partial rollout; web UI cannot execute the destructive transition. `--batch` mode requires four explicit precondition flags and is rate-limited per operator. | **ADR-018** |
@@ -2876,7 +2876,7 @@ sange-architecture/                    # transient, design-time deliverable
 
 ### 16.2 Final v3 source-repository layout (the actual on-disk codebase)
 
-✅ **Path locked (2026-05-13, user-confirmed):** The v3 codebase lives **in-place** at `/Users/imanimanyara/Artisan/projects/opensource/sange/`. After v1/v2 sub-directory deletion, the v3 codebase fills the existing repo root. This preserves the `github.com/simtabi/sange` git remote, the Simtabi org-tree convention from `/Users/imanimanyara/Artisan/projects/opensource/CLAUDE.md`, and the existing git history.
+✅ **Path locked (2026-05-13, user-confirmed):** The v3 codebase lives **in-place** at `/Users/imanimanyara/Artisan/projects/opensource/sange/`. After v1/v2 sub-directory deletion, the v3 codebase fills the existing repo root. This preserves the `github.com/sangedev/sange` git remote, the Simtabi org-tree convention from `/Users/imanimanyara/Artisan/projects/opensource/CLAUDE.md`, and the existing git history.
 
 **Design-time companion folder.** The architecture prompt, the `sange-architecture.md` deliverable, and the `.design/plans/` companion folder all live under `.design/` at the repo root — a dotfile folder that signals "design metadata, not source code" to readers. This was confirmed by the user reorganizing the on-disk layout (v4.2). The arrangement is canonical for **all** future agency projects per ADR-025 + ADR-027 — fork `/Users/imanimanyara/Artisan/projects/opensource/sange/.design/` as the template for any new project's design workbook.
 

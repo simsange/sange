@@ -12,7 +12,7 @@
 # Build (multi-arch, release):
 #   docker buildx build \
 #     --platform linux/amd64,linux/arm64 \
-#     -t ghcr.io/simtabi/sange:<tag> \
+#     -t ghcr.io/sangedev/sange:<tag> \
 #     --push .
 #
 # Run:

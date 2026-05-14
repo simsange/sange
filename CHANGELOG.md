@@ -47,4 +47,4 @@ model fully reified via `docs/security/stride.md` (emitted by T-G-012)._
 - **`-rcN`** is reserved for release candidates near a tagged version.
 - Breaking changes are recorded as superseding ADRs (`.design/plans/decisions-log.md`).
 
-[Unreleased]: https://github.com/simtabi/sange/compare/HEAD...HEAD
+[Unreleased]: https://github.com/sangedev/sange/compare/HEAD...HEAD

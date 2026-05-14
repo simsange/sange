@@ -2,7 +2,7 @@
 
 Sange is owned by **Simtabi LLC** and developed by the maintainer below plus
 the community of contributors visible at
-<https://github.com/simtabi/sange/graphs/contributors>.
+<https://github.com/sangedev/sange/graphs/contributors>.
 
 ## Copyright holder
 
@@ -40,4 +40,4 @@ merges. If you prefer a different attribution, say so in the PR description.
 
 ---
 
-*Project: <https://opensource.simtabi.com/products/sange>. Repository: <https://github.com/simtabi/sange>.*
+*Project: <https://opensource.simtabi.com/products/sange>. Repository: <https://github.com/sangedev/sange>.*

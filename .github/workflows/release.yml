@@ -127,8 +127,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/simtabi/sange:${{ steps.tag.outputs.value }}
-            ghcr.io/simtabi/sange:latest
+            ghcr.io/sangedev/sange:${{ steps.tag.outputs.value }}
+            ghcr.io/sangedev/sange:latest
           provenance: true
           sbom: true
 
