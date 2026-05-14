@@ -1,9 +1,9 @@
 ---
 generated_by: tools/generators/cli_reference.py
 generator_version: 1.0.0
-generated_at: 2026-05-14T19:20:02Z
-input_sha256: f6019b9d4f28b45745ed28581770da78737f9937f8d001a9f07e65df096ea257
-output_sha256: b64fb5725a56a4abdbd31736bd830d2a5dd2fdc606ab11030c7185ee4603c653
+generated_at: 2026-05-14T19:27:42Z
+input_sha256: f81a4e3eb747c39c7f5f59ce211ea56df98bd43a8e39e87c06159def384b2e6d
+output_sha256: 160763b4386d5745561779c3f86fadc7ad81c741c0a3f05fa4716f2cf75fd566
 manual_edits_allowed: false
 ---
 # Sange CLI reference
@@ -23,6 +23,8 @@ Every entry below is auto-introspected from the live click command tree, so flag
 | `sange ai preview` | Render the prompt for a task without sending. |
 | `sange ai providers` | List registered AI providers + capabilities. |
 | `sange commit` | Generate a commit message from a diff. |
+| `sange commits` | Manage the commit lifecycle queue. |
+| `sange commits list` | Show the commit queue. |
 | `sange doctor` | Environment health checks. |
 
 
@@ -48,6 +50,7 @@ Polyglot VCS automation toolkit (Git/SVN/Hg/P4).
 | :--- | :--- |
 | `sange ai` | AI provider preview + introspection. |
 | `sange commit` | Generate a commit message from a diff. |
+| `sange commits` | Manage the commit lifecycle queue. |
 | `sange doctor` | Environment health checks. |
 
 
@@ -102,6 +105,32 @@ Generate a commit message from a diff.
 | `--repo` | value |  | Repo root for context lookup (branch + recent commits). When omitted, the prompt receives empty repo context. |
 | `--scope` | value |  | Optional scope hint biasing the generated message. |
 | `--telemetry-dir` | value | `.sange/telemetry` | Where to write the NDJSON telemetry file. Default: .sange/telemetry in the current directory. |
+
+
+### `sange commits`
+
+
+Manage the commit lifecycle queue.
+
+**Sub-commands:**
+
+| Sub-command | Description |
+| :--- | :--- |
+| `sange commits list` | Show the commit queue. |
+
+
+### `sange commits list`
+
+
+Show the commit queue.
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--include-archived` | flag | false | Include rows in .sange/commits/archive/. |
+| `--repo` | value | `.` | Repo root (the parent of .sange/commits/). Default: cwd. |
+| `--status` | value |  | Filter by status (draft / pending_review / approved / committed / pushed / archived / rejected / discarded). Empty = all. |
 
 
 ### `sange doctor`
