@@ -56,6 +56,13 @@ from sange.core.enhancer.redaction import (
     Redactor,
     shannon_entropy,
 )
+from sange.core.enhancer.tasks import (
+    CONVENTIONAL_COMMIT_TYPES,
+    CommitMessageRequest,
+    CommitMessageResult,
+    build_commit_message_template,
+    generate_commit_message,
+)
 from sange.core.enhancer.templates import (
     PromptTemplate,
     RenderedPrompt,
@@ -69,6 +76,9 @@ from sange.core.enhancer.templates import (
 
 __all__ = [
     "AuditRecord",
+    "CONVENTIONAL_COMMIT_TYPES",
+    "CommitMessageRequest",
+    "CommitMessageResult",
     "EnhancedResult",
     "EnhancerError",
     "EnhancerValidationError",
@@ -89,7 +99,9 @@ __all__ = [
     "TemplateNotFoundError",
     "TemplateRegistry",
     "XmlFormattingStrategy",
+    "build_commit_message_template",
     "for_provider",
+    "generate_commit_message",
     "register_strategy",
     "registered_providers",
     "shannon_entropy",
