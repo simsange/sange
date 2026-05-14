@@ -67,7 +67,15 @@ def commit_command(
         help="Where to write the NDJSON telemetry file. "
              "Default: .sange/telemetry in the current directory.",
     ),
+    save: bool = typer.Option(
+        True,
+        "--save/--no-save",
+        help="Save the generated commit as a DRAFT in <repo>/.sange/commits/. "
+             "Disable for ephemeral one-shot use.",
+    ),
 ) -> None:
+    import datetime as _dt
+
     from sange.core.enhancer.tasks.commit_message import (
         CommitMessageRequest,
         generate_commit_message,
@@ -110,6 +118,21 @@ def commit_command(
         typer.echo(f"AI provider error: {exc}", err=True)
         raise typer.Exit(code=70)
 
+    saved_path: Path | None = None
+    counter: int | None = None
+    if save:
+        # `--repo` is the lookup-context flag; if absent we save into
+        # the current working dir's .sange/commits/.
+        save_root = repo_path if repo_path is not None else Path(".")
+        try:
+            saved_path, counter = _save_draft(
+                result=result,
+                branch=branch,
+                repo_root=save_root,
+            )
+        except Exception as exc:  # noqa: BLE001 — surface save failures explicitly
+            typer.echo(f"warning: failed to save DRAFT row: {exc}", err=True)
+
     if json_mode:
         payload = {
             "type": result.type,
@@ -118,6 +141,8 @@ def commit_command(
             "body": result.body,
             "breaking_change": result.breaking_change,
             "audit_id": result.audit_id,
+            "draft_counter": counter,
+            "draft_path": str(saved_path) if saved_path else None,
         }
         typer.echo(json.dumps(payload, indent=2))
         return
@@ -134,14 +159,20 @@ def commit_command(
         typer.echo("")
         typer.echo(result.body)
 
+    # Surface where the DRAFT was saved (counter + path).
+    if saved_path is not None:
+        typer.echo("", err=True)
+        typer.echo(
+            f"saved DRAFT #{counter:04d} to {saved_path}", err=True
+        )
+
     # Surface the telemetry recording path (per §12.1 transparency).
     if not no_telemetry:
-        import datetime as _dt
-
         now = _dt.datetime.now(tz=_dt.timezone.utc)
         iso_year, iso_week, _ = now.isocalendar()
         record_path = telemetry_dir / f"events-{iso_year}-W{iso_week:02d}.ndjson"
-        typer.echo("", err=True)
+        if saved_path is None:
+            typer.echo("", err=True)
         typer.echo(f"recorded to {record_path}", err=True)
 
 
@@ -189,6 +220,48 @@ def _gather_repo_context(
         return branch or "", recent, files
     except Exception:  # noqa: BLE001 — best-effort; degrade silently.
         return "", "", []
+
+
+def _save_draft(
+    *,
+    result,  # type: ignore[no-untyped-def] — CommitMessageResult, lazily-imported above
+    branch: str,
+    repo_root: Path,
+) -> tuple[Path, int]:
+    """Build a `CommitJSON` in DRAFT status and write it to disk.
+
+    Returns `(path_written, counter)`. The counter is the per-repo
+    monotonic value; the path is `<repo_root>/.sange/commits/NNNN-...json`."""
+
+    import datetime as _dt
+
+    from sange.core.lifecycle import (
+        CommitJSON,
+        CommitMessage,
+        CommitsDirectory,
+    )
+
+    cd = CommitsDirectory(repo_root)
+    counter = cd.allocate_counter()
+    now = _dt.datetime.now(tz=_dt.timezone.utc)
+
+    commit = CommitJSON(
+        counter=counter,
+        created_at=now,
+        updated_at=now,
+        message=CommitMessage(
+            type=result.type,
+            scope=result.scope,
+            subject=result.subject,
+            body=result.body,
+            breaking_change=result.breaking_change,
+        ),
+        branch=branch,
+        repo_path=str(repo_root.resolve()),
+        template_id=result.audit_id,
+    )
+    path = cd.save(commit)
+    return path, counter
 
 
 __all__ = ["commit_command"]

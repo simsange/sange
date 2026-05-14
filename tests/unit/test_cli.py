@@ -178,13 +178,21 @@ class TestCommit:
         self, runner: CliRunner
     ) -> None:
         # MockProvider can't synthesize valid JSON → exit 70.
-        result = runner.invoke(app, ["commit"], input="+ change\n")
+        # --no-save + --no-telemetry keep the test from polluting cwd
+        # when error path runs.
+        result = runner.invoke(
+            app,
+            ["commit", "--no-save", "--no-telemetry"],
+            input="+ change\n",
+        )
         assert result.exit_code == 70
         assert "AI provider error" in result.output
 
     def test_commit_empty_diff_exits_2(self, runner: CliRunner) -> None:
         # Send empty stdin → empty diff → usage error.
-        result = runner.invoke(app, ["commit"], input="")
+        result = runner.invoke(
+            app, ["commit", "--no-save", "--no-telemetry"], input=""
+        )
         assert result.exit_code == 2
         assert "diff is empty" in result.output
 
@@ -192,7 +200,8 @@ class TestCommit:
         self, runner: CliRunner
     ) -> None:
         result = runner.invoke(
-            app, ["commit", "--diff", "/nonexistent/diff"]
+            app,
+            ["commit", "--no-save", "--no-telemetry", "--diff", "/nonexistent/diff"],
         )
         assert result.exit_code == 2
 
@@ -241,7 +250,11 @@ class TestCommit:
 
         monkeypatch.setattr(enhancer_mod, "get_provider", _patched)
 
-        result = runner.invoke(app, ["commit"], input="+ change\n")
+        result = runner.invoke(
+            app,
+            ["commit", "--no-save", "--no-telemetry"],
+            input="+ change\n",
+        )
         assert result.exit_code == 0, result.output
         # Conventional Commits format: type(scope): subject
         assert "feat(auth): add login flow" in result.output
@@ -282,13 +295,19 @@ class TestCommit:
         monkeypatch.setattr(_protocol, "get_provider", _patched)
         monkeypatch.setattr(enhancer_mod, "get_provider", _patched)
 
-        result = runner.invoke(app, ["--json", "commit"], input="+ change\n")
+        result = runner.invoke(
+            app,
+            ["--json", "commit", "--no-save", "--no-telemetry"],
+            input="+ change\n",
+        )
         assert result.exit_code == 0, result.output
         payload = json.loads(result.output)
         assert payload["type"] == "fix"
         assert payload["subject"] == "correct rounding"
         assert payload["scope"] == ""
         assert payload["breaking_change"] is False
+        assert payload["draft_counter"] is None
+        assert payload["draft_path"] is None
 
     def test_commit_records_telemetry_by_default(
         self,
@@ -330,7 +349,11 @@ class TestCommit:
         telemetry_dir = tmp_path / "tele"
         result = runner.invoke(
             app,
-            ["commit", "--telemetry-dir", str(telemetry_dir)],
+            [
+                "commit",
+                "--no-save",
+                "--telemetry-dir", str(telemetry_dir),
+            ],
             input="+ change\n",
         )
         assert result.exit_code == 0, result.output
@@ -380,6 +403,7 @@ class TestCommit:
             app,
             [
                 "commit",
+                "--no-save",
                 "--no-telemetry",
                 "--telemetry-dir", str(telemetry_dir),
             ],
@@ -389,6 +413,240 @@ class TestCommit:
         assert "recorded to" not in result.output
         # No NDJSON file should exist.
         assert not list(telemetry_dir.glob("*.ndjson")) if telemetry_dir.is_dir() else True
+
+    def test_commit_save_writes_draft_row(
+        self,
+        runner: CliRunner,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        """`--save` (default) writes a CommitJSON DRAFT row under
+        <repo>/.sange/commits/."""
+
+        from sange.adapters.ai import (
+            CompletionResponse,
+            FinishReason,
+            MockProvider,
+            Usage,
+            _protocol,
+        )
+        from sange.core.enhancer import enhancer as enhancer_mod
+
+        class _Mock(MockProvider):
+            def complete(self, request):  # type: ignore[override]
+                return CompletionResponse(
+                    text=json.dumps({
+                        "type": "feat", "scope": "auth", "subject": "add passkey",
+                        "body": "WebAuthn.", "breaking_change": False,
+                    }),
+                    finish_reason=FinishReason.STOP,
+                    usage=Usage(model=request.model),
+                    provider="mock",
+                    model=request.model,
+                )
+
+        def _patched(name: str, **kwargs):
+            return _Mock() if name == "mock" else _protocol.get_provider(name, **kwargs)
+
+        monkeypatch.setattr(_protocol, "get_provider", _patched)
+        monkeypatch.setattr(enhancer_mod, "get_provider", _patched)
+
+        repo_root = tmp_path / "repo"
+        repo_root.mkdir()
+        result = runner.invoke(
+            app,
+            [
+                "commit",
+                "--repo", str(repo_root),
+                "--no-telemetry",
+            ],
+            input="+ change\n",
+        )
+        assert result.exit_code == 0, result.output
+
+        commits_dir = repo_root / ".sange" / "commits"
+        assert commits_dir.is_dir()
+        json_files = list(commits_dir.glob("*.json"))
+        assert len(json_files) == 1
+        assert json_files[0].name.startswith("0001-feat-auth-")
+
+        # Verify the JSON contents.
+        data = json.loads(json_files[0].read_text(encoding="utf-8"))
+        assert data["status"] == "draft"
+        assert data["counter"] == 1
+        assert data["message"]["type"] == "feat"
+        assert data["message"]["scope"] == "auth"
+        assert data["message"]["subject"] == "add passkey"
+        assert data["message"]["body"] == "WebAuthn."
+        assert data["message"]["breaking_change"] is False
+        # template_id is the audit_id from the enhancer.
+        assert data["template_id"] == "commit-message@1.0.0"
+        # No committed_sha (we're in DRAFT).
+        assert data["committed_sha"] == ""
+
+        # And the stderr notice is present.
+        assert "saved DRAFT #0001" in result.output
+
+    def test_commit_no_save_skips_draft_row(
+        self,
+        runner: CliRunner,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        """`--no-save` skips the DRAFT-row write and the notice."""
+
+        from sange.adapters.ai import (
+            CompletionResponse,
+            FinishReason,
+            MockProvider,
+            Usage,
+            _protocol,
+        )
+        from sange.core.enhancer import enhancer as enhancer_mod
+
+        class _Mock(MockProvider):
+            def complete(self, request):  # type: ignore[override]
+                return CompletionResponse(
+                    text=json.dumps({
+                        "type": "fix", "scope": "", "subject": "x",
+                        "body": "", "breaking_change": False,
+                    }),
+                    finish_reason=FinishReason.STOP,
+                    usage=Usage(model=request.model),
+                    provider="mock",
+                    model=request.model,
+                )
+
+        def _patched(name: str, **kwargs):
+            return _Mock() if name == "mock" else _protocol.get_provider(name, **kwargs)
+
+        monkeypatch.setattr(_protocol, "get_provider", _patched)
+        monkeypatch.setattr(enhancer_mod, "get_provider", _patched)
+
+        repo_root = tmp_path / "repo"
+        repo_root.mkdir()
+        result = runner.invoke(
+            app,
+            [
+                "commit",
+                "--no-save",
+                "--no-telemetry",
+                "--repo", str(repo_root),
+            ],
+            input="+ change\n",
+        )
+        assert result.exit_code == 0
+        # No .sange/commits/ dir was created.
+        assert not (repo_root / ".sange" / "commits").exists()
+        # No "saved DRAFT" notice.
+        assert "saved DRAFT" not in result.output
+
+    def test_commit_save_counter_monotonic(
+        self,
+        runner: CliRunner,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        """Two successful saves allocate counters 1 then 2."""
+
+        from sange.adapters.ai import (
+            CompletionResponse,
+            FinishReason,
+            MockProvider,
+            Usage,
+            _protocol,
+        )
+        from sange.core.enhancer import enhancer as enhancer_mod
+
+        class _Mock(MockProvider):
+            def complete(self, request):  # type: ignore[override]
+                return CompletionResponse(
+                    text=json.dumps({
+                        "type": "chore", "scope": "", "subject": "tidy",
+                        "body": "", "breaking_change": False,
+                    }),
+                    finish_reason=FinishReason.STOP,
+                    usage=Usage(model=request.model),
+                    provider="mock",
+                    model=request.model,
+                )
+
+        def _patched(name: str, **kwargs):
+            return _Mock() if name == "mock" else _protocol.get_provider(name, **kwargs)
+
+        monkeypatch.setattr(_protocol, "get_provider", _patched)
+        monkeypatch.setattr(enhancer_mod, "get_provider", _patched)
+
+        repo_root = tmp_path / "repo"
+        repo_root.mkdir()
+        for _ in range(2):
+            result = runner.invoke(
+                app,
+                ["commit", "--repo", str(repo_root), "--no-telemetry"],
+                input="+ change\n",
+            )
+            assert result.exit_code == 0, result.output
+
+        commits = sorted((repo_root / ".sange" / "commits").glob("*.json"))
+        assert len(commits) == 2
+        assert commits[0].name.startswith("0001-")
+        assert commits[1].name.startswith("0002-")
+
+    def test_commit_json_mode_includes_draft_metadata(
+        self,
+        runner: CliRunner,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        """In --json mode with --save, the payload includes draft_counter
+        and draft_path."""
+
+        from sange.adapters.ai import (
+            CompletionResponse,
+            FinishReason,
+            MockProvider,
+            Usage,
+            _protocol,
+        )
+        from sange.core.enhancer import enhancer as enhancer_mod
+
+        class _Mock(MockProvider):
+            def complete(self, request):  # type: ignore[override]
+                return CompletionResponse(
+                    text=json.dumps({
+                        "type": "feat", "scope": "x", "subject": "y",
+                        "body": "", "breaking_change": False,
+                    }),
+                    finish_reason=FinishReason.STOP,
+                    usage=Usage(model=request.model),
+                    provider="mock",
+                    model=request.model,
+                )
+
+        def _patched(name: str, **kwargs):
+            return _Mock() if name == "mock" else _protocol.get_provider(name, **kwargs)
+
+        monkeypatch.setattr(_protocol, "get_provider", _patched)
+        monkeypatch.setattr(enhancer_mod, "get_provider", _patched)
+
+        repo_root = tmp_path / "repo"
+        repo_root.mkdir()
+        result = runner.invoke(
+            app,
+            [
+                "--json", "commit",
+                "--no-telemetry",
+                "--repo", str(repo_root),
+            ],
+            input="+ change\n",
+        )
+        assert result.exit_code == 0, result.output
+        payload = json.loads(result.output)
+        assert payload["draft_counter"] == 1
+        assert payload["draft_path"] is not None
+        assert payload["draft_path"].endswith(".json")
+        # The file exists.
+        assert Path(payload["draft_path"]).is_file()
 
     def test_commit_with_breaking_change(
         self, runner: CliRunner, monkeypatch: pytest.MonkeyPatch
@@ -425,7 +683,11 @@ class TestCommit:
         monkeypatch.setattr(_protocol, "get_provider", _patched)
         monkeypatch.setattr(enhancer_mod, "get_provider", _patched)
 
-        result = runner.invoke(app, ["commit"], input="+ change\n")
+        result = runner.invoke(
+            app,
+            ["commit", "--no-save", "--no-telemetry"],
+            input="+ change\n",
+        )
         assert result.exit_code == 0
         # Breaking change marker `!` between scope and colon.
         assert "feat(api)!: remove v1 endpoints" in result.output

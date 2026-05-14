@@ -1,9 +1,9 @@
 ---
 generated_by: tools/generators/cli_reference.py
 generator_version: 1.0.0
-generated_at: 2026-05-14T18:38:41Z
-input_sha256: 32ec006b07e35e92df47adcfdfda4302d6cc6ed52f26b1ed5ab1f7dc1bc7678b
-output_sha256: adc976aed07cedb0d065b51af5a7780062b048ad416aaf4c48ffa3f257aa02e2
+generated_at: 2026-05-14T19:20:02Z
+input_sha256: f6019b9d4f28b45745ed28581770da78737f9937f8d001a9f07e65df096ea257
+output_sha256: b64fb5725a56a4abdbd31736bd830d2a5dd2fdc606ab11030c7185ee4603c653
 manual_edits_allowed: false
 ---
 # Sange CLI reference
@@ -96,6 +96,7 @@ Generate a commit message from a diff.
 | :--- | :--- | :--- | :--- |
 | `--diff` | value |  | Path to a file containing the staged diff. When omitted, reads from stdin. |
 | `--model` | value | `mock-1` | Model identifier passed to the provider. |
+| `--no-save`, `--save` | flag | true | Save the generated commit as a DRAFT in <repo>/.sange/commits/. Disable for ephemeral one-shot use. |
 | `--no-telemetry` | flag | false | Disable local telemetry recording for this invocation. |
 | `--provider` | value | `mock` | AI provider to call (mock / anthropic / openai / ollama / ...). |
 | `--repo` | value |  | Repo root for context lookup (branch + recent commits). When omitted, the prompt receives empty repo context. |
