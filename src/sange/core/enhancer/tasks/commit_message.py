@@ -31,8 +31,13 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from typing import TYPE_CHECKING
+
 from sange.core.enhancer.enhancer import EnhancedResult, PromptEnhancer
 from sange.core.enhancer.templates import PromptTemplate, TemplateRegistry
+
+if TYPE_CHECKING:
+    from sange.core.telemetry.collector import TelemetryCollector
 
 
 # --------------------------------------------------------------------------- #
@@ -212,6 +217,7 @@ def generate_commit_message(
     enhancer: PromptEnhancer | None = None,
     provider: str | None = None,
     model: str | None = None,
+    collector: "TelemetryCollector | None" = None,
 ) -> CommitMessageResult:
     """Run the full pipeline and return a typed result.
 
@@ -235,7 +241,7 @@ def generate_commit_message(
 
     if enhancer is None:
         registry = TemplateRegistry([build_commit_message_template()])
-        enhancer = PromptEnhancer(templates=registry)
+        enhancer = PromptEnhancer(templates=registry, collector=collector)
     elif not enhancer._templates.has(TEMPLATE_ID, TEMPLATE_VERSION):  # type: ignore[attr-defined]
         enhancer._templates.register(build_commit_message_template())  # type: ignore[attr-defined]
 

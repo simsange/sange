@@ -42,9 +42,10 @@ just "shape is correct; required fields present".
 from __future__ import annotations
 
 import json
+import time
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sange.adapters.ai._protocol import (
     AIProvider,
@@ -63,6 +64,9 @@ from sange.core.enhancer.formatting import (
 )
 from sange.core.enhancer.redaction import Redactor
 from sange.core.enhancer.templates import RenderedPrompt, TemplateRegistry
+
+if TYPE_CHECKING:
+    from sange.core.telemetry.collector import TelemetryCollector
 
 
 # --------------------------------------------------------------------------- #
@@ -221,6 +225,7 @@ class PromptEnhancer:
         default_provider: str = "mock",
         default_model: str = "mock-1",
         max_retries: int = 1,
+        collector: TelemetryCollector | None = None,
     ) -> None:
         if not isinstance(templates, TemplateRegistry):
             raise TypeError("templates must be a TemplateRegistry instance")
@@ -232,6 +237,7 @@ class PromptEnhancer:
         self._default_provider = default_provider
         self._default_model = default_model
         self._max_retries = max_retries
+        self._collector = collector
 
     # ----- public API ----------------------------------------------- #
 
@@ -267,6 +273,7 @@ class PromptEnhancer:
         formatted = resolution.strategy.format(rendered)
 
         retries = 0
+        t0 = time.perf_counter()
         response = self._call_provider(resolution, formatted, rendered)
         data, last_error = self._maybe_validate(rendered, response.text)
 
@@ -284,7 +291,17 @@ class PromptEnhancer:
             )
             data, last_error = self._maybe_validate(rendered, response.text)
 
+        latency_ms = int((time.perf_counter() - t0) * 1000)
+
         if data is _RETRY_SENTINEL:
+            # Validation failed terminally — surface an ErrorEvent before
+            # raising so the audit feed records the failure.
+            self._record_error(
+                template_id=rendered.template_id,
+                provider=provider_name,
+                error_type="EnhancerValidationError",
+                error_message=f"schema validation failed after {retries} retry(ies): {last_error}",
+            )
             raise EnhancerValidationError(
                 f"response from {provider_name!r} did not match schema after "
                 f"{retries} retry(ies): {last_error}; "
@@ -301,6 +318,8 @@ class PromptEnhancer:
             usage=response.usage,
             retries=retries if retry_used else 0,
         )
+
+        self._record_audit(audit, latency_ms=latency_ms)
 
         return EnhancedResult(
             text=response.text,
@@ -432,6 +451,47 @@ class PromptEnhancer:
             # it accessible via `text` but don't fit it into `.data`.
             return None, ""
         return payload, ""
+
+    # ----- telemetry hooks ------------------------------------------ #
+
+    def _record_audit(self, audit: AuditRecord, *, latency_ms: int) -> None:
+        """Fire-and-forget record into the operator's collector, if any."""
+
+        if self._collector is None:
+            return
+        try:
+            from sange.core.telemetry.collector import TelemetryCollector
+
+            event = TelemetryCollector.from_audit(audit, latency_ms=latency_ms)
+            self._collector.record(event)
+        except Exception:  # noqa: BLE001 — telemetry must never break the call path.
+            pass
+
+    def _record_error(
+        self,
+        *,
+        template_id: str,
+        provider: str,
+        error_type: str,
+        error_message: str,
+    ) -> None:
+        """Record an `ErrorEvent` for a terminal-failure enhance() call."""
+
+        if self._collector is None:
+            return
+        try:
+            from sange.core.telemetry.events import ErrorEvent
+
+            event = ErrorEvent(
+                command_path=f"enhance.{template_id}",
+                error_type=error_type,
+                error_message=error_message,
+            )
+            self._collector.record(event)
+        except Exception:  # noqa: BLE001 — telemetry must never break the call path.
+            pass
+
+    # ----- internals ----------------------------------------------- #
 
     @staticmethod
     def _build_retry_messages(

@@ -1,9 +1,9 @@
 ---
 generated_by: tools/generators/cli_reference.py
 generator_version: 1.0.0
-generated_at: 2026-05-14T18:10:06Z
-input_sha256: e3d4f117e197a7836a154be9b7d2e42cac262b95c104b857ac5b9b181cf385f3
-output_sha256: 64369f7135d94d16f1d40cc78851eb116ea9ce28cccbb0403bc8666b8bc8a059
+generated_at: 2026-05-14T18:38:41Z
+input_sha256: 32ec006b07e35e92df47adcfdfda4302d6cc6ed52f26b1ed5ab1f7dc1bc7678b
+output_sha256: adc976aed07cedb0d065b51af5a7780062b048ad416aaf4c48ffa3f257aa02e2
 manual_edits_allowed: false
 ---
 # Sange CLI reference
@@ -96,9 +96,11 @@ Generate a commit message from a diff.
 | :--- | :--- | :--- | :--- |
 | `--diff` | value |  | Path to a file containing the staged diff. When omitted, reads from stdin. |
 | `--model` | value | `mock-1` | Model identifier passed to the provider. |
+| `--no-telemetry` | flag | false | Disable local telemetry recording for this invocation. |
 | `--provider` | value | `mock` | AI provider to call (mock / anthropic / openai / ollama / ...). |
 | `--repo` | value |  | Repo root for context lookup (branch + recent commits). When omitted, the prompt receives empty repo context. |
 | `--scope` | value |  | Optional scope hint biasing the generated message. |
+| `--telemetry-dir` | value | `.sange/telemetry` | Where to write the NDJSON telemetry file. Default: .sange/telemetry in the current directory. |
 
 
 ### `sange doctor`

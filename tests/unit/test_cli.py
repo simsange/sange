@@ -290,6 +290,106 @@ class TestCommit:
         assert payload["scope"] == ""
         assert payload["breaking_change"] is False
 
+    def test_commit_records_telemetry_by_default(
+        self,
+        runner: CliRunner,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        """Successful `sange commit` records an AI call event and
+        emits a 'recorded to' notice on stderr."""
+
+        from sange.adapters.ai import (
+            CompletionResponse,
+            FinishReason,
+            MockProvider,
+            Usage,
+            _protocol,
+        )
+        from sange.core.enhancer import enhancer as enhancer_mod
+
+        class _Mock(MockProvider):
+            def complete(self, request):  # type: ignore[override]
+                return CompletionResponse(
+                    text=json.dumps({
+                        "type": "feat", "scope": "x", "subject": "y",
+                        "body": "", "breaking_change": False,
+                    }),
+                    finish_reason=FinishReason.STOP,
+                    usage=Usage(model=request.model),
+                    provider="mock",
+                    model=request.model,
+                )
+
+        def _patched(name: str, **kwargs):
+            return _Mock() if name == "mock" else _protocol.get_provider(name, **kwargs)
+
+        monkeypatch.setattr(_protocol, "get_provider", _patched)
+        monkeypatch.setattr(enhancer_mod, "get_provider", _patched)
+
+        telemetry_dir = tmp_path / "tele"
+        result = runner.invoke(
+            app,
+            ["commit", "--telemetry-dir", str(telemetry_dir)],
+            input="+ change\n",
+        )
+        assert result.exit_code == 0, result.output
+        # Some marker that telemetry got recorded — the path is on stderr,
+        # which CliRunner combines into `result.output`.
+        assert "recorded to" in result.output
+        assert telemetry_dir.is_dir()
+        # At least one NDJSON file landed.
+        assert list(telemetry_dir.glob("*.ndjson"))
+
+    def test_commit_no_telemetry_flag_disables(
+        self,
+        runner: CliRunner,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        from sange.adapters.ai import (
+            CompletionResponse,
+            FinishReason,
+            MockProvider,
+            Usage,
+            _protocol,
+        )
+        from sange.core.enhancer import enhancer as enhancer_mod
+
+        class _Mock(MockProvider):
+            def complete(self, request):  # type: ignore[override]
+                return CompletionResponse(
+                    text=json.dumps({
+                        "type": "fix", "scope": "", "subject": "x",
+                        "body": "", "breaking_change": False,
+                    }),
+                    finish_reason=FinishReason.STOP,
+                    usage=Usage(model=request.model),
+                    provider="mock",
+                    model=request.model,
+                )
+
+        def _patched(name: str, **kwargs):
+            return _Mock() if name == "mock" else _protocol.get_provider(name, **kwargs)
+
+        monkeypatch.setattr(_protocol, "get_provider", _patched)
+        monkeypatch.setattr(enhancer_mod, "get_provider", _patched)
+
+        telemetry_dir = tmp_path / "tele"
+        result = runner.invoke(
+            app,
+            [
+                "commit",
+                "--no-telemetry",
+                "--telemetry-dir", str(telemetry_dir),
+            ],
+            input="+ change\n",
+        )
+        assert result.exit_code == 0, result.output
+        assert "recorded to" not in result.output
+        # No NDJSON file should exist.
+        assert not list(telemetry_dir.glob("*.ndjson")) if telemetry_dir.is_dir() else True
+
     def test_commit_with_breaking_change(
         self, runner: CliRunner, monkeypatch: pytest.MonkeyPatch
     ) -> None:

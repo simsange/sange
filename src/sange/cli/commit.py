@@ -56,16 +56,32 @@ def commit_command(
         "--scope",
         help="Optional scope hint biasing the generated message.",
     ),
+    no_telemetry: bool = typer.Option(
+        False,
+        "--no-telemetry",
+        help="Disable local telemetry recording for this invocation.",
+    ),
+    telemetry_dir: Path = typer.Option(
+        Path(".sange/telemetry"),
+        "--telemetry-dir",
+        help="Where to write the NDJSON telemetry file. "
+             "Default: .sange/telemetry in the current directory.",
+    ),
 ) -> None:
     from sange.core.enhancer.tasks.commit_message import (
         CommitMessageRequest,
         generate_commit_message,
     )
+    from sange.core.telemetry import CollectorPolicy, TelemetryCollector
 
     import click
 
     ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
+
+    collector = TelemetryCollector(
+        CollectorPolicy(enabled=not no_telemetry, log_dir=telemetry_dir)
+    )
 
     diff_text = _read_diff(diff_path)
     if not diff_text:
@@ -87,7 +103,9 @@ def commit_command(
         raise typer.Exit(code=2)
 
     try:
-        result = generate_commit_message(request, provider=provider, model=model)
+        result = generate_commit_message(
+            request, provider=provider, model=model, collector=collector
+        )
     except Exception as exc:  # noqa: BLE001 — surface as exit-code-70 AI error.
         typer.echo(f"AI provider error: {exc}", err=True)
         raise typer.Exit(code=70)
@@ -115,6 +133,16 @@ def commit_command(
     if result.body:
         typer.echo("")
         typer.echo(result.body)
+
+    # Surface the telemetry recording path (per §12.1 transparency).
+    if not no_telemetry:
+        import datetime as _dt
+
+        now = _dt.datetime.now(tz=_dt.timezone.utc)
+        iso_year, iso_week, _ = now.isocalendar()
+        record_path = telemetry_dir / f"events-{iso_year}-W{iso_week:02d}.ndjson"
+        typer.echo("", err=True)
+        typer.echo(f"recorded to {record_path}", err=True)
 
 
 # --------------------------------------------------------------------------- #
