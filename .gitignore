@@ -209,3 +209,8 @@ id_ed25519
 id_ed25519.pub
 credentials.json
 secrets.json
+
+# ---------------------------------------------------------------------
+# MkDocs build artifacts (documentation/ — seed of sangedev/documentation)
+# ---------------------------------------------------------------------
+documentation/site/
