@@ -1,9 +1,9 @@
 ---
 generated_by: tools/generators/docs_index.py
 generator_version: 1.0.0
-generated_at: 2026-05-14T22:00:00Z
-input_sha256: 3ce2be475f0029f192b472df6fa86b4c6223c97f455f73784f510653c1c0303a
-output_sha256: d569c5eeb1a90aeebbc41cad44b53011a1d7f4b3ed3f79e44466c7dfb03f9168
+generated_at: 2026-05-14T18:57:28Z
+input_sha256: b1adc8a0606948c86ae3759f4c91e2d6f936aa1fa3cb57bdfd52f423edce77c3
+output_sha256: 213859186575658de22be50105bf49426ac39aeec0a4ba8768fe9fac4f3febd2
 manual_edits_allowed: false
 ---
 # Sange documentation
@@ -14,16 +14,20 @@ manual_edits_allowed: false
 
 | Section | Title | Files |
 | :--- | :--- | ---: |
-| `reference/` | Reference (catalogs + schemas) | 5 |
+| `reference/` | Reference (catalogs + schemas) | 9 |
 | `security/` | Security | 1 |
-| `adr/` | Architecture Decision Records | 1 |
-| **Total** |  | 7 |
+| `adr/` | Architecture Decision Records | 2 |
+| **Total** |  | 12 |
 
 
 ## `reference/` — Reference (catalogs + schemas)
 
 - [Appendix D — Git command catalog](reference/appendix-d-git-catalog.md) — [`reference/appendix-d-git-catalog.md`](./reference/appendix-d-git-catalog.md)
+- [Appendix E — SVN command catalog](reference/appendix-e-svn-catalog.md) — [`reference/appendix-e-svn-catalog.md`](./reference/appendix-e-svn-catalog.md)
+- [Appendix F — Cross-VCS concept map](reference/appendix-f-cross-vcs.md) — [`reference/appendix-f-cross-vcs.md`](./reference/appendix-f-cross-vcs.md)
 - [Appendix G — Commit message preset library](reference/appendix-g-commit-templates.md) — [`reference/appendix-g-commit-templates.md`](./reference/appendix-g-commit-templates.md)
+- [Sange CLI reference](reference/cli-reference.md) — [`reference/cli-reference.md`](./reference/cli-reference.md)
+- [Sange configuration schema](reference/config-schema.md) — [`reference/config-schema.md`](./reference/config-schema.md)
 - [Sange exit codes](reference/exit-codes.md) — [`reference/exit-codes.md`](./reference/exit-codes.md)
 - [Sange premade-kit manifest reference](reference/kit-manifest.md) — [`reference/kit-manifest.md`](./reference/kit-manifest.md)
 - [Sange gitignore profile registry](reference/profile-registry.md) — [`reference/profile-registry.md`](./reference/profile-registry.md)
@@ -35,6 +39,7 @@ manual_edits_allowed: false
 ## `adr/` — Architecture Decision Records
 
 - [ADR-0032: Multi-dimensional variant matrix for gitignore-swap (Android-Studio-inspired)](adr/0032-variant-matrix-android-studio-inspired.md) — [`adr/0032-variant-matrix-android-studio-inspired.md`](./adr/0032-variant-matrix-android-studio-inspired.md)
+- [ADR-0033: Multi-arch Docker + Linux images (amd64 / arm64 / armv7)](adr/0033-multi-arch-docker.md) — [`adr/0033-multi-arch-docker.md`](./adr/0033-multi-arch-docker.md)
 
 ## Generated content
 

@@ -9,14 +9,18 @@
 [meta]
 generator = "tools/generators/kit_manifest.py"
 generator_version = "1.0.0"
-generated_at = "2026-05-14T20:00:00Z"
-file_count = 37
-total_bytes = 44904
+generated_at = "2026-05-14T18:56:51Z"
+file_count = 43
+total_bytes = 48316
 signature_required = true
 signature_artifact = "templates/MANIFEST.toml.sig"
 hash_algorithm = "sha256"
 
 # Per-category roll-up.
+[meta.categories._root]
+file_count = 1
+total_bytes = 859
+
 [meta.categories."commit-templates"]
 file_count = 1
 total_bytes = 19361
@@ -24,6 +28,17 @@ total_bytes = 19361
 [meta.categories."gitignore-profiles"]
 file_count = 36
 total_bytes = 25543
+
+[meta.categories.makefiles]
+file_count = 5
+total_bytes = 2553
+
+[[file]]
+path = "Makefile.template"
+category = "_root"
+size_bytes = 859
+sha256 = "b57760110dae1d9638d7214732529bbbc51eacbf06d623e779ca65780603b00b"
+file_type = "binary"
 
 [[file]]
 path = "commit-templates/default.toml"
@@ -283,3 +298,38 @@ category = "gitignore-profiles"
 size_bytes = 758
 sha256 = "dd05d608a064bd54f88fdb942c1322ce32661590105d8c4ca05d3cb94de7d9f7"
 file_type = "toml"
+
+[[file]]
+path = "makefiles/_core/colors.mk"
+category = "makefiles"
+size_bytes = 418
+sha256 = "5765e647f2ea35bf2a4ad139213c3b951b83997c86c3095b662c82d1127a6f6b"
+file_type = "binary"
+
+[[file]]
+path = "makefiles/_core/env.mk"
+category = "makefiles"
+size_bytes = 599
+sha256 = "ff2656344e5258fc746893cb093450bbac5a4d79137915db758e6fc1b4f674db"
+file_type = "binary"
+
+[[file]]
+path = "makefiles/_core/help.mk"
+category = "makefiles"
+size_bytes = 415
+sha256 = "5652e7c1aeaf375549920a61334b02b66e0cce305a739c95078d3d5524074d50"
+file_type = "binary"
+
+[[file]]
+path = "makefiles/lang/python.mk"
+category = "makefiles"
+size_bytes = 570
+sha256 = "92ffb2cbfeffb4c2bc7b0b9e67ce074cf924f030a5f602b1677a7ab499e03e7c"
+file_type = "binary"
+
+[[file]]
+path = "makefiles/vcs/git.mk"
+category = "makefiles"
+size_bytes = 551
+sha256 = "2b3fe8b67986c950e00a392d2e5cafa719ea41068d92a99d008a984812374dc1"
+file_type = "binary"
