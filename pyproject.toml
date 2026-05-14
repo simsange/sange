@@ -126,9 +126,10 @@ Issues = "https://github.com/simtabi/sange/issues"
 Changelog = "https://github.com/simtabi/sange/blob/main/CHANGELOG.md"
 "Security Policy" = "https://github.com/simtabi/sange/security/policy"
 
-# CLI entry-points are introduced in T-040 (Typer skeleton). Adding them in T-001
-# would resolve to an empty src/sange/cli/app.py that the snapshot deliberately
-# defers. The package is installable today; CLI invocation lands with T-040.
+# CLI entry-points — landed in T-040. `pip install -e .` exposes `sange`
+# on PATH; the entry resolves to `sange.cli.app` which is the typer App.
+[project.scripts]
+sange = "sange.cli:app"
 
 [tool.hatch.version]
 path = "src/sange/_version.py"
