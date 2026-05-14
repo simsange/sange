@@ -64,6 +64,14 @@ class TestDoctor:
         ai_check = next(c for c in payload["checks"] if c["name"] == "ai-providers")
         assert ai_check["details"]["mock"] == "installed"
 
+    def test_doctor_includes_makefile_check(
+        self, runner: CliRunner
+    ) -> None:
+        result = runner.invoke(app, ["--json", "doctor"])
+        payload = json.loads(result.output)
+        names = [c["name"] for c in payload["checks"]]
+        assert "makefile-tracked" in names
+
 
 # --------------------------------------------------------------------------- #
 # ai providers

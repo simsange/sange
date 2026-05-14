@@ -24,6 +24,7 @@ import shutil
 import subprocess
 import sys
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import typer
 
@@ -126,6 +127,90 @@ def _check_ai_providers() -> CheckResult:
     )
 
 
+def _check_makefile_tracked(repo_root: Path | None = None) -> CheckResult:
+    """Per §10.3: the generated Makefile must be gitignored.
+
+    Three outcomes:
+      * `OK`   — Makefile is gitignored OR doesn't exist OR cwd isn't
+                  a git working tree.
+      * `OK`   — Makefile exists but isn't tracked yet (could be a
+                  fresh emit awaiting `git add` — informational only).
+      * `FAIL` — Makefile is tracked. Loud failure with the §10.3
+                  recovery hint.
+    """
+
+    root = repo_root or Path.cwd()
+    git_path = shutil.which("git")
+    if git_path is None:
+        return CheckResult(
+            name="makefile-tracked",
+            ok=True,
+            message="skipped (git not on PATH)",
+        )
+
+    # Is this a git working tree at all?
+    try:
+        subprocess.run(
+            [git_path, "rev-parse", "--show-toplevel"],
+            cwd=root,
+            capture_output=True,
+            check=True,
+            text=True,
+            timeout=5,
+        )
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return CheckResult(
+            name="makefile-tracked",
+            ok=True,
+            message="skipped (not a git working tree)",
+        )
+
+    makefile = root / "Makefile"
+    if not makefile.is_file():
+        return CheckResult(
+            name="makefile-tracked",
+            ok=True,
+            message="Makefile not present (nothing to check)",
+        )
+
+    # `git ls-files --error-unmatch Makefile` returns 0 iff tracked.
+    try:
+        result = subprocess.run(
+            [git_path, "ls-files", "--error-unmatch", "Makefile"],
+            cwd=root,
+            capture_output=True,
+            check=False,
+            text=True,
+            timeout=5,
+        )
+    except subprocess.TimeoutExpired:
+        return CheckResult(
+            name="makefile-tracked",
+            ok=False,
+            message="git ls-files timed out",
+        )
+
+    is_tracked = result.returncode == 0
+    if is_tracked:
+        return CheckResult(
+            name="makefile-tracked",
+            ok=False,
+            message=(
+                "Makefile is tracked in git — per §10.3 the generated "
+                "Makefile must be gitignored. Recovery: `sange fix-makefile-tracked` "
+                "(or manually: `git rm --cached Makefile && echo '/Makefile' >> .gitignore`)."
+            ),
+            details={"tracked": True},
+        )
+
+    return CheckResult(
+        name="makefile-tracked",
+        ok=True,
+        message="Makefile present + correctly gitignored",
+        details={"tracked": False},
+    )
+
+
 def doctor_command() -> None:
     """Run all v0.1 health checks; print results; exit non-zero on failure."""
 
@@ -139,6 +224,7 @@ def doctor_command() -> None:
         _check_git(),
         _check_config(),
         _check_ai_providers(),
+        _check_makefile_tracked(),
     ]
 
     all_ok = all(c.ok for c in checks)
@@ -172,3 +258,7 @@ def doctor_command() -> None:
 
 
 __all__ = ["CheckResult", "doctor_command"]
+
+
+# Internal exposure for tests + future `sange fix-makefile-tracked` command.
+_check_makefile_tracked  # noqa: B018 — symbol reference for re-import.
