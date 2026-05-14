@@ -1,9 +1,9 @@
 ---
 generated_by: tools/generators/cli_reference.py
 generator_version: 1.0.0
-generated_at: 2026-05-14T21:36:13Z
-input_sha256: adb5ede9390eb91307a77997f5fda0fc3d2d13bcca624ecd796c5aea4ebf537a
-output_sha256: 26dd23147368490e6ccb8fbcb9f4e3d916fa4e892faad2f10f399800d9df21c5
+generated_at: 2026-05-14T21:53:19Z
+input_sha256: a806154f1b1d85c75153440b595ca824fa60eac8cd7a032903b443a7dd9e7f89
+output_sha256: 70020180b8b6f8bc81dc1801207e1b848d10f9fb2b5045dc65d94d1710f51a20
 manual_edits_allowed: false
 ---
 # Sange CLI reference
@@ -28,6 +28,7 @@ Every entry below is auto-introspected from the live click command tree, so flag
 | `sange commits list` | Show the commit queue. |
 | `sange commits push` | Land an APPROVED commit (git commit + optionally git push). |
 | `sange doctor` | Environment health checks. |
+| `sange init` | Bootstrap .sange/ skeleton in the target repo. |
 
 
 ## Commands
@@ -54,6 +55,7 @@ Polyglot VCS automation toolkit (Git/SVN/Hg/P4).
 | `sange commit` | Generate a commit message from a diff. |
 | `sange commits` | Manage the commit lifecycle queue. |
 | `sange doctor` | Environment health checks. |
+| `sange init` | Bootstrap .sange/ skeleton in the target repo. |
 
 
 ### `sange ai`
@@ -187,6 +189,21 @@ Land an APPROVED commit (git commit + optionally git push).
 
 
 Environment health checks.
+
+### `sange init`
+
+
+Bootstrap .sange/ skeleton in the target repo.
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--force` | flag | false | Overwrite existing files. Default: keep existing untouched. |
+| `--gitignore`, `--no-gitignore` | flag | true | Append /Makefile + /.sange/ entries to .gitignore. |
+| `--makefile`, `--no-makefile` | flag | true | Install the top-level Makefile + .sange/makefiles/ tree. |
+| `--repo` | value | `.` | Target repo root. Default: the current directory. |
+
 
 ## Exit codes
 

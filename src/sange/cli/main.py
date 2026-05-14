@@ -78,11 +78,13 @@ from sange.cli.ai import ai_app  # noqa: E402
 from sange.cli.commit import commit_command  # noqa: E402
 from sange.cli.commits import commits_app  # noqa: E402
 from sange.cli.doctor import doctor_command  # noqa: E402
+from sange.cli.init import init_command  # noqa: E402
 
 app.add_typer(ai_app, name="ai", help="AI provider preview + introspection.")
 app.add_typer(commits_app, name="commits", help="Manage the commit lifecycle queue.")
 app.command("doctor", help="Environment health checks.")(doctor_command)
 app.command("commit", help="Generate a commit message from a diff.")(commit_command)
+app.command("init", help="Bootstrap .sange/ skeleton in the target repo.")(init_command)
 
 
 __all__ = ["app"]
