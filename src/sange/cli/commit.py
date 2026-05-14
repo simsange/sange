@@ -204,12 +204,9 @@ def _gather_repo_context(
 
     try:
         from sange.adapters.vcs.git import GitDriver
-        from sange.core.models import Repo, VCSKind
 
-        repo = Repo(path=str(repo_path.resolve()), kind=VCSKind.GIT)
+        repo = GitDriver.detect(repo_path.resolve())
         driver = GitDriver()
-        if not driver.detect(repo):
-            return "", "", []
 
         branch = driver.current_branch(repo)
         commits = driver.log(repo, max_count=5)

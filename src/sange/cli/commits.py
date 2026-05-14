@@ -224,6 +224,208 @@ def approve_command(
 
 
 # --------------------------------------------------------------------------- #
+# `sange commits push <counter|id>`
+# --------------------------------------------------------------------------- #
+
+
+@commits_app.command(
+    "push",
+    help="Land an APPROVED commit (git commit + optionally git push).",
+)
+def push_command(
+    target: str = typer.Argument(
+        ...,
+        help="Counter (e.g. `1` or `0001`) or full commit id.",
+    ),
+    repo_root: Path = typer.Option(
+        Path("."),
+        "--repo",
+        help="Repo root (must be a working git checkout). Default: cwd.",
+    ),
+    push: bool = typer.Option(
+        True,
+        "--push/--no-push",
+        help="After the local commit lands, also `git push` to the remote.",
+    ),
+    remote: str = typer.Option(
+        "origin",
+        "--remote",
+        help="Remote name when --push is on. Default: origin.",
+    ),
+    branch: str = typer.Option(
+        "",
+        "--branch",
+        help="Branch to push. Default: current branch.",
+    ),
+    author_name: str = typer.Option(
+        "",
+        "--author-name",
+        help="Override the author name (otherwise git config user.name).",
+    ),
+    author_email: str = typer.Option(
+        "",
+        "--author-email",
+        help="Override the author email (otherwise git config user.email).",
+    ),
+    sign: bool = typer.Option(
+        False,
+        "--sign",
+        help="GPG-sign the commit (`git commit -S`).",
+    ),
+) -> None:
+    """Resolve the commit, build the Conventional Commits message,
+    run `git commit`, record the SHA, optionally push, and write
+    the updated CommitJSON back to disk."""
+
+    import click
+
+    from sange.adapters.vcs._protocol import DriverError
+    from sange.adapters.vcs.git import GitDriver, GitRepoNotFound
+    from sange.core.lifecycle import (
+        CommitsDirectory,
+        CommitStatus,
+        IllegalTransition,
+        LifecycleEngine,
+    )
+
+    ctx = click.get_current_context()
+    json_mode = bool(ctx.obj and ctx.obj.get("json"))
+
+    # Pre-flight: author name + email must be both-or-neither.
+    if bool(author_name) != bool(author_email):
+        typer.echo(
+            "error: --author-name and --author-email must be supplied together",
+            err=True,
+        )
+        raise typer.Exit(code=2)
+
+    cd = CommitsDirectory(repo_root)
+    commit = _resolve_target(cd, target)
+    if commit is None:
+        typer.echo(f"error: no commit found matching {target!r}", err=True)
+        raise typer.Exit(code=2)
+
+    if commit.status is not CommitStatus.APPROVED:
+        typer.echo(
+            f"error: commit #{commit.counter} is in state "
+            f"{commit.status.value!r}; must be 'approved' before push. "
+            "Run `sange commits approve` first.",
+            err=True,
+        )
+        raise typer.Exit(code=2)
+
+    # Resolve the repo (validates that path is inside a git working tree).
+    try:
+        repo = GitDriver.detect(repo_root.resolve())
+    except GitRepoNotFound:
+        typer.echo(
+            f"error: {repo_root} is not a git working tree",
+            err=True,
+        )
+        raise typer.Exit(code=65)  # VCS-not-detected per §16
+    driver = GitDriver()
+
+    # Render the commit message.
+    message = _render_message(commit)
+
+    # Run git commit.
+    try:
+        commit_ref = driver.commit(
+            repo,
+            message=message,
+            author_name=author_name,
+            author_email=author_email,
+            sign=sign,
+        )
+    except DriverError as exc:
+        typer.echo(f"git commit failed: {exc}", err=True)
+        raise typer.Exit(code=65)
+
+    engine = LifecycleEngine()
+    try:
+        committed = engine.mark_committed(commit, sha=commit_ref.sha)
+    except IllegalTransition as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(code=2)
+
+    cd.save(committed)
+
+    push_status = "(--no-push)"
+    push_result_payload: dict | None = None
+    if push:
+        try:
+            push_result = driver.push(repo, remote=remote, branch=branch or "")
+        except DriverError as exc:
+            typer.echo(
+                f"warning: git commit landed but push failed: {exc}", err=True
+            )
+            push_status = f"FAILED: {exc}"
+        else:
+            try:
+                pushed = engine.mark_pushed(committed, remote=remote)
+            except IllegalTransition as exc:
+                typer.echo(f"error: {exc}", err=True)
+                raise typer.Exit(code=2)
+            cd.save(pushed)
+            committed = pushed
+            push_status = f"pushed to {remote}"
+            push_result_payload = {
+                "remote": push_result.remote,
+                "was_no_op": push_result.was_no_op,
+                "forced": push_result.forced,
+                "refs_updated": [
+                    {"local": local, "remote": rem}
+                    for local, rem in push_result.refs_updated
+                ],
+            }
+
+    if json_mode:
+        payload = {
+            "counter": committed.counter,
+            "id": committed.id,
+            "status": committed.status.value,
+            "committed_sha": committed.committed_sha,
+            "pushed_remote": committed.pushed_remote,
+            "push": push_result_payload,
+        }
+        typer.echo(json.dumps(payload, indent=2))
+        return
+
+    typer.echo(f"committed #{committed.counter:04d} as {commit_ref.short_sha} ({push_status})")
+
+
+# --------------------------------------------------------------------------- #
+# Message rendering
+# --------------------------------------------------------------------------- #
+
+
+def _render_message(commit) -> str:  # type: ignore[no-untyped-def]
+    """Render a `CommitMessage` into Conventional Commits text."""
+
+    msg = commit.message
+    header = msg.type
+    if msg.scope:
+        header += f"({msg.scope})"
+    if msg.breaking_change:
+        header += "!"
+    header += f": {msg.subject}"
+
+    parts: list[str] = [header]
+    if msg.body:
+        parts.append("")
+        parts.append(msg.body)
+    if msg.breaking_change and "BREAKING CHANGE" not in msg.body:
+        parts.append("")
+        parts.append("BREAKING CHANGE: see scope above")
+    if msg.footer:
+        parts.append("")
+        parts.append(msg.footer)
+    for co_author in msg.co_authors:
+        parts.append(f"Co-authored-by: {co_author}")
+    return "\n".join(parts)
+
+
+# --------------------------------------------------------------------------- #
 # Helpers
 # --------------------------------------------------------------------------- #
 
@@ -242,4 +444,9 @@ def _resolve_target(cd, target: str):  # type: ignore[no-untyped-def]
     return cd.store.find_by_id(target)
 
 
-__all__ = ["commits_app", "approve_command", "list_command"]
+__all__ = [
+    "approve_command",
+    "commits_app",
+    "list_command",
+    "push_command",
+]

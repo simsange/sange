@@ -416,6 +416,285 @@ class TestApprove:
         assert payload["approvals"][0]["via"] == "tui"
 
 
+# --------------------------------------------------------------------------- #
+# `sange commits push <counter|id>` — requires real git
+# --------------------------------------------------------------------------- #
+
+
+import shutil  # noqa: E402
+import subprocess  # noqa: E402
+
+_GIT = shutil.which("git")
+
+
+def _setup_git_repo(tmp_path: Path) -> Path:
+    """Init a bare-remote + working-tree pair under tmp_path. Returns the
+    working-tree path with one initial commit + a staged change ready for
+    the next commit."""
+
+    remote = tmp_path / "remote.git"
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    env = {
+        "GIT_AUTHOR_NAME": "Test",
+        "GIT_AUTHOR_EMAIL": "t@t",
+        "GIT_COMMITTER_NAME": "Test",
+        "GIT_COMMITTER_EMAIL": "t@t",
+        "PATH": "/usr/bin:/usr/local/bin:/opt/homebrew/bin",
+        "HOME": str(tmp_path),
+    }
+    subprocess.run(
+        ["git", "init", "--bare", "-q", "-b", "main", str(remote)],
+        env=env, check=True,
+    )
+    for cmd in (
+        ["git", "init", "-q", "-b", "main"],
+        ["git", "config", "user.email", "t@t"],
+        ["git", "config", "user.name", "Test"],
+    ):
+        subprocess.run(cmd, cwd=repo, env=env, check=True)
+    (repo / "README.md").write_text("x\n")
+    subprocess.run(["git", "add", "README.md"], cwd=repo, env=env, check=True)
+    subprocess.run(
+        ["git", "commit", "-q", "-m", "initial"], cwd=repo, env=env, check=True
+    )
+    subprocess.run(
+        ["git", "remote", "add", "origin", str(remote)],
+        cwd=repo, env=env, check=True,
+    )
+    subprocess.run(
+        ["git", "push", "-q", "origin", "main"], cwd=repo, env=env, check=True
+    )
+    # Stage a change for the next commit.
+    (repo / "README.md").write_text("y\n")
+    subprocess.run(["git", "add", "README.md"], cwd=repo, env=env, check=True)
+    return repo
+
+
+def _seed_approved(repo: Path, *, counter: int = 1) -> None:
+    """Plant one APPROVED commit row in <repo>/.sange/commits/."""
+
+    from sange.core.lifecycle import LifecycleEngine
+
+    cd = CommitsDirectory(repo)
+    engine = LifecycleEngine()
+    draft = CommitJSON(
+        counter=counter,
+        created_at=_NOW,
+        updated_at=_NOW,
+        message=CommitMessage(
+            type="docs", scope="readme", subject="update README"
+        ),
+    )
+    cd.save(engine.approve(engine.submit(draft), actor="alice", via="cli"))
+
+
+@pytest.mark.skipif(_GIT is None, reason="git not on PATH")
+class TestPush:
+    def test_push_with_no_push_flag(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        repo = _setup_git_repo(tmp_path)
+        _seed_approved(repo)
+        result = runner.invoke(
+            app,
+            [
+                "commits", "push", "1",
+                "--repo", str(repo),
+                "--no-push",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        assert "committed #0001" in result.output
+        assert "(--no-push)" in result.output
+
+        # Lifecycle row transitioned to COMMITTED with a real SHA.
+        rows = CommitsDirectory(repo).list_all()
+        assert rows[0].status is CommitStatus.COMMITTED
+        assert len(rows[0].committed_sha) == 40
+
+        # And git really did create the commit.
+        env = {"PATH": "/usr/bin:/usr/local/bin:/opt/homebrew/bin", "HOME": str(tmp_path)}
+        out = subprocess.run(
+            ["git", "log", "--oneline", "-2"],
+            cwd=repo, env=env, capture_output=True, text=True,
+        )
+        assert "docs(readme): update README" in out.stdout
+
+    def test_push_full_with_remote(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        repo = _setup_git_repo(tmp_path)
+        _seed_approved(repo)
+        result = runner.invoke(
+            app,
+            ["commits", "push", "1", "--repo", str(repo)],
+        )
+        assert result.exit_code == 0, result.output
+        assert "pushed to origin" in result.output
+
+        rows = CommitsDirectory(repo).list_all()
+        assert rows[0].status is CommitStatus.PUSHED
+        assert rows[0].pushed_remote == "origin"
+
+    def test_push_json_mode(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        repo = _setup_git_repo(tmp_path)
+        _seed_approved(repo)
+        result = runner.invoke(
+            app,
+            ["--json", "commits", "push", "1", "--repo", str(repo)],
+        )
+        assert result.exit_code == 0, result.output
+        payload = json.loads(result.output)
+        assert payload["counter"] == 1
+        assert payload["status"] == "pushed"
+        assert len(payload["committed_sha"]) == 40
+        assert payload["pushed_remote"] == "origin"
+        assert payload["push"]["remote"] == "origin"
+
+    def test_push_refuses_non_approved(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        repo = _setup_git_repo(tmp_path)
+        # Save a DRAFT (not APPROVED).
+        cd = CommitsDirectory(repo)
+        cd.save(_draft(1, "docs", "readme", "x"))
+        result = runner.invoke(
+            app, ["commits", "push", "1", "--repo", str(repo)]
+        )
+        assert result.exit_code == 2
+        assert "draft" in result.output.lower()
+        assert "approve" in result.output.lower()
+
+    def test_push_missing_counter_exits_2(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        repo = _setup_git_repo(tmp_path)
+        result = runner.invoke(
+            app, ["commits", "push", "99", "--repo", str(repo)]
+        )
+        assert result.exit_code == 2
+        assert "no commit found" in result.output
+
+    def test_push_non_git_dir_exits_65(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        from sange.core.lifecycle import LifecycleEngine
+
+        # No git repo at tmp_path.
+        cd = CommitsDirectory(tmp_path)
+        cd.save(
+            LifecycleEngine().approve(
+                LifecycleEngine().submit(
+                    CommitJSON(
+                        counter=1, created_at=_NOW, updated_at=_NOW,
+                        message=CommitMessage(
+                            type="docs", scope="x", subject="y"
+                        ),
+                    )
+                ),
+                actor="alice", via="cli",
+            )
+        )
+        result = runner.invoke(
+            app, ["commits", "push", "1", "--repo", str(tmp_path)]
+        )
+        assert result.exit_code == 65
+        assert "not a git working tree" in result.output
+
+    def test_push_author_mismatch_exits_2(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        repo = _setup_git_repo(tmp_path)
+        _seed_approved(repo)
+        # Only --author-name without --author-email.
+        result = runner.invoke(
+            app,
+            [
+                "commits", "push", "1", "--repo", str(repo),
+                "--author-name", "Bob",
+            ],
+        )
+        assert result.exit_code == 2
+        assert "author" in result.output.lower()
+
+    def test_push_author_override(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        repo = _setup_git_repo(tmp_path)
+        _seed_approved(repo)
+        result = runner.invoke(
+            app,
+            [
+                "commits", "push", "1", "--repo", str(repo), "--no-push",
+                "--author-name", "Override User",
+                "--author-email", "override@example.com",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+
+        # git log shows the override.
+        env = {"PATH": "/usr/bin:/usr/local/bin:/opt/homebrew/bin", "HOME": str(tmp_path)}
+        out = subprocess.run(
+            ["git", "log", "-1", "--format=%an <%ae>"],
+            cwd=repo, env=env, capture_output=True, text=True,
+        )
+        assert "Override User" in out.stdout
+        assert "override@example.com" in out.stdout
+
+
+# --------------------------------------------------------------------------- #
+# _render_message
+# --------------------------------------------------------------------------- #
+
+
+class TestRenderMessage:
+    def test_basic_message(self) -> None:
+        from sange.cli.commits import _render_message
+
+        commit = _draft(1, "feat", "auth", "add login")
+        text = _render_message(commit)
+        assert text == "feat(auth): add login"
+
+    def test_no_scope(self) -> None:
+        from sange.cli.commits import _render_message
+
+        commit = _draft(1, "chore", "", "tidy")
+        text = _render_message(commit)
+        assert text == "chore: tidy"
+
+    def test_breaking_change_marker(self) -> None:
+        from sange.cli.commits import _render_message
+
+        commit = CommitJSON(
+            counter=1, created_at=_NOW, updated_at=_NOW,
+            message=CommitMessage(
+                type="feat", scope="api", subject="remove v1",
+                body="v1 retired.", breaking_change=True,
+            ),
+        )
+        text = _render_message(commit)
+        assert text.startswith("feat(api)!: remove v1")
+        assert "BREAKING CHANGE" in text
+
+    def test_body_appended(self) -> None:
+        from sange.cli.commits import _render_message
+
+        commit = CommitJSON(
+            counter=1, created_at=_NOW, updated_at=_NOW,
+            message=CommitMessage(
+                type="docs", scope="readme", subject="update",
+                body="Two-paragraph body.\n\nWith details.",
+            ),
+        )
+        text = _render_message(commit)
+        assert "docs(readme): update" in text
+        assert "Two-paragraph body" in text
+        assert "With details" in text
+
+
 class TestSubAppIntegration:
     def test_commits_no_args_shows_help(self, runner: CliRunner) -> None:
         result = runner.invoke(app, ["commits"])

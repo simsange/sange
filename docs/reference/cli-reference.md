@@ -1,9 +1,9 @@
 ---
 generated_by: tools/generators/cli_reference.py
 generator_version: 1.0.0
-generated_at: 2026-05-14T19:30:27Z
-input_sha256: b1913c0a473b9c2b8638f502bab0c92ec9413b4332382b122be154495b4c5e48
-output_sha256: 1af00dd0fc13f0b1b95808c1163dd3ff9e2df66bde549267a2223d61d87de055
+generated_at: 2026-05-14T21:36:13Z
+input_sha256: adb5ede9390eb91307a77997f5fda0fc3d2d13bcca624ecd796c5aea4ebf537a
+output_sha256: 26dd23147368490e6ccb8fbcb9f4e3d916fa4e892faad2f10f399800d9df21c5
 manual_edits_allowed: false
 ---
 # Sange CLI reference
@@ -26,6 +26,7 @@ Every entry below is auto-introspected from the live click command tree, so flag
 | `sange commits` | Manage the commit lifecycle queue. |
 | `sange commits approve` | Approve a commit (DRAFT → APPROVED). |
 | `sange commits list` | Show the commit queue. |
+| `sange commits push` | Land an APPROVED commit (git commit + optionally git push). |
 | `sange doctor` | Environment health checks. |
 
 
@@ -119,6 +120,7 @@ Manage the commit lifecycle queue.
 | :--- | :--- |
 | `sange commits approve` | Approve a commit (DRAFT → APPROVED). |
 | `sange commits list` | Show the commit queue. |
+| `sange commits push` | Land an APPROVED commit (git commit + optionally git push). |
 
 
 ### `sange commits approve`
@@ -154,6 +156,31 @@ Show the commit queue.
 | `--include-archived` | flag | false | Include rows in .sange/commits/archive/. |
 | `--repo` | value | `.` | Repo root (the parent of .sange/commits/). Default: cwd. |
 | `--status` | value |  | Filter by status (draft / pending_review / approved / committed / pushed / archived / rejected / discarded). Empty = all. |
+
+
+### `sange commits push`
+
+
+Land an APPROVED commit (git commit + optionally git push).
+
+**Arguments:**
+
+| Name | Status |
+| :--- | :--- |
+| `target` | required |
+
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--author-email` | value |  | Override the author email (otherwise git config user.email). |
+| `--author-name` | value |  | Override the author name (otherwise git config user.name). |
+| `--branch` | value |  | Branch to push. Default: current branch. |
+| `--no-push`, `--push` | flag | true | After the local commit lands, also `git push` to the remote. |
+| `--remote` | value | `origin` | Remote name when --push is on. Default: origin. |
+| `--repo` | value | `.` | Repo root (must be a working git checkout). Default: cwd. |
+| `--sign` | flag | false | GPG-sign the commit (`git commit -S`). |
 
 
 ### `sange doctor`
