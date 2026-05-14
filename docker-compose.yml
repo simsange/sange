@@ -1,0 +1,42 @@
+# Local-dev convenience compose file.
+#
+# Usage:
+#   docker compose run --rm sange --version
+#   docker compose run --rm sange commit --no-save  < diff.patch
+#   docker compose run --rm sange doctor
+#
+# The image is built from the local Dockerfile (single-arch for dev speed).
+# For multi-arch release builds use `docker buildx` directly (see Dockerfile
+# header). Secrets via SSH agent forwarding per §6.10.
+
+services:
+  sange:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: sange:dev
+
+    # Mount the host's working tree at /repo. The container's cwd is /repo
+    # by default (set in the Dockerfile), so `sange commit` operates on
+    # the host's staged changes.
+    volumes:
+      - ./:/repo:rw
+
+      # SSH agent forwarding for git push to remotes — Linux convention.
+      # On macOS Docker Desktop runs the daemon in a VM; the SSH_AUTH_SOCK
+      # is forwarded via a magic path. Both forms below; the one not
+      # applicable to the host is a no-op.
+      - ${SSH_AUTH_SOCK:-/dev/null}:/run/ssh-agent:ro
+
+    environment:
+      # Forward the agent socket inside the container so `git push` can
+      # authenticate without copying private keys.
+      SSH_AUTH_SOCK: /run/ssh-agent
+
+      # Disable any local-dev telemetry rotation; everything still lands
+      # under /repo/.sange/ but the file's lifetime is the host's not
+      # the container's.
+      NO_COLOR: ${NO_COLOR:-}
+
+    # No restart policy — this is a one-shot CLI container, not a daemon.
+    # `sanged` daemon mode (Phase 3+) will get its own compose service.

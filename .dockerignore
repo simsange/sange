@@ -1,0 +1,75 @@
+# Keep the build context minimal. Anything not in this list is shipped
+# into the Docker daemon at `docker build` time; large/unnecessary content
+# slows builds and risks leaking secrets baked into hidden files.
+
+# VCS metadata — never needed inside the image.
+.git/
+.gitignore
+.gitattributes
+
+# Python build artifacts.
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.eggs/
+build/
+dist/
+wheels/
+*.egg
+
+# Virtual envs.
+.venv/
+venv/
+env/
+ENV/
+
+# Test + coverage artifacts.
+.pytest_cache/
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# IDE / OS noise.
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local development + Sange operational state — never go into the image.
+.sange/
+.env
+.env.*
+*.local
+
+# Documentation + design docs — not needed at runtime; large.
+docs/
+.design/
+
+# Tests — the runtime image doesn't run the suite.
+tests/
+
+# CI definitions.
+.github/
+
+# Tools — generators run at dev/CI time, not in the runtime image.
+tools/
+
+# Templates — `sange init` copies these out of the source tree, but the
+# install path uses `pip install` against the package which already
+# bundles them. Excluded from the BUILD context, not the install.
+templates/
+
+# Operations Kit — distributed separately.
+kit/
+
+# Misc.
+*.log
+*.swp
+*.swo
+*~
