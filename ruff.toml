@@ -1,0 +1,51 @@
+# Ruff — Sange v3 linting + formatting.
+#
+# Rule selection per Simtabi org convention (CLAUDE.md): E, F, W, I, N, UP, B, SIM, RUF.
+# Target Python 3.12 (the project's floor — see pyproject.toml::project.requires-python).
+
+target-version = "py312"
+line-length = 100
+src = ["src", "tests", "tools"]
+extend-exclude = [
+    ".design",
+    "sange-v1",
+    "sange-v2",
+    "build",
+    "dist",
+    "*.egg-info",
+    "__pycache__",
+]
+
+[lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "W",    # pycodestyle warnings
+    "I",    # isort
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "RUF",  # ruff-specific rules
+]
+# Rationale per Simtabi CLAUDE.md: "Don't suppress failures with `# noqa` … without
+# a one-line comment explaining why." If you ignore a rule globally here, add a
+# comment with the reason.
+
+[lint.per-file-ignores]
+# Tests legitimately have long parameter lists, fixture-rebinding warnings, and
+# may import un-used names to verify importability — turn off pyflakes' F401 there.
+"tests/**/*.py" = ["F401", "B011"]
+# The version module is read by hatchling at build time; the lone __version__ assignment
+# trips no rule today, but if pyupgrade ever rewrites the string we want it untouched.
+"src/sange/_version.py" = ["UP"]
+
+[lint.isort]
+known-first-party = ["sange"]
+combine-as-imports = true
+force-single-line = false
+
+[format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true

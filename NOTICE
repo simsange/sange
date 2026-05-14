@@ -1,0 +1,20 @@
+Sange — local-first developer-experience layer between humans and their VCS.
+Copyright 2026 Simtabi LLC
+
+This product includes software developed at Simtabi LLC
+(https://opensource.simtabi.com).
+
+This product is licensed under the Apache License, Version 2.0.
+See the LICENSE file for the full license terms.
+
+----------------------------------------------------------------------
+
+Third-party components bundled inside Sange will be listed here as they are
+added (one block per project, with the upstream project's required copyright
+and notice text). At T-001 (initial scaffolding) no third-party source is
+vendored — runtime dependencies are pulled at install time via the standard
+Python packaging mechanism and carry their own NOTICEs.
+
+When the v1.0 release ships, this file is regenerated from the CycloneDX SBOM
+(produced by .github/workflows/sbom.yml) so every transitively-included
+license has an attribution entry.

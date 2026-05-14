@@ -1,0 +1,52 @@
+# EditorConfig — Sange v3.
+# Per Simtabi org CLAUDE.md: UTF-8, LF endings, final newline, trim trailing ws,
+# 4-space Python / 2-space JS+YAML+TOML.
+# https://editorconfig.org/
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+
+[*.{py,pyi}]
+indent_size = 4
+max_line_length = 100
+
+[*.{js,jsx,ts,tsx,vue,mjs,cjs}]
+indent_size = 2
+
+[*.{yml,yaml}]
+indent_size = 2
+
+[*.{toml,ini,cfg}]
+indent_size = 2
+
+[*.{md,mdx}]
+trim_trailing_whitespace = false
+max_line_length = off
+
+[*.{json,jsonc}]
+indent_size = 2
+
+[*.php]
+indent_size = 4
+
+[*.{sh,bash,zsh}]
+indent_size = 2
+
+[{Makefile,*.mk}]
+indent_style = tab
+
+[Dockerfile*]
+indent_size = 4
+
+[*.{conf,nginx,Caddyfile}]
+indent_size = 4
+
+# Apache 2.0 license text is reproduced verbatim; keep its internal whitespace.
+[LICENSE]
+trim_trailing_whitespace = false

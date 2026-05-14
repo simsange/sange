@@ -1,0 +1,85 @@
+# pre-commit — Sange v3 commit-time gates.
+#
+# Hook stack per build-kickoff-prompt + .design/sange-architecture-prompt.md §16.2:
+# ruff (lint+format), mypy (types), gitleaks (secret scan), shellcheck (shell),
+# hadolint (Dockerfile), prettier (YAML/JSON/MD).
+#
+# The `rev` fields below are starting points; run `pre-commit autoupdate` after
+# the first install to pull current pinned versions. Every hook revision should
+# eventually land in CI so the hooks fail identically locally and on GHA.
+
+default_language_version:
+  python: python3.12
+
+# Sange-specific exclusions: never lint vendored design artifacts or the held v1/v2
+# trees (R-017: held until v0.1.0 beta). The `.design/` workbook is curated by hand
+# and intentionally outside the lint surface.
+exclude: |
+  (?x)^(
+    \.design/.*
+    | sange-v1/.*
+    | sange-v2/.*
+    | build/.*
+    | dist/.*
+  )$
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-added-large-files
+        args: ["--maxkb=512"]
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.5.7
+    hooks:
+      - id: ruff
+        args: ["--fix", "--exit-non-zero-on-fix"]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.11.1
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - "pydantic>=2.5"
+          - "pydantic-settings>=2.1"
+          - "typer>=0.12"
+          - "rich>=13.7"
+          - "structlog>=24.1"
+          - "types-PyYAML"
+        files: ^(src|tests|tools)/.*\.py$
+        args: ["--config-file=mypy.ini"]
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
+    hooks:
+      - id: shellcheck
+
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.13.0-beta
+    hooks:
+      - id: hadolint-docker
+
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v4.0.0-alpha.8
+    hooks:
+      - id: prettier
+        # Prettier scope: YAML + JSON + Markdown only. Python is handled by ruff-format;
+        # PHP (web/) gets its own formatter (Laravel Pint) in T-160.
+        types_or: ["yaml", "json", "markdown"]
+        exclude: ^(\.design/|CHANGELOG\.md$|docs/reference/.*\.md$|docs/audit/.*\.md$)

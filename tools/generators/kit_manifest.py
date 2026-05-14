@@ -1,0 +1,418 @@
+"""Generate templates/MANIFEST.toml — the signed-kit trust root.
+
+T-G-005 — walks `templates/` recursively, computes per-file sha256, and
+emits the canonical manifest the kit-loader uses to verify integrity
+before materializing any fragment via `sange scaffold`. Per ADR-020.
+
+Two outputs:
+
+  * `templates/MANIFEST.toml` — machine-consumed; one `[[file]]` block per
+    kit fragment. CI's release pipeline signs this file with cosign and
+    uploads `templates/MANIFEST.toml.sig` alongside it.
+  * `docs/reference/kit-manifest.md` — human-readable canonical reference
+    with §16.4.1 frontmatter (the verifier-tracked file).
+
+Determinism (ADR-023):
+
+  * Walk is alphabetically sorted by relative path.
+  * Per-file payload is sha256 + size + mode-class only — NO mtime, NO
+    inode, NO atime. Re-runs are byte-identical when content is.
+  * `MANIFEST.toml` and `MANIFEST.toml.sig` are skipped during the walk
+    to avoid self-reference.
+  * Hidden files, editor backups, and `.DS_Store` are skipped.
+"""
+
+from __future__ import annotations
+
+import datetime as _dt
+import json
+import sys
+from collections.abc import Iterable
+from dataclasses import dataclass
+from pathlib import Path
+
+# --- Path bootstrap ------------------------------------------------------- #
+HERE = Path(__file__).resolve().parent
+REPO_ROOT = HERE.parent.parent
+if str(HERE) not in sys.path:
+    sys.path.insert(0, str(HERE))
+
+from _lib import markdown  # noqa: E402
+from _lib.fingerprint import sha256_file, sha256_text  # noqa: E402
+from _lib.output import (  # noqa: E402
+    GeneratorMetadata,
+    WriteMode,
+    WriteOutcome,
+    write_generated_file,
+)
+
+GENERATOR_VERSION = "1.0.0"
+GENERATED_BY = "tools/generators/kit_manifest.py"
+
+TEMPLATES_DIR = REPO_ROOT / "templates"
+MANIFEST_PATH = TEMPLATES_DIR / "MANIFEST.toml"
+REFERENCE_DOC_PATH = REPO_ROOT / "docs" / "reference" / "kit-manifest.md"
+
+
+# Files we deliberately skip during the walk.
+SKIP_FILENAMES = {
+    "MANIFEST.toml",       # self-reference
+    "MANIFEST.toml.sig",   # signature artifact
+    ".DS_Store",
+    "Thumbs.db",
+    "desktop.ini",
+}
+
+
+# --------------------------------------------------------------------------- #
+# Schema
+# --------------------------------------------------------------------------- #
+
+
+@dataclass(frozen=True)
+class KitFile:
+    relative_path: str  # always POSIX-style, relative to TEMPLATES_DIR
+    category: str       # top-level subdirectory ("gitignore-profiles", "commit-templates", …)
+    size_bytes: int
+    sha256: str
+    file_type: str      # "toml" | "markdown" | "yaml" | "json" | "py" | "sh" | "binary"
+
+
+def _classify_type(path: Path) -> str:
+    suffix = path.suffix.lower()
+    if suffix in {".toml"}:
+        return "toml"
+    if suffix in {".md", ".markdown"}:
+        return "markdown"
+    if suffix in {".yml", ".yaml"}:
+        return "yaml"
+    if suffix in {".json"}:
+        return "json"
+    if suffix in {".py"}:
+        return "py"
+    if suffix in {".sh", ".bash"}:
+        return "sh"
+    if suffix in {".gitignore"}:
+        return "gitignore"
+    return "binary"
+
+
+def _should_skip(path: Path) -> bool:
+    if path.name in SKIP_FILENAMES:
+        return True
+    if path.name.startswith("."):
+        return True
+    if path.name.endswith("~"):
+        return True
+    if path.name.endswith(".tmp"):
+        return True
+    return False
+
+
+def walk_templates(root: Path) -> list[KitFile]:
+    """Walk the templates tree, return canonical KitFile entries.
+
+    Sorted by relative path. Skips files in SKIP_FILENAMES and dotfiles.
+    """
+
+    files: list[KitFile] = []
+    if not root.exists():
+        return files
+    for path in sorted(root.rglob("*")):
+        if not path.is_file():
+            continue
+        if _should_skip(path):
+            continue
+        rel = path.relative_to(root).as_posix()
+        # The top-level directory after `templates/` is the category.
+        parts = rel.split("/", 1)
+        category = parts[0] if len(parts) > 1 else "_root"
+        files.append(
+            KitFile(
+                relative_path=rel,
+                category=category,
+                size_bytes=path.stat().st_size,
+                sha256=sha256_file(path),
+                file_type=_classify_type(path),
+            )
+        )
+    return files
+
+
+# --------------------------------------------------------------------------- #
+# Manifest TOML
+# --------------------------------------------------------------------------- #
+
+
+def _toml_quote(value: str) -> str:
+    escaped = value.replace("\\", "\\\\").replace('"', '\\"')
+    return f'"{escaped}"'
+
+
+def _render_manifest_toml(
+    files: Iterable[KitFile],
+    *,
+    timestamp: _dt.datetime,
+) -> str:
+    files = list(files)
+    total_bytes = sum(f.size_bytes for f in files)
+
+    lines: list[str] = []
+    lines.append("# Sange Premade Operations Kit — signed manifest.")
+    lines.append(f"# Generated by {GENERATED_BY} (T-G-005).")
+    lines.append("# Trust root for the kit per ADR-020 (Premade Operations Kit policy).")
+    lines.append("#")
+    lines.append("# CI signs this file with cosign and uploads the result as")
+    lines.append("# `templates/MANIFEST.toml.sig` alongside it. `sange scaffold`")
+    lines.append("# refuses to materialize any fragment when the signature fails.")
+    lines.append("")
+
+    lines.append("[meta]")
+    lines.append(f'generator = "{GENERATED_BY}"')
+    lines.append(f'generator_version = "{GENERATOR_VERSION}"')
+    lines.append(f'generated_at = "{timestamp.astimezone(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}"')
+    lines.append(f"file_count = {len(files)}")
+    lines.append(f"total_bytes = {total_bytes}")
+    lines.append('signature_required = true')
+    lines.append('signature_artifact = "templates/MANIFEST.toml.sig"')
+    lines.append('hash_algorithm = "sha256"')
+    lines.append("")
+
+    # Per-category summary.
+    by_category: dict[str, list[KitFile]] = {}
+    for f in files:
+        by_category.setdefault(f.category, []).append(f)
+
+    lines.append("# Per-category roll-up.")
+    for category in sorted(by_category):
+        cat_files = by_category[category]
+        lines.append(f"[meta.categories.{_toml_key(category)}]")
+        lines.append(f"file_count = {len(cat_files)}")
+        lines.append(f"total_bytes = {sum(f.size_bytes for f in cat_files)}")
+        lines.append("")
+
+    # Per-file rows. Sorted alphabetically by `relative_path` so a diff
+    # surfaces every added/removed file in stable order.
+    for kf in files:
+        lines.append("[[file]]")
+        lines.append(f"path = {_toml_quote(kf.relative_path)}")
+        lines.append(f"category = {_toml_quote(kf.category)}")
+        lines.append(f"size_bytes = {kf.size_bytes}")
+        lines.append(f"sha256 = {_toml_quote(kf.sha256)}")
+        lines.append(f"file_type = {_toml_quote(kf.file_type)}")
+        lines.append("")
+
+    return "\n".join(lines)
+
+
+def _toml_key(name: str) -> str:
+    """Make a category name safe for use as a TOML bare key.
+
+    `_core` works as-is; `_local` likewise. Names with hyphens need quoting.
+    """
+
+    if all(ch.isalnum() or ch == "_" for ch in name):
+        return name
+    return _toml_quote(name)
+
+
+def _write_toml_atomically(path: Path, content: str) -> None:
+    import os, tempfile  # noqa: E401
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    encoded = content.encode("utf-8")
+    tmp_fd, tmp_name = tempfile.mkstemp(
+        prefix=f".{path.name}.", suffix=".tmp", dir=str(path.parent),
+    )
+    try:
+        with os.fdopen(tmp_fd, "wb") as handle:
+            handle.write(encoded)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp_name, path)
+        try:
+            os.chmod(path, 0o644)
+        except OSError:
+            pass
+    except BaseException:
+        try:
+            Path(tmp_name).unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise
+
+
+# --------------------------------------------------------------------------- #
+# Reference doc body
+# --------------------------------------------------------------------------- #
+
+
+def _render_reference_body(files: list[KitFile]) -> str:
+    parts: list[str] = []
+    parts.append(markdown.heading(1, "Sange premade-kit manifest reference"))
+    parts.append(
+        "> Generated by `tools/generators/kit_manifest.py` (T-G-005). "
+        "The machine-consumed manifest is at `templates/MANIFEST.toml`. "
+        "Per ADR-020 this is the trust root for the entire premade kit; "
+        "CI signs it with cosign and `sange scaffold` refuses to materialize "
+        "any fragment whose hash doesn't match.\n"
+    )
+    parts.append(
+        f"**Total files:** {len(files)}.\n"
+        f"**Total bytes:** {sum(f.size_bytes for f in files):,}.\n"
+    )
+
+    parts.append(markdown.heading(2, "Per-category roll-up"))
+    by_category: dict[str, list[KitFile]] = {}
+    for f in files:
+        by_category.setdefault(f.category, []).append(f)
+    rows = []
+    for category in sorted(by_category):
+        cat = by_category[category]
+        rows.append(
+            [
+                f"`{category}/`",
+                str(len(cat)),
+                f"{sum(f.size_bytes for f in cat):,}",
+            ]
+        )
+    rows.append(
+        [
+            "**Total**",
+            str(len(files)),
+            f"{sum(f.size_bytes for f in files):,}",
+        ]
+    )
+    parts.append(
+        markdown.table(
+            ["Category", "Files", "Bytes"],
+            rows,
+            alignments=["left", "right", "right"],
+        )
+    )
+    parts.append("")
+
+    parts.append(markdown.heading(2, "Verification"))
+    parts.append(
+        "Operators can verify the on-disk kit matches the published manifest "
+        "with two commands. Both produce zero output on success:\n"
+    )
+    parts.append(
+        markdown.code_block(
+            "# Verify the manifest's cosign signature (CI signs every release):\n"
+            "cosign verify-blob \\\n"
+            "  --certificate-identity-regexp 'https://github.com/simtabi/sange/.*' \\\n"
+            "  --certificate-oidc-issuer https://token.actions.githubusercontent.com \\\n"
+            "  --signature templates/MANIFEST.toml.sig \\\n"
+            "  templates/MANIFEST.toml\n"
+            "\n"
+            "# Verify every kit file's sha256 matches the manifest entry:\n"
+            "sange scaffold verify\n",
+            lang="bash",
+        )
+    )
+    parts.append("")
+
+    parts.append(markdown.heading(2, "How additions land in the manifest"))
+    parts.append(
+        markdown.bullet_list(
+            [
+                "Other generators (T-G-004 commit-templates, T-G-015 profile-registry, future T-G-NNN kit-fragment emitters) write files under `templates/`.",
+                "T-G-005 walks the tree alphabetically and computes a deterministic sha256 per file.",
+                "Hidden files, editor backups, the manifest itself, and `*.sig` are skipped.",
+                "Run `python tools/generators/all.py --only T-G-005 --write` after any change under `templates/` so the manifest reflects current state.",
+                "CI signs the manifest on release; the signature artifact lives next to the manifest as `templates/MANIFEST.toml.sig`.",
+            ]
+        )
+    )
+    parts.append("")
+
+    parts.append(markdown.heading(2, "Plugin extensions"))
+    parts.append(
+        "Per ADR-020, third-party plugins may ship additional kit fragments. "
+        "Each plugin manifest declares its files separately and is signed "
+        "independently. The Sange runtime kit-loader treats first-party and "
+        "plugin fragments as distinct trust roots — a compromised plugin "
+        "cannot forge entries in the canonical `templates/MANIFEST.toml`."
+    )
+    return "\n".join(parts)
+
+
+# --------------------------------------------------------------------------- #
+# Generator entry-point
+# --------------------------------------------------------------------------- #
+
+
+def _input_sha256(files: list[KitFile]) -> str:
+    """Hash the canonical list of (path, size, sha256) tuples.
+
+    Stable across runs as long as the file set + content is stable.
+    """
+
+    payload = {
+        "generator_version": GENERATOR_VERSION,
+        "files": [
+            {
+                "path": f.relative_path,
+                "size": f.size_bytes,
+                "sha256": f.sha256,
+                "category": f.category,
+                "file_type": f.file_type,
+            }
+            for f in files
+        ],
+    }
+    return sha256_text(json.dumps(payload, sort_keys=True))
+
+
+def run(
+    *,
+    mode: WriteMode,
+    clock: _dt.datetime,
+    templates_dir: Path | None = None,
+    manifest_path: Path | None = None,
+    reference_doc_path: Path | None = None,
+) -> list[WriteOutcome]:
+    """Generator entry-point."""
+
+    root = templates_dir or TEMPLATES_DIR
+    target_manifest = manifest_path or MANIFEST_PATH
+    target_doc = reference_doc_path or REFERENCE_DOC_PATH
+
+    files = walk_templates(root)
+
+    if mode is WriteMode.WRITE:
+        _write_toml_atomically(target_manifest, _render_manifest_toml(files, timestamp=clock))
+
+    meta = GeneratorMetadata(
+        generated_by=GENERATED_BY,
+        generator_version=GENERATOR_VERSION,
+        input_sha256=_input_sha256(files),
+        manual_edits_allowed=False,
+        generated_at=clock,
+    )
+    body = _render_reference_body(files)
+    return [write_generated_file(target_doc, body, meta, mode=mode)]
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--write", action="store_true")
+    parser.add_argument("--check", action="store_true")
+    args = parser.parse_args()
+    if not (args.write or args.check):
+        args.write = True
+    mode = WriteMode.WRITE if args.write else WriteMode.CHECK
+
+    results = run(mode=mode, clock=_dt.datetime.now(tz=_dt.timezone.utc))
+    rc = 0
+    for r in results:
+        if r.result is not None and r.result.value != "match":
+            rc = 66
+        line = f"[{mode.value}] {r.path}  sha256={r.output_sha256}"
+        if r.result is not None:
+            line += f"  ({r.result.value})"
+        print(line)
+    raise SystemExit(rc)
