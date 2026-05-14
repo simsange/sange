@@ -270,6 +270,152 @@ class TestListArchive:
 # --------------------------------------------------------------------------- #
 
 
+# --------------------------------------------------------------------------- #
+# `sange commits approve <counter|id>`
+# --------------------------------------------------------------------------- #
+
+
+class TestApprove:
+    def test_approve_by_counter(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        cd = CommitsDirectory(tmp_path)
+        cd.save(_draft(1, "feat", "auth", "add login"))
+        result = runner.invoke(
+            app,
+            [
+                "commits", "approve", "1",
+                "--repo", str(tmp_path),
+                "--actor", "alice",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "approved #0001" in result.output
+        assert "feat(auth): add login" in result.output
+        assert "alice" in result.output
+
+        # Verify on disk.
+        rows = cd.list_all()
+        assert rows[0].status is CommitStatus.APPROVED
+        assert len(rows[0].approvals) == 1
+        assert rows[0].approvals[0].actor == "alice"
+        assert rows[0].approvals[0].via == "cli"
+
+    def test_approve_by_id(self, runner: CliRunner, tmp_path: Path) -> None:
+        cd = CommitsDirectory(tmp_path)
+        commit = _draft(1, "fix", "core", "tighten loop")
+        cd.save(commit)
+        result = runner.invoke(
+            app,
+            [
+                "commits", "approve", commit.id,
+                "--repo", str(tmp_path),
+                "--actor", "bob",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "approved #0001" in result.output
+
+    def test_approve_zero_padded_counter(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        cd = CommitsDirectory(tmp_path)
+        cd.save(_draft(5, "docs", "", "update readme"))
+        # The command must accept "0005" as well as "5".
+        result = runner.invoke(
+            app,
+            [
+                "commits", "approve", "0005",
+                "--repo", str(tmp_path),
+                "--actor", "alice",
+            ],
+        )
+        assert result.exit_code == 0
+
+    def test_approve_missing_counter_exits_2(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        result = runner.invoke(
+            app,
+            ["commits", "approve", "999", "--repo", str(tmp_path)],
+        )
+        assert result.exit_code == 2
+        assert "no commit found" in result.output
+
+    def test_approve_already_approved_refused(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        cd = CommitsDirectory(tmp_path)
+        cd.save(_draft(1, "feat", "auth", "x"))
+        runner.invoke(
+            app,
+            ["commits", "approve", "1", "--repo", str(tmp_path), "--actor", "alice"],
+        )
+        # Second approve must refuse with the state-machine error.
+        result = runner.invoke(
+            app,
+            ["commits", "approve", "1", "--repo", str(tmp_path), "--actor", "bob"],
+        )
+        assert result.exit_code == 2
+        # Error mentions current state + allowed-from set.
+        assert "approved" in result.output
+        assert "pending_review" in result.output
+
+    def test_approve_json_mode(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        cd = CommitsDirectory(tmp_path)
+        cd.save(_draft(1, "chore", "", "tidy"))
+        result = runner.invoke(
+            app,
+            [
+                "--json", "commits", "approve", "1",
+                "--repo", str(tmp_path),
+                "--actor", "alice",
+            ],
+        )
+        assert result.exit_code == 0
+        payload = json.loads(result.output)
+        assert payload["counter"] == 1
+        assert payload["status"] == "approved"
+        assert len(payload["approvals"]) == 1
+        assert payload["approvals"][0]["actor"] == "alice"
+        assert payload["approvals"][0]["via"] == "cli"
+
+    def test_approve_actor_defaults_to_user_env(
+        self,
+        runner: CliRunner,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setenv("USER", "testuser")
+        cd = CommitsDirectory(tmp_path)
+        cd.save(_draft(1, "feat", "auth", "x"))
+        result = runner.invoke(
+            app,
+            ["commits", "approve", "1", "--repo", str(tmp_path)],
+        )
+        assert result.exit_code == 0
+        assert "testuser" in result.output
+
+    def test_approve_via_override(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        cd = CommitsDirectory(tmp_path)
+        cd.save(_draft(1, "feat", "auth", "x"))
+        result = runner.invoke(
+            app,
+            [
+                "--json", "commits", "approve", "1",
+                "--repo", str(tmp_path),
+                "--actor", "alice",
+                "--via", "tui",
+            ],
+        )
+        payload = json.loads(result.output)
+        assert payload["approvals"][0]["via"] == "tui"
+
+
 class TestSubAppIntegration:
     def test_commits_no_args_shows_help(self, runner: CliRunner) -> None:
         result = runner.invoke(app, ["commits"])

@@ -135,4 +135,111 @@ def list_command(
     )
 
 
-__all__ = ["commits_app", "list_command"]
+# --------------------------------------------------------------------------- #
+# `sange commits approve <counter|id>`
+# --------------------------------------------------------------------------- #
+
+
+@commits_app.command("approve", help="Approve a commit (DRAFT → APPROVED).")
+def approve_command(
+    target: str = typer.Argument(
+        ...,
+        help="Counter (e.g. `1` or `0001`) or full commit id.",
+    ),
+    repo_root: Path = typer.Option(
+        Path("."),
+        "--repo",
+        help="Repo root (the parent of .sange/commits/). Default: cwd.",
+    ),
+    actor: str = typer.Option(
+        "",
+        "--actor",
+        help="Approver name. Default: $USER environment variable.",
+    ),
+    via: str = typer.Option(
+        "cli",
+        "--via",
+        help="Surface the approval came through (cli / tui / web / mcp).",
+    ),
+) -> None:
+    """Resolve the commit, transition DRAFT → PENDING_REVIEW → APPROVED,
+    write back to disk."""
+
+    import os
+
+    import click
+
+    from sange.core.lifecycle import (
+        CommitsDirectory,
+        CommitStatus,
+        IllegalTransition,
+        LifecycleEngine,
+    )
+
+    ctx = click.get_current_context()
+    json_mode = bool(ctx.obj and ctx.obj.get("json"))
+
+    cd = CommitsDirectory(repo_root)
+    commit = _resolve_target(cd, target)
+    if commit is None:
+        typer.echo(f"error: no commit found matching {target!r}", err=True)
+        raise typer.Exit(code=2)
+
+    actor_name = actor or os.environ.get("USER", "") or "unknown"
+    engine = LifecycleEngine()
+
+    try:
+        # Solo-dev UX: DRAFT goes through the PENDING_REVIEW intermediate
+        # transparently. If the commit is already PENDING_REVIEW, skip
+        # the submit step.
+        if commit.status is CommitStatus.DRAFT:
+            commit = engine.submit(commit)
+        approved = engine.approve(commit, actor=actor_name, via=via)  # type: ignore[arg-type]
+    except IllegalTransition as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(code=2)
+
+    path = cd.save(approved)
+
+    if json_mode:
+        payload = {
+            "counter": approved.counter,
+            "id": approved.id,
+            "status": approved.status.value,
+            "approvals": [
+                {"actor": a.actor, "via": a.via, "at": a.at.isoformat()}
+                for a in approved.approvals
+            ],
+            "path": str(path),
+        }
+        typer.echo(json.dumps(payload, indent=2))
+        return
+
+    typer.echo(
+        f"approved #{approved.counter:04d}: {approved.message.type}"
+        + (f"({approved.message.scope})" if approved.message.scope else "")
+        + f": {approved.message.subject}"
+    )
+    typer.echo(f"approved by {actor_name} via {via} at {approved.approvals[-1].at.isoformat()}")
+
+
+# --------------------------------------------------------------------------- #
+# Helpers
+# --------------------------------------------------------------------------- #
+
+
+def _resolve_target(cd, target: str):  # type: ignore[no-untyped-def]
+    """Resolve a CLI target (counter int or hex id) to a CommitJSON."""
+
+    if target.isdigit() or (target.startswith("0") and target.lstrip("0").isdigit()):
+        # Counter form (1, 0001, 42, etc.).
+        try:
+            counter = int(target)
+        except ValueError:
+            return None
+        return cd.by_counter(counter)
+    # Otherwise treat as an id.
+    return cd.store.find_by_id(target)
+
+
+__all__ = ["commits_app", "approve_command", "list_command"]

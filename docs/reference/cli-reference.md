@@ -1,9 +1,9 @@
 ---
 generated_by: tools/generators/cli_reference.py
 generator_version: 1.0.0
-generated_at: 2026-05-14T19:27:42Z
-input_sha256: f81a4e3eb747c39c7f5f59ce211ea56df98bd43a8e39e87c06159def384b2e6d
-output_sha256: 160763b4386d5745561779c3f86fadc7ad81c741c0a3f05fa4716f2cf75fd566
+generated_at: 2026-05-14T19:30:27Z
+input_sha256: b1913c0a473b9c2b8638f502bab0c92ec9413b4332382b122be154495b4c5e48
+output_sha256: 1af00dd0fc13f0b1b95808c1163dd3ff9e2df66bde549267a2223d61d87de055
 manual_edits_allowed: false
 ---
 # Sange CLI reference
@@ -24,6 +24,7 @@ Every entry below is auto-introspected from the live click command tree, so flag
 | `sange ai providers` | List registered AI providers + capabilities. |
 | `sange commit` | Generate a commit message from a diff. |
 | `sange commits` | Manage the commit lifecycle queue. |
+| `sange commits approve` | Approve a commit (DRAFT → APPROVED). |
 | `sange commits list` | Show the commit queue. |
 | `sange doctor` | Environment health checks. |
 
@@ -116,7 +117,29 @@ Manage the commit lifecycle queue.
 
 | Sub-command | Description |
 | :--- | :--- |
+| `sange commits approve` | Approve a commit (DRAFT → APPROVED). |
 | `sange commits list` | Show the commit queue. |
+
+
+### `sange commits approve`
+
+
+Approve a commit (DRAFT → APPROVED).
+
+**Arguments:**
+
+| Name | Status |
+| :--- | :--- |
+| `target` | required |
+
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--actor` | value |  | Approver name. Default: $USER environment variable. |
+| `--repo` | value | `.` | Repo root (the parent of .sange/commits/). Default: cwd. |
+| `--via` | value | `cli` | Surface the approval came through (cli / tui / web / mcp). |
 
 
 ### `sange commits list`
