@@ -695,6 +695,147 @@ class TestRenderMessage:
         assert "With details" in text
 
 
+# --------------------------------------------------------------------------- #
+# Interactive approval (questionary-mediated)
+# --------------------------------------------------------------------------- #
+
+
+class TestInteractiveApprove:
+    def _patch_questionary(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        decision: str,
+        reason: str = "",
+    ) -> None:
+        """Stub the two interactive helpers so tests never touch a TTY."""
+
+        import sange.cli.commits as cmod
+
+        monkeypatch.setattr(cmod, "_interactive_decision", lambda _c: decision)
+        monkeypatch.setattr(cmod, "_interactive_reject_reason", lambda: reason)
+
+    def test_interactive_approve(
+        self,
+        runner: CliRunner,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        self._patch_questionary(monkeypatch, decision="approve")
+        cd = CommitsDirectory(tmp_path)
+        cd.save(_draft(1, "feat", "auth", "add login"))
+
+        result = runner.invoke(
+            app,
+            [
+                "commits", "approve", "1",
+                "-i",
+                "--repo", str(tmp_path),
+                "--actor", "alice",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "approved #0001" in result.output
+
+        rows = cd.list_all()
+        assert rows[0].status is CommitStatus.APPROVED
+
+    def test_interactive_reject(
+        self,
+        runner: CliRunner,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        self._patch_questionary(
+            monkeypatch, decision="reject", reason="message too vague"
+        )
+        cd = CommitsDirectory(tmp_path)
+        cd.save(_draft(1, "fix", "core", "x"))
+
+        result = runner.invoke(
+            app,
+            [
+                "commits", "approve", "1",
+                "-i",
+                "--repo", str(tmp_path),
+                "--actor", "alice",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "rejected #0001" in result.output
+        assert "message too vague" in result.output
+
+        rows = cd.list_all()
+        assert rows[0].status is CommitStatus.REJECTED
+        assert len(rows[0].rejections) == 1
+        assert rows[0].rejections[0].reason == "message too vague"
+        assert rows[0].rejections[0].actor == "alice"
+
+    def test_interactive_skip(
+        self,
+        runner: CliRunner,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        self._patch_questionary(monkeypatch, decision="skip")
+        cd = CommitsDirectory(tmp_path)
+        cd.save(_draft(1, "chore", "", "tidy"))
+
+        result = runner.invoke(
+            app,
+            [
+                "commits", "approve", "1",
+                "-i",
+                "--repo", str(tmp_path),
+                "--actor", "alice",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "skipped" in result.output.lower()
+
+        rows = cd.list_all()
+        # Still DRAFT — no transition fired.
+        assert rows[0].status is CommitStatus.DRAFT
+
+    def test_interactive_reject_with_empty_reason_cancels(
+        self,
+        runner: CliRunner,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        # User selects "reject" but then aborts at the reason prompt
+        # (empty string returned).
+        self._patch_questionary(monkeypatch, decision="reject", reason="")
+        cd = CommitsDirectory(tmp_path)
+        cd.save(_draft(1, "feat", "auth", "x"))
+
+        result = runner.invoke(
+            app,
+            ["commits", "approve", "1", "-i", "--repo", str(tmp_path)],
+        )
+        assert result.exit_code == 0
+        assert "cancelled" in result.output.lower()
+        rows = cd.list_all()
+        assert rows[0].status is CommitStatus.DRAFT
+
+    def test_interactive_default_off(
+        self,
+        runner: CliRunner,
+        tmp_path: Path,
+    ) -> None:
+        """Without `-i` or `--interactive`, no questionary call happens
+        (proven by the test not hanging on stdin)."""
+
+        cd = CommitsDirectory(tmp_path)
+        cd.save(_draft(1, "feat", "auth", "x"))
+        result = runner.invoke(
+            app,
+            ["commits", "approve", "1", "--repo", str(tmp_path), "--actor", "a"],
+        )
+        assert result.exit_code == 0
+        rows = cd.list_all()
+        assert rows[0].status is CommitStatus.APPROVED
+
+
 class TestSubAppIntegration:
     def test_commits_no_args_shows_help(self, runner: CliRunner) -> None:
         result = runner.invoke(app, ["commits"])

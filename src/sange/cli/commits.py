@@ -161,6 +161,13 @@ def approve_command(
         "--via",
         help="Surface the approval came through (cli / tui / web / mcp).",
     ),
+    interactive: bool = typer.Option(
+        False,
+        "--interactive/--no-interactive",
+        "-i",
+        help="Show the rendered message + prompt approve / reject / skip. "
+             "Default: non-interactive (approve immediately).",
+    ),
 ) -> None:
     """Resolve the commit, transition DRAFT → PENDING_REVIEW → APPROVED,
     write back to disk."""
@@ -187,6 +194,31 @@ def approve_command(
 
     actor_name = actor or os.environ.get("USER", "") or "unknown"
     engine = LifecycleEngine()
+
+    # Interactive mode: render the commit + prompt approve/reject/skip.
+    if interactive:
+        decision = _interactive_decision(commit)
+        if decision == "skip":
+            typer.echo("skipped (no transition)")
+            return
+        if decision == "reject":
+            reason = _interactive_reject_reason()
+            if not reason:
+                typer.echo("rejection cancelled (no reason provided)")
+                return
+            try:
+                if commit.status is CommitStatus.DRAFT:
+                    commit = engine.submit(commit)
+                rejected = engine.reject(
+                    commit, actor=actor_name, reason=reason, via=via,  # type: ignore[arg-type]
+                )
+            except IllegalTransition as exc:
+                typer.echo(f"error: {exc}", err=True)
+                raise typer.Exit(code=2)
+            cd.save(rejected)
+            typer.echo(f"rejected #{rejected.counter:04d}: {reason}")
+            return
+        # decision == "approve" → fall through to the non-interactive path.
 
     try:
         # Solo-dev UX: DRAFT goes through the PENDING_REVIEW intermediate
@@ -392,6 +424,54 @@ def push_command(
         return
 
     typer.echo(f"committed #{committed.counter:04d} as {commit_ref.short_sha} ({push_status})")
+
+
+# --------------------------------------------------------------------------- #
+# Interactive helpers — questionary-based prompts
+# --------------------------------------------------------------------------- #
+
+
+def _interactive_decision(commit) -> str:  # type: ignore[no-untyped-def]
+    """Render the commit, then prompt approve / reject / skip.
+
+    Returns the literal choice value: `"approve"`, `"reject"`, or
+    `"skip"`. Falls back to `"skip"` on Ctrl-C / empty input."""
+
+    import questionary
+
+    # Display the rendered Conventional Commits message above the prompt.
+    rendered = _render_message(commit)
+    typer.echo("")
+    typer.echo(f"=== commit #{commit.counter:04d} ({commit.status.value}) ===")
+    typer.echo(rendered)
+    typer.echo("")
+
+    answer = questionary.select(
+        "What would you like to do?",
+        choices=[
+            questionary.Choice(title="Approve", value="approve"),
+            questionary.Choice(title="Reject (with reason)", value="reject"),
+            questionary.Choice(title="Skip (no change)", value="skip"),
+        ],
+        default="approve",
+    ).ask()
+
+    if answer is None:
+        # Ctrl-C / EOF.
+        return "skip"
+    return answer
+
+
+def _interactive_reject_reason() -> str:
+    """Prompt for a rejection reason. Returns the text or `""` on cancel."""
+
+    import questionary
+
+    answer = questionary.text(
+        "Reason for rejection:",
+        validate=lambda v: True if v.strip() else "reason cannot be empty",
+    ).ask()
+    return (answer or "").strip()
 
 
 # --------------------------------------------------------------------------- #

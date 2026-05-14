@@ -1,9 +1,9 @@
 ---
 generated_by: tools/generators/cli_reference.py
 generator_version: 1.0.0
-generated_at: 2026-05-14T21:53:19Z
-input_sha256: a806154f1b1d85c75153440b595ca824fa60eac8cd7a032903b443a7dd9e7f89
-output_sha256: 70020180b8b6f8bc81dc1801207e1b848d10f9fb2b5045dc65d94d1710f51a20
+generated_at: 2026-05-14T22:40:21Z
+input_sha256: acc441a65fcef484b032ec394b0674117282931a6c53a9e4622c47125fdeb974
+output_sha256: 86a2eec8145e92495e166ca05f008dd1ca0302c7a7ed28f7167759d505361ef7
 manual_edits_allowed: false
 ---
 # Sange CLI reference
@@ -142,6 +142,7 @@ Approve a commit (DRAFT → APPROVED).
 | Flag | Kind | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `--actor` | value |  | Approver name. Default: $USER environment variable. |
+| `--interactive`, `--no-interactive`, `-i` | flag | false | Show the rendered message + prompt approve / reject / skip. Default: non-interactive (approve immediately). |
 | `--repo` | value | `.` | Repo root (the parent of .sange/commits/). Default: cwd. |
 | `--via` | value | `cli` | Surface the approval came through (cli / tui / web / mcp). |
 
