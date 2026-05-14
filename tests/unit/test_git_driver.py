@@ -331,22 +331,27 @@ class TestRemotes:
 
 
 # --------------------------------------------------------------------------- #
-# Write methods raise NotImplementedError (T-005 placeholder)
+# Write methods — smoke-tested against ephemeral_repo (full coverage in
+# test_git_driver_write.py)
 # --------------------------------------------------------------------------- #
 
 
-class TestWriteMethodsStillRaise:
-    def test_add_raises(self, ephemeral_repo: Path) -> None:
-        repo = GitDriver.detect(ephemeral_repo)
-        with pytest.raises(NotImplementedError, match="T-005"):
-            GitDriver().add(repo, [Path("foo")])
+class TestWriteMethodsImplemented:
+    """T-005 superseded T-004's NotImplementedError placeholders. Full
+    coverage lives in test_git_driver_write.py against `fresh_repo`; here
+    we just confirm the methods callable + return the documented type."""
 
-    def test_commit_raises(self, ephemeral_repo: Path) -> None:
+    def test_add_callable(self, ephemeral_repo: Path) -> None:
+        (ephemeral_repo / "new_file.txt").write_text("x\n")
         repo = GitDriver.detect(ephemeral_repo)
-        with pytest.raises(NotImplementedError, match="T-005"):
-            GitDriver().commit(repo, message="x")
+        GitDriver().add(repo, [Path("new_file.txt")])  # No raise = success.
 
-    def test_push_raises(self, ephemeral_repo: Path) -> None:
+    def test_commit_returns_commitref(self, ephemeral_repo: Path) -> None:
+        (ephemeral_repo / "new_file.txt").write_text("x\n")
         repo = GitDriver.detect(ephemeral_repo)
-        with pytest.raises(NotImplementedError, match="T-005"):
-            GitDriver().push(repo)
+        d = GitDriver()
+        d.add(repo, [Path("new_file.txt")])
+        commit = d.commit(repo, message="add new_file")
+        from sange.core.models import CommitRef
+        assert isinstance(commit, CommitRef)
+        assert commit.subject == "add new_file"

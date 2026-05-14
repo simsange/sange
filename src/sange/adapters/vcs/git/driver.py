@@ -31,6 +31,7 @@ from pathlib import Path
 from sange.adapters.vcs._protocol import (
     DriverCapabilities,
     DriverError,
+    PushResult,
     TagInfo,
 )
 from sange.adapters.vcs.git import parsers as P
@@ -326,16 +327,69 @@ class GitDriver:
             raise DriverError(f"commit {sha} not found in {repo.path}")
         return records[0]
 
-    # ----- write methods (T-005 will fill these in) ------------------ #
+    # ----- write methods (T-005) ------------------------------------- #
+    #
+    # Every write method maps subprocess failure to DriverError via the
+    # run_git wrapper. Path arguments are stringified for the command line
+    # but stay Path objects in the Domain types.
 
     def add(self, repo: Repo, paths: Sequence[Path]) -> None:
-        raise NotImplementedError("T-005 — GitDriver write operations")
+        """Stage `paths` for the next commit (`git add`).
+
+        Per-path absolute-path rejection: the Protocol declares paths are
+        repo-relative. Adapter enforces this so a stray `Path("/etc/passwd")`
+        can't sneak into the index.
+        """
+
+        if not paths:
+            return
+        for p in paths:
+            if p.is_absolute():
+                raise DriverError(
+                    f"add: path {p!r} must be relative to repo root"
+                )
+        run_git(("add", "--", *(str(p) for p in paths)), cwd=repo.path)
 
     def remove(self, repo: Repo, paths: Sequence[Path], *, force: bool = False) -> None:
-        raise NotImplementedError("T-005 — GitDriver write operations")
+        """Remove `paths` from working tree + index (`git rm`).
+
+        `force=True` allows removing files with uncommitted changes
+        (otherwise git refuses). The §6.8 commit lifecycle's
+        approve-on-destructive gate intercepts before this lands.
+        """
+
+        if not paths:
+            return
+        for p in paths:
+            if p.is_absolute():
+                raise DriverError(f"remove: path {p!r} must be relative")
+        args: list[str] = ["rm"]
+        if force:
+            args.append("--force")
+        args.append("--")
+        args.extend(str(p) for p in paths)
+        run_git(args, cwd=repo.path)
 
     def revert_working_copy(self, repo: Repo, paths: Sequence[Path]) -> None:
-        raise NotImplementedError("T-005 — GitDriver write operations")
+        """Discard uncommitted changes to `paths` (`git restore`).
+
+        DESTRUCTIVE — the CLI/TUI layer wraps this with a type-to-confirm
+        gate per §7.0.5; adapters don't gate (the Protocol is the imperative
+        contract, gates are the Application layer).
+        """
+
+        if not paths:
+            return
+        for p in paths:
+            if p.is_absolute():
+                raise DriverError(
+                    f"revert_working_copy: path {p!r} must be relative"
+                )
+        run_git(
+            ("restore", "--source=HEAD", "--worktree", "--staged",
+             "--", *(str(p) for p in paths)),
+            cwd=repo.path,
+        )
 
     def commit(
         self,
@@ -347,22 +401,96 @@ class GitDriver:
         allow_empty: bool = False,
         sign: bool = False,
     ) -> CommitRef:
-        raise NotImplementedError("T-005 — GitDriver write operations")
+        """Create a commit from the staged content.
+
+        `author_name`/`author_email` override the current git identity
+        for this commit only (Git's `--author=` flag). `sign=True`
+        produces a GPG-signed commit (per the §6.9 release-engineering
+        signing path).
+        """
+
+        if not message:
+            raise DriverError("commit: message must be non-empty")
+        # Reject CR/LF in the subject portion (the first line of `message`).
+        first_line = message.split("\n", 1)[0]
+        if "\r" in first_line:
+            raise DriverError("commit: subject must be single-line")
+
+        args: list[str] = ["commit", "-m", message]
+        if author_name and author_email:
+            args.append(f"--author={author_name} <{author_email}>")
+        elif author_name or author_email:
+            raise DriverError(
+                "commit: author_name and author_email must both be set or both omitted"
+            )
+        if allow_empty:
+            args.append("--allow-empty")
+        if sign:
+            args.append("-S")
+
+        run_git(args, cwd=repo.path)
+        # Return the just-created commit by re-reading HEAD.
+        head_sha = run_git(("rev-parse", "HEAD"), cwd=repo.path).strip()
+        return self.show_commit(repo, head_sha)
 
     def branch_create(self, repo: Repo, name: str, *, base: str = "") -> BranchInfo:
-        raise NotImplementedError("T-005 — GitDriver write operations")
+        """Create branch `name`, optionally off `base` (default: current branch)."""
+
+        if not name:
+            raise DriverError("branch_create: name must be non-empty")
+        args: list[str] = ["branch", name]
+        if base:
+            args.append(base)
+        run_git(args, cwd=repo.path)
+        # Re-list to find the new branch entry.
+        for b in self.branches(repo):
+            if b.name == name:
+                return b
+        # Unreachable on success, but safe fallback.
+        raise DriverError(f"branch_create: created {name!r} but couldn't find it")
 
     def branch_delete(self, repo: Repo, name: str, *, force: bool = False) -> None:
-        raise NotImplementedError("T-005 — GitDriver write operations")
+        """Delete branch `name`. `force=True` allows deleting unmerged branches."""
+
+        if not name:
+            raise DriverError("branch_delete: name must be non-empty")
+        flag = "-D" if force else "-d"
+        run_git(("branch", flag, name), cwd=repo.path)
 
     def switch(self, repo: Repo, branch: str) -> BranchInfo:
-        raise NotImplementedError("T-005 — GitDriver write operations")
+        """Switch the working copy to `branch` (`git switch`)."""
+
+        if not branch:
+            raise DriverError("switch: branch must be non-empty")
+        run_git(("switch", branch), cwd=repo.path)
+        cb = self.current_branch(repo)
+        if cb is None:
+            raise DriverError(
+                f"switch: after switching to {branch!r}, HEAD is detached"
+            )
+        return cb
 
     def fetch(self, repo: Repo, remote: str = "") -> None:
-        raise NotImplementedError("T-005 — GitDriver write operations")
+        """Fetch updates. Empty `remote` → fetch all remotes."""
+
+        args: list[str] = ["fetch"]
+        if remote:
+            args.append(remote)
+        else:
+            args.append("--all")
+        run_git(args, cwd=repo.path)
 
     def pull(self, repo: Repo, remote: str = "") -> None:
-        raise NotImplementedError("T-005 — GitDriver write operations")
+        """Fetch + integrate from `remote` (or the upstream when empty).
+
+        Defers merge-vs-rebase to the user's `pull.rebase` config (Sange
+        does NOT silently override it).
+        """
+
+        args: list[str] = ["pull"]
+        if remote:
+            args.append(remote)
+        run_git(args, cwd=repo.path)
 
     def push(
         self,
@@ -372,8 +500,64 @@ class GitDriver:
         branch: str = "",
         force: bool = False,
         force_with_lease: bool = False,
-    ):
-        raise NotImplementedError("T-005 — GitDriver write operations")
+    ) -> "PushResult":
+        """Push local commits to `remote/branch`.
+
+        Forbids `force=True` AND `force_with_lease=True` together —
+        callers must pick one. `--force-with-lease` is preferred when
+        either is needed.
+        """
+
+        if force and force_with_lease:
+            raise DriverError(
+                "push: force and force_with_lease are mutually exclusive — pick one"
+            )
+
+        args: list[str] = ["push"]
+        if force_with_lease:
+            args.append("--force-with-lease")
+        elif force:
+            args.append("--force")
+        # Always be explicit about the destination if either is provided.
+        target_remote = remote or "origin"
+        # Use --porcelain so the no-op / pushed / forced state appears on
+        # stdout (where run_git can see it). Without --porcelain git's
+        # "Everything up-to-date" status goes to stderr.
+        args.append("--porcelain")
+        if branch:
+            args.extend([target_remote, branch])
+        elif remote:
+            args.append(target_remote)
+
+        try:
+            stdout = run_git(args, cwd=repo.path)
+        except GitCommandFailed as exc:
+            raise DriverError(
+                f"push to {target_remote} failed: {exc.stderr.strip() or '<no stderr>'}"
+            ) from exc
+
+        # Parse `git push --porcelain` output: per-ref lines start with a
+        # one-character flag:
+        #   '='  up to date (no-op)
+        #   ' '  successfully pushed fast-forward
+        #   '+'  successful forced update
+        #   '*'  successfully pushed a new ref
+        #   '-'  successfully deleted ref
+        #   '!'  rejected or failed
+        # Lines beginning with "To " are the header; "Done" is the trailer.
+        # was_no_op = every ref line carries the '=' flag.
+        ref_lines = [
+            line for line in stdout.splitlines()
+            if line and not line.startswith("To ") and line != "Done"
+        ]
+        was_no_op = bool(ref_lines) and all(
+            line.startswith("=") for line in ref_lines
+        )
+        return PushResult(
+            remote=target_remote,
+            was_no_op=was_no_op,
+            forced=force or force_with_lease,
+        )
 
     def tag_create(
         self,
@@ -384,10 +568,57 @@ class GitDriver:
         message: str = "",
         sign: bool = False,
     ) -> TagInfo:
-        raise NotImplementedError("T-005 — GitDriver write operations")
+        """Create a tag.
+
+        * `target_sha=""` → tag HEAD.
+        * `message=""` + `sign=False` → lightweight tag.
+        * `message` non-empty OR `sign=True` → annotated tag (signed if
+          `sign=True`; signing requires a configured GPG key).
+        """
+
+        if not name:
+            raise DriverError("tag_create: name must be non-empty")
+
+        args: list[str] = ["tag"]
+        annotated = bool(message) or sign
+        if sign:
+            args.append("-s")
+        elif annotated:
+            args.append("-a")
+        if message:
+            args.extend(["-m", message])
+        elif sign:
+            # Signed tags require a message; default to the tag name.
+            args.extend(["-m", name])
+        args.append(name)
+        if target_sha:
+            args.append(target_sha)
+
+        run_git(args, cwd=repo.path)
+
+        # Re-list to find the new tag — picks up the resolved SHA + the
+        # is_annotated flag the parser computed.
+        for t in self.tags(repo):
+            if t.name == name:
+                # Patch is_signed since the parser can't tell cheaply.
+                if sign and not t.is_signed:
+                    t = TagInfo(
+                        name=t.name,
+                        target_sha=t.target_sha,
+                        is_annotated=t.is_annotated,
+                        is_signed=True,
+                        message=t.message,
+                        created_at=t.created_at,
+                    )
+                return t
+        raise DriverError(f"tag_create: created {name!r} but couldn't find it")
 
     def tag_delete(self, repo: Repo, name: str) -> None:
-        raise NotImplementedError("T-005 — GitDriver write operations")
+        """Delete tag `name` from the local repository."""
+
+        if not name:
+            raise DriverError("tag_delete: name must be non-empty")
+        run_git(("tag", "-d", name), cwd=repo.path)
 
 
 __all__ = ["GitDriver", "GitRepoNotFound"]
