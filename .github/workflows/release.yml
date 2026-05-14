@@ -1,0 +1,172 @@
+name: Release
+
+# Tag-driven release pipeline. Pushing a `v*` tag triggers:
+#   1. Build sdist + wheel
+#   2. Publish to PyPI via OIDC trusted publisher (no API token; OIDC
+#      claims the GitHub identity, PyPI checks against the configured
+#      trusted-publisher record).
+#   3. Build multi-arch Docker image (linux/amd64 + linux/arm64) per
+#      ADR-033 and push to GHCR with sigstore signing.
+#   4. Create a GitHub Release with auto-generated notes drawn from
+#      docs/CHANGELOG.md (T-G-013).
+#
+# Prerequisites (one-time setup, see docs/release.md):
+#   - PyPI trusted-publisher configured pointing at this repo +
+#     `release.yml` + the `pypi` environment.
+#   - GHCR repo has Actions write access.
+#   - Repo settings: tag-protection rule for `v*`.
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+      - "v*.*.*-*"
+
+permissions:
+  contents: write     # for GitHub Release creation
+  id-token: write     # for OIDC (PyPI trusted publishing)
+  packages: write     # for GHCR push
+  attestations: write # for sigstore signing
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false  # never cancel a tagged release mid-flight
+
+jobs:
+  build:
+    name: build sdist + wheel
+    runs-on: ubuntu-24.04
+    outputs:
+      tag: ${{ steps.tag.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # changelog + tag annotation rely on history
+
+      - name: Extract tag name
+        id: tag
+        run: echo "value=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install build
+        run: pip install --upgrade pip build
+
+      - name: Build sdist + wheel
+        run: python -m build
+
+      - name: Smoke-install the wheel
+        run: |
+          python -m venv /tmp/smoke
+          /tmp/smoke/bin/pip install dist/*.whl
+          /tmp/smoke/bin/sange --version
+
+      - name: Upload dist artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+
+  pypi:
+    name: publish to PyPI (OIDC)
+    runs-on: ubuntu-24.04
+    needs: build
+    environment:
+      name: pypi
+      url: https://pypi.org/p/sange
+    steps:
+      - name: Download dist artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        # Official trusted-publisher action: no API key, OIDC-mediated.
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+
+  docker:
+    name: docker build + push (multi-arch)
+    runs-on: ubuntu-24.04
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract tag name
+        id: tag
+        run: echo "value=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        # QEMU is the fallback for arches we don't have native runners
+        # for. ADR-033's primary path (native ARM runners) lands in v0.5;
+        # v0.1 release builds via QEMU which is correct enough for the
+        # initial release. Verify with `sange doctor --container`.
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build + push multi-arch image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/simtabi/sange:${{ steps.tag.outputs.value }}
+            ghcr.io/simtabi/sange:latest
+          provenance: true
+          sbom: true
+
+  release:
+    name: create GitHub Release
+    runs-on: ubuntu-24.04
+    needs: [pypi, docker]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download dist artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Create GitHub Release
+        # gh-cli is pre-installed on ubuntu-24.04 runners.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Generate release notes from docs/CHANGELOG.md if present —
+          # the T-G-013 generator produces the canonical source.
+          if [[ -f docs/CHANGELOG.md ]]; then
+              # Extract the "Unreleased" section as the v0.1.0 notes
+              # (the operator should `sange release tag v0.1.0` once
+              # that command exists; for v0.1 we use the section as-is).
+              awk '/^## Unreleased/,/^## [0-9]/' docs/CHANGELOG.md \
+                  | sed '$d' > /tmp/release-notes.md || true
+          fi
+          if [[ ! -s /tmp/release-notes.md ]]; then
+              echo "_Release notes from auto-generated docs/CHANGELOG.md_" \
+                  > /tmp/release-notes.md
+          fi
+
+          gh release create "${GITHUB_REF_NAME}" \
+              --title "${GITHUB_REF_NAME}" \
+              --notes-file /tmp/release-notes.md \
+              dist/*

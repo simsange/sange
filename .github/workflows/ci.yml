@@ -1,0 +1,136 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    name: pytest (py${{ matrix.python }} / ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Per ADR-033: every CI run must cover linux/amd64 + linux/arm64
+        # natively. ubuntu-24.04-arm is the GitHub Actions native-ARM
+        # runner (no QEMU emulation).
+        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-14]
+        python: ["3.10", "3.11", "3.12", "3.13"]
+        # macOS runners are slow + paid; only test the floor + ceiling
+        # versions there. Linux covers the full matrix.
+        exclude:
+          - os: macos-14
+            python: "3.11"
+          - os: macos-14
+            python: "3.12"
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+
+      - name: Install package + dev extras
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run pytest
+        run: pytest -q
+
+  lint:
+    name: ruff
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install ruff
+        run: pip install "ruff>=0.5"
+      - name: Lint
+        run: ruff check .
+
+  typecheck:
+    name: mypy
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install package + dev extras
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Type check
+        run: mypy src
+
+  generators:
+    name: generators (verify + all.py --check)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install package + dev extras
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Verify session log
+        run: python tools/generators/verify_session_log.py
+      - name: Verify generated files
+        run: python tools/generators/verify_generated.py
+      - name: Run all generators in --check mode
+        run: python tools/generators/all.py --check
+
+  build:
+    name: package builds (sdist + wheel)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install build
+        run: pip install --upgrade pip build
+      - name: Build sdist + wheel
+        run: python -m build
+      - name: Smoke-install the wheel
+        run: |
+          # In a fresh venv, install the wheel and run `sange --version`.
+          python -m venv /tmp/smoke-venv
+          /tmp/smoke-venv/bin/pip install dist/*.whl
+          /tmp/smoke-venv/bin/sange --version
+
+  docker:
+    name: docker build (single-arch sanity)
+    runs-on: ubuntu-24.04
+    needs: [test, lint, typecheck, build]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build (single-arch, no-push)
+        # Build for the runner's arch only — multi-arch is the release
+        # workflow's job. This step verifies the Dockerfile is sound.
+        run: docker build -t sange:ci .
+      - name: Smoke-run the image
+        run: docker run --rm sange:ci --version

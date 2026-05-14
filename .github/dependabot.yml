@@ -1,0 +1,56 @@
+version: 2
+
+# Per ~/.claude/CLAUDE.md global conventions:
+#   - timezone: America/New_York
+#   - weekly window: Monday 06:00
+#   - keep GitHub Actions versions current — re-pin on every merged
+#     dep PR (don't @latest, don't @main)
+
+updates:
+  # Python package dependencies declared in pyproject.toml.
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+      include: scope
+    labels:
+      - dependencies
+      - python
+
+  # GitHub Actions versions in .github/workflows/*.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(ci)"
+      include: scope
+    labels:
+      - dependencies
+      - github-actions
+
+  # Docker base images.
+  - package-ecosystem: docker
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "chore(docker)"
+      include: scope
+    labels:
+      - dependencies
+      - docker
