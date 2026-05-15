@@ -30,11 +30,12 @@ v0.1 MVP scope (this module):
   * `AuditConfig` — hash-chained audit settings (§7.0.7).
   * `TelemetryConfig` — local-only collector (§12).
 
-v0.5+/v1.0 extension points (TODO comments in this module):
-  * `BundleConfig` — release-bundle destinations (§6.9).
-  * `WebUIConfig` — bind address, auth, remote topology (§8).
-  * `PurgeConfig` — purge subsystem defaults (§6.11).
-  * `PluginConfig` — plugin marketplace + signature policy (§7.9).
+v0.5+/v1.0 extension points (not yet stubbed; each lands alongside
+the relevant subsystem per docs/governance/roadmap.md):
+  * `BundleConfig` — release-bundle destinations (§6.9), v0.5+.
+  * `WebUIConfig` — bind address, auth, remote topology (§8), v1.0.
+  * `PurgeConfig` — purge subsystem defaults (§6.11), v0.5 read-only / v1.0 destructive.
+  * `PluginConfig` — plugin marketplace + signature policy (§7.9), v1.0.
 """
 
 from __future__ import annotations

@@ -23,12 +23,16 @@ v0.1 MVP scope: the minimum models the `VCSDriver` Protocol needs.
   * `FileEntry`         — one entry inside a `WorkingCopyStatus`.
   * `DiffSummary`       — files-changed / insertions / deletions + hash.
 
-v0.5+/v1.0 extension points (TODO comments below):
-  * `Release`           — release bundle metadata (§6.9).
-  * `Bundle`            — versioned signed artifact (§6.9).
-  * `PurgePlan`         — history-rewrite plan (§6.11).
-  * `Approval`          — multi-actor approval chain (§6.8).
-  * `AuditEntry`        — hash-chained JSONL row (§7.0.7).
+v0.5+/v1.0 extension points (not yet stubbed; each lands alongside
+the relevant subsystem per docs/governance/roadmap.md):
+  * `Release`           — release bundle metadata (§6.9), v0.5+.
+  * `Bundle`            — versioned signed artifact (§6.9), v0.5+.
+  * `PurgePlan`         — history-rewrite plan (§6.11), v0.5 read-only / v1.0 destructive.
+  * `Approval`          — multi-actor approval chain (§6.8); a v0.1 single-
+                          actor `Approval` already exists in
+                          `sange.core.lifecycle.schema` for the lifecycle
+                          state-machine — the §6.8 multi-actor extension is v0.5+.
+  * `AuditEntry`        — hash-chained JSONL row (§7.0.7), v0.5+.
   * `CommitTemplate`    — Conventional-Commits-shaped preset (already in
                           `templates/commit-templates/default.toml`).
 """
