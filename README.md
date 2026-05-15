@@ -76,6 +76,7 @@ manuals are split per-tool, per-topic.
 |---|---|
 | Quickstart | [`docs/quickstart.md`](docs/quickstart.md) |
 | Commit lifecycle walkthrough | [`docs/tools/workflow/commit-lifecycle.md`](docs/tools/workflow/commit-lifecycle.md) |
+| Roadmap (v0.1 → v4.0+) | [`docs/governance/roadmap.md`](docs/governance/roadmap.md) |
 | Release procedure | [`docs/release.md`](docs/release.md) |
 | Changelog | [`CHANGELOG.md`](CHANGELOG.md) |
 | ADR index (33 decisions) | [`docs/adr/`](docs/adr/) and [`.design/plans/decisions-log.md`](.design/plans/decisions-log.md) |
@@ -109,7 +110,6 @@ manuals are split per-tool, per-topic.
 | JSON-RPC schema | `docs/reference/json-rpc-schema.md` | T-162 (v1.0) |
 | Prompt-injection defense | `docs/security/prompt-injection.md` | per-topic docs sprint |
 | SLSA + SBOM | `docs/security/slsa-and-sbom.md` | per-topic docs sprint |
-| Roadmap | `docs/governance/roadmap.md` | governance docs sprint |
 | ADR process | `docs/governance/adr-process.md` | governance docs sprint |
 | Operations runbook | `docs/operations/` | v0.5+ operator-facing |
 

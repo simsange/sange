@@ -1,9 +1,9 @@
 ---
 generated_by: tools/generators/docs_index.py
 generator_version: 1.0.0
-generated_at: 2026-05-15T16:01:19Z
-input_sha256: 58e7225caac8e947d52480b8c6296dbb8702974ec14365029e22d747cc204a28
-output_sha256: 2e9a39ae02aaacb2fa80e1f97e09932e31d346de0bd746238f4c40fe1c64f90b
+generated_at: 2026-05-15T16:07:10Z
+input_sha256: 26ec3ac9fa7907f08db91de585f4957c2ba419d414ef71bdc5af041938cd304c
+output_sha256: 41e8d48f221db6db68bd878f6599fabb95d5b8d65a33da12dcf4e8da6d018ac9
 manual_edits_allowed: false
 ---
 # Sange documentation
@@ -18,8 +18,9 @@ manual_edits_allowed: false
 | `reference/` | Reference (catalogs + schemas) | 9 |
 | `security/` | Security | 1 |
 | `adr/` | Architecture Decision Records | 2 |
+| `governance/` | Governance + roadmap | 1 |
 | _top-level_ | Top-level | 3 |
-| **Total** |  | 16 |
+| **Total** |  | 17 |
 
 
 ## `tools/` — Per-tool walkthroughs
@@ -46,6 +47,10 @@ manual_edits_allowed: false
 
 - [ADR-0032: Multi-dimensional variant matrix for gitignore-swap (Android-Studio-inspired)](adr/0032-variant-matrix-android-studio-inspired.md) — [`adr/0032-variant-matrix-android-studio-inspired.md`](./adr/0032-variant-matrix-android-studio-inspired.md)
 - [ADR-0033: Multi-arch Docker + Linux images (amd64 / arm64 / armv7)](adr/0033-multi-arch-docker.md) — [`adr/0033-multi-arch-docker.md`](./adr/0033-multi-arch-docker.md)
+
+## `governance/` — Governance + roadmap
+
+- [Roadmap](governance/roadmap.md) — [`governance/roadmap.md`](./governance/roadmap.md)
 
 ## Top-level docs
 
