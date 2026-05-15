@@ -1,9 +1,9 @@
 ---
 generated_by: tools/generators/docs_index.py
 generator_version: 1.0.0
-generated_at: 2026-05-15T16:11:26Z
-input_sha256: fed3afad6025eed223605f33b62b75ab0c0a1b0209ac8a18c72619238031817e
-output_sha256: 5b195c0663b44ba095b46d444bda5691154a8b04d908bd998ea2c307a2858f80
+generated_at: 2026-05-15T16:21:07Z
+input_sha256: d79dd72344688349bdd2a358dda332ba952d5e4c6c2ff6e38b051bea2c0f12cf
+output_sha256: 523c6bb8f33a857e60fe7689f355eff2ec6c8bbe3a133d17e848412d68ffac38
 manual_edits_allowed: false
 ---
 # Sange documentation
@@ -16,11 +16,11 @@ manual_edits_allowed: false
 | :--- | :--- | ---: |
 | `tools/` | Per-tool walkthroughs | 1 |
 | `reference/` | Reference (catalogs + schemas) | 9 |
-| `security/` | Security | 1 |
+| `security/` | Security | 2 |
 | `adr/` | Architecture Decision Records | 2 |
 | `governance/` | Governance + roadmap | 2 |
 | _top-level_ | Top-level | 3 |
-| **Total** |  | 18 |
+| **Total** |  | 19 |
 
 
 ## `tools/` — Per-tool walkthroughs
@@ -41,6 +41,7 @@ manual_edits_allowed: false
 
 ## `security/` — Security
 
+- [Prompt-injection defense](security/prompt-injection.md) — [`security/prompt-injection.md`](./security/prompt-injection.md)
 - [Sange threat model — STRIDE](security/stride.md) — [`security/stride.md`](./security/stride.md)
 
 ## `adr/` — Architecture Decision Records

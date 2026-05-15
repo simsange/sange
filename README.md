@@ -91,6 +91,7 @@ manuals are split per-tool, per-topic.
 | Exit codes | [`docs/reference/exit-codes.md`](docs/reference/exit-codes.md) |
 | Operations Kit manifest | [`docs/reference/kit-manifest.md`](docs/reference/kit-manifest.md) |
 | Threat model (STRIDE) | [`docs/security/stride.md`](docs/security/stride.md) |
+| Prompt-injection defense | [`docs/security/prompt-injection.md`](docs/security/prompt-injection.md) |
 | Architecture deliverable (canonical) | [`.design/sange-architecture.md`](.design/sange-architecture.md) |
 | Master checklist | [`.design/plans/checklist.md`](.design/plans/checklist.md) |
 
@@ -109,7 +110,6 @@ manuals are split per-tool, per-topic.
 | Per-VCS reference | `docs/tools/vcs/` | per-tool docs sprint |
 | Per-language profiles | `docs/tools/lang/` | per-tool docs sprint |
 | JSON-RPC schema | `docs/reference/json-rpc-schema.md` | T-162 (v1.0) |
-| Prompt-injection defense | `docs/security/prompt-injection.md` | per-topic docs sprint |
 | SLSA + SBOM | `docs/security/slsa-and-sbom.md` | per-topic docs sprint |
 | Operations runbook | `docs/operations/` | v0.5+ operator-facing |
 
