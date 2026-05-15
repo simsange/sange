@@ -5,6 +5,7 @@ v0.1 ships:
 
   * `sange commits list`     — show pending + recent commits in the queue.
   * `sange commits new`      — write a manual DRAFT commit (no AI).
+  * `sange commits ai`       — generate a DRAFT via AI (alias for `sange commit`).
   * `sange commits submit`   — DRAFT → PENDING_REVIEW.
   * `sange commits approve`  — PENDING_REVIEW → APPROVED (auto-submits DRAFT).
   * `sange commits reject`   — PENDING_REVIEW → REJECTED.
@@ -297,6 +298,30 @@ def _detect_branch(repo_root: Path) -> str:
         return branch.name if branch else ""
     except Exception:
         return ""
+
+
+# --------------------------------------------------------------------------- #
+# `sange commits ai` — alias for the top-level `sange commit` happy path
+# --------------------------------------------------------------------------- #
+#
+# T-043. The AI-driven DRAFT-creation flow is implemented in
+# `sange/cli/commit.py::commit_command` (it's also the top-level `sange
+# commit` happy path). Registering it here under the `commits` sub-app
+# gives the granular surface a complete parallel:
+#
+#     sange commits new   — manual draft (you supply type/subject/body).
+#     sange commits ai    — AI draft     (you supply diff; AI fills the rest).
+#
+# Both produce a DRAFT row in `.sange/commits/`; downstream verbs
+# (submit / approve / reject / commit / push) work identically on
+# either.
+
+from sange.cli.commit import commit_command as _commit_command  # noqa: E402
+
+commits_app.command(
+    "ai",
+    help="Generate a commit message via AI and save as DRAFT.",
+)(_commit_command)
 
 
 # --------------------------------------------------------------------------- #

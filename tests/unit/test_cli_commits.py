@@ -414,6 +414,149 @@ class TestCommitsNew:
 
 
 # --------------------------------------------------------------------------- #
+# `sange commits ai` — AI-driven draft creation (T-043)
+# --------------------------------------------------------------------------- #
+
+
+def _patch_mock_provider(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Inject a MockProvider that returns valid CommitMessageResult JSON.
+
+    Mirrors the pattern in tests/unit/test_cli.py::test_commit_records_telemetry.
+    The default MockProvider's echo-mode produces invalid JSON; this override
+    returns a fixed canned response."""
+
+    from sange.adapters.ai import (
+        CompletionResponse,
+        FinishReason,
+        MockProvider,
+        Usage,
+        _protocol,
+    )
+    from sange.core.enhancer import enhancer as enhancer_mod
+
+    class _Mock(MockProvider):
+        def complete(self, request):  # type: ignore[override]
+            return CompletionResponse(
+                text=json.dumps({
+                    "type": "feat", "scope": "ai", "subject": "from-mock",
+                    "body": "Body from canned mock.", "breaking_change": False,
+                }),
+                finish_reason=FinishReason.STOP,
+                usage=Usage(model=request.model),
+                provider="mock",
+                model=request.model,
+            )
+
+    def _patched(name: str, **kwargs):
+        return _Mock() if name == "mock" else _protocol.get_provider(name, **kwargs)
+
+    monkeypatch.setattr(_protocol, "get_provider", _patched)
+    monkeypatch.setattr(enhancer_mod, "get_provider", _patched)
+
+
+class TestCommitsAi:
+    def test_help_shows_ai_verb(self, runner: CliRunner) -> None:
+        result = runner.invoke(app, ["commits", "--help"])
+        assert result.exit_code == 0
+        assert "ai" in result.output
+        assert "Generate a commit message via AI" in result.output
+
+    def test_ai_saves_draft_by_default(
+        self,
+        runner: CliRunner,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        _patch_mock_provider(monkeypatch)
+
+        result = runner.invoke(
+            app,
+            [
+                "commits", "ai",
+                "--repo", str(tmp_path),
+                "--no-telemetry",
+            ],
+            input="+ added a flow\n",
+        )
+        assert result.exit_code == 0, result.output
+        assert "feat(ai): from-mock" in result.output
+
+        # The DRAFT row should exist on disk.
+        rows = CommitsDirectory(tmp_path).list_all()
+        assert len(rows) == 1
+        assert rows[0].status is CommitStatus.DRAFT
+        assert rows[0].message.subject == "from-mock"
+        assert rows[0].message.body == "Body from canned mock."
+
+    def test_ai_no_save(
+        self,
+        runner: CliRunner,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        _patch_mock_provider(monkeypatch)
+
+        result = runner.invoke(
+            app,
+            [
+                "commits", "ai",
+                "--repo", str(tmp_path),
+                "--no-save",
+                "--no-telemetry",
+            ],
+            input="+ added a flow\n",
+        )
+        assert result.exit_code == 0, result.output
+        assert "feat(ai): from-mock" in result.output
+
+        # --no-save → no DRAFT row written.
+        assert list(CommitsDirectory(tmp_path).list_all()) == []
+
+    def test_ai_empty_diff_exits_2(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        # An empty stdin pipe yields an empty diff → exit 2.
+        result = runner.invoke(
+            app,
+            [
+                "commits", "ai",
+                "--repo", str(tmp_path),
+                "--no-telemetry",
+                "--no-save",
+            ],
+            input="",
+        )
+        assert result.exit_code == 2
+        assert "diff is empty" in result.output
+
+    def test_ai_json_mode(
+        self,
+        runner: CliRunner,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        _patch_mock_provider(monkeypatch)
+
+        result = runner.invoke(
+            app,
+            [
+                "--json",
+                "commits", "ai",
+                "--repo", str(tmp_path),
+                "--no-telemetry",
+            ],
+            input="+ change\n",
+        )
+        assert result.exit_code == 0
+        payload = json.loads(result.output)
+        assert payload["type"] == "feat"
+        assert payload["scope"] == "ai"
+        assert payload["subject"] == "from-mock"
+        assert payload["draft_counter"] == 1
+        assert payload["draft_path"]
+
+
+# --------------------------------------------------------------------------- #
 # `sange commits submit <counter|id>` (T-044a)
 # --------------------------------------------------------------------------- #
 
