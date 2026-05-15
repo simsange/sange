@@ -22,7 +22,6 @@ from sange.adapters.vcs.git import GitDriver
 from sange.adapters.vcs.git._subprocess import GitCommandFailed
 from sange.core.models import BranchInfo, CommitRef
 
-
 pytestmark = pytest.mark.skipif(
     shutil.which("git") is None,
     reason="git not installed; GitDriver write tests skipped",

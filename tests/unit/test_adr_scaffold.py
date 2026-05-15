@@ -19,11 +19,9 @@ if str(GENERATORS_DIR) not in sys.path:
     sys.path.insert(0, str(GENERATORS_DIR))
 
 import adr_scaffold  # noqa: E402
-
 from _lib.output import WriteMode  # noqa: E402
 
-
-FIXED_CLOCK = _dt.datetime(2026, 5, 14, 8, 0, 0, tzinfo=_dt.timezone.utc)
+FIXED_CLOCK = _dt.datetime(2026, 5, 14, 8, 0, 0, tzinfo=_dt.UTC)
 
 
 # --------------------------------------------------------------------------- #
@@ -112,8 +110,8 @@ class TestNextAdrNumber:
 
         from pathlib import Path
 
-        REPO_ROOT = Path(__file__).resolve().parents[2]
-        log_text = (REPO_ROOT / ".design" / "plans" / "decisions-log.md").read_text(encoding="utf-8")
+        repo_root = Path(__file__).resolve().parents[2]
+        log_text = (repo_root / ".design" / "plans" / "decisions-log.md").read_text(encoding="utf-8")
 
         # Extract the canonical "Next ADR slot" callout's number.
         callout_match = re.search(

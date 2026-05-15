@@ -83,11 +83,11 @@ class GeneratorMetadata:
     input_sha256: str
     manual_edits_allowed: bool = False
     generated_at: _dt.datetime = field(
-        default_factory=lambda: _dt.datetime.now(tz=_dt.timezone.utc)
+        default_factory=lambda: _dt.datetime.now(tz=_dt.UTC)
     )
 
     def iso_timestamp(self) -> str:
-        return self.generated_at.astimezone(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        return self.generated_at.astimezone(_dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def render_frontmatter(meta: GeneratorMetadata, output_sha256: str) -> str:

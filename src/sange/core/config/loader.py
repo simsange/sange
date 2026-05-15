@@ -49,9 +49,7 @@ import json
 import os
 import re
 import shutil
-import sys
 import warnings
-from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
@@ -66,7 +64,6 @@ from sange.core.config.models import (
     SangeConfig,
     SchemaVersion,
 )
-
 
 # --------------------------------------------------------------------------- #
 # Exceptions
@@ -341,7 +338,7 @@ def _check_schema_version(
 
 
 def _backup_file(path: Path) -> Path:
-    ts = _dt.datetime.now(_dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    ts = _dt.datetime.now(_dt.UTC).strftime("%Y%m%dT%H%M%SZ")
     backup = path.with_suffix(path.suffix + f".bak-{ts}")
     shutil.copy2(path, backup)
     return backup
@@ -426,11 +423,11 @@ def load_config(
 
 
 __all__ = [
-    "ConfigError",
     "DEFAULT_SYSTEM_DIR",
     "DEFAULT_USER_DIR",
     "ENV_PREFIX",
     "ENV_SEPARATOR",
+    "ConfigError",
     "EnvOverrideError",
     "SchemaVersionError",
     "discover_repo_config",

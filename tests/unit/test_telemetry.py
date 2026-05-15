@@ -11,17 +11,16 @@ import pytest
 from sange.adapters.ai import Usage
 from sange.core.enhancer import AuditRecord
 from sange.core.telemetry import (
+    SCHEMA_VERSION,
     AiCallEvent,
     CollectorPolicy,
     CommandEvent,
     ErrorEvent,
     EventKind,
-    SCHEMA_VERSION,
     TelemetryCollector,
 )
 
-
-_FIXED = _dt.datetime(2026, 5, 14, 12, 0, 0, tzinfo=_dt.timezone.utc)
+_FIXED = _dt.datetime(2026, 5, 14, 12, 0, 0, tzinfo=_dt.UTC)
 
 
 # --------------------------------------------------------------------------- #
@@ -147,7 +146,7 @@ class TestRecord:
         self, tmp_path: Path
     ) -> None:
         c = TelemetryCollector(CollectorPolicy(log_dir=tmp_path))
-        a = AiCallEvent(timestamp=_dt.datetime(2026, 1, 5, tzinfo=_dt.timezone.utc))  # W2
+        a = AiCallEvent(timestamp=_dt.datetime(2026, 1, 5, tzinfo=_dt.UTC))  # W2
         b = AiCallEvent(timestamp=_FIXED)  # W20
         c.record(a)
         c.record(b)

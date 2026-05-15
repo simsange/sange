@@ -34,12 +34,13 @@ from sange.adapters.vcs._protocol import (
     PushResult,
     TagInfo,
 )
-from sange.adapters.vcs.git import parsers as P
+from sange.adapters.vcs.git import (
+    parsers as P,  # noqa: N812 — single-letter alias for the parsers module; 14+ call sites benefit from the brevity
+)
 from sange.adapters.vcs.git._subprocess import (
     GitCommandFailed,
     GitNotInstalled,
     run_git,
-    run_git_lines,
 )
 from sange.core.models import (
     BranchInfo,
@@ -47,7 +48,6 @@ from sange.core.models import (
     DiffSummary,
     RemoteInfo,
     Repo,
-    VCSKind,
     WorkingCopyStatus,
 )
 
@@ -500,7 +500,7 @@ class GitDriver:
         branch: str = "",
         force: bool = False,
         force_with_lease: bool = False,
-    ) -> "PushResult":
+    ) -> PushResult:
         """Push local commits to `remote/branch`.
 
         Forbids `force=True` AND `force_with_lease=True` together —

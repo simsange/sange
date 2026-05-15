@@ -40,10 +40,9 @@ v0.5+/v1.0 extension points (TODO comments in this module):
 from __future__ import annotations
 
 import re
-from typing import Any, Literal
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
-
 
 # --------------------------------------------------------------------------- #
 # Schema versioning

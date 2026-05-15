@@ -15,7 +15,6 @@ from pathlib import Path
 
 import pytest
 
-
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _REPO_GH = _REPO_ROOT / ".github"
 _ORG_GH = _REPO_ROOT / "org-github" / ".github"

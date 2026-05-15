@@ -39,7 +39,6 @@ from _lib.output import (  # noqa: E402
     write_generated_file,
 )
 
-
 # --------------------------------------------------------------------------- #
 # fingerprint
 # --------------------------------------------------------------------------- #
@@ -80,7 +79,7 @@ class TestFingerprint:
 
     def test_extract_body_no_closing_delimiter(self) -> None:
         text = "---\nfoo: bar\nno closing fence ever\n"
-        front, body = fingerprint.extract_body(text)
+        front, _body = fingerprint.extract_body(text)
         # Defensive — without a closing fence we treat the whole content as body.
         assert front == ""
 
@@ -101,7 +100,7 @@ def _meta(input_sha: str = "deadbeef") -> GeneratorMetadata:
         generator_version="1.2.3",
         input_sha256=input_sha,
         manual_edits_allowed=False,
-        generated_at=_dt.datetime(2026, 1, 2, 3, 4, 5, tzinfo=_dt.timezone.utc),
+        generated_at=_dt.datetime(2026, 1, 2, 3, 4, 5, tzinfo=_dt.UTC),
     )
 
 
@@ -184,14 +183,14 @@ class TestWriteGeneratedFile:
             generator_version="1",
             input_sha256="abc",
             manual_edits_allowed=False,
-            generated_at=_dt.datetime(2026, 1, 1, tzinfo=_dt.timezone.utc),
+            generated_at=_dt.datetime(2026, 1, 1, tzinfo=_dt.UTC),
         )
         meta_b = GeneratorMetadata(
             generated_by="x",
             generator_version="1",
             input_sha256="abc",
             manual_edits_allowed=False,
-            generated_at=_dt.datetime(2026, 6, 30, tzinfo=_dt.timezone.utc),
+            generated_at=_dt.datetime(2026, 6, 30, tzinfo=_dt.UTC),
         )
         write_generated_file(path, "Stable body!\n", meta_a, mode=WriteMode.WRITE)
         check = write_generated_file(path, "Stable body!\n", meta_b, mode=WriteMode.CHECK)

@@ -44,8 +44,8 @@ from _lib.output import (  # noqa: E402
     WriteOutcome,
     write_generated_file,
 )
-from sange.exit_codes import DESCRIPTIONS, ExitCode  # noqa: E402
 
+from sange.exit_codes import DESCRIPTIONS, ExitCode  # noqa: E402
 
 GENERATOR_VERSION = "1.0.0"
 GENERATED_BY = "tools/generators/exit_codes.py"
@@ -153,7 +153,7 @@ if __name__ == "__main__":
         args.write = True
     mode = WriteMode.WRITE if args.write else WriteMode.CHECK
 
-    results = run(mode=mode, clock=_dt.datetime.now(tz=_dt.timezone.utc))
+    results = run(mode=mode, clock=_dt.datetime.now(tz=_dt.UTC))
     rc = 0
     for r in results:
         if r.result is not None and r.result.value != "match":

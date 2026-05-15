@@ -52,11 +52,10 @@ if str(HERE) not in sys.path:
 
 # --- Imports -------------------------------------------------------------- #
 from _lib.output import (  # noqa: E402
+    VerificationResult,
     WriteMode,
     WriteOutcome,
-    VerificationResult,
 )
-
 
 GENERATOR_VERSION = "1.0.0"
 GENERATED_BY = "tools/generators/makefile_kit.py"
@@ -291,7 +290,7 @@ def _emit(path: Path, content: str, mode: WriteMode) -> WriteOutcome:
 def run(
     *,
     mode: WriteMode,
-    clock: _dt.datetime,  # noqa: ARG001 — clock unused (no frontmatter timestamps)
+    clock: _dt.datetime,
 ) -> list[WriteOutcome]:
     """Emit the shim + every fragment. Idempotent in WRITE mode."""
 
@@ -319,7 +318,7 @@ if __name__ == "__main__":
         args.write = True
     mode = WriteMode.WRITE if args.write else WriteMode.CHECK
 
-    results = run(mode=mode, clock=_dt.datetime.now(tz=_dt.timezone.utc))
+    results = run(mode=mode, clock=_dt.datetime.now(tz=_dt.UTC))
     rc = 0
     for r in results:
         if r.result is not None and r.result.value != "match":

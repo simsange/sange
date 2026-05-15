@@ -278,7 +278,7 @@ def _run_one(gen: Generator, mode: WriteMode, clock: _dt.datetime) -> RunResult:
         )
     try:
         outcomes = runner(mode=mode, clock=clock)
-    except Exception as exc:  # noqa: BLE001 — orchestrator-level catch-all
+    except Exception as exc:
         return RunResult(
             task_id=gen.task_id,
             status="crashed",
@@ -301,7 +301,7 @@ def run(
     skip: set[str] | None = None,
     clock: _dt.datetime | None = None,
 ) -> list[RunResult]:
-    clock = clock or _dt.datetime.now(tz=_dt.timezone.utc)
+    clock = clock or _dt.datetime.now(tz=_dt.UTC)
     ids = [g.task_id for g in REGISTRY]
     if only:
         ids = [i for i in ids if i in only]
@@ -373,7 +373,7 @@ def _format_clock(text: str) -> _dt.datetime:
     # Accept the trailing Z form (UTC) as well as offset-bearing ISO 8601.
     if text.endswith("Z"):
         text = text[:-1] + "+00:00"
-    return _dt.datetime.fromisoformat(text).astimezone(_dt.timezone.utc)
+    return _dt.datetime.fromisoformat(text).astimezone(_dt.UTC)
 
 
 def main(argv: list[str] | None = None) -> int:

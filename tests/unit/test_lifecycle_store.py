@@ -11,16 +11,15 @@ from sange.core.lifecycle import (
     CommitCounter,
     CommitJSON,
     CommitMessage,
+    CommitsDirectory,
     CommitStatus,
     CommitStore,
     CommitStoreError,
-    CommitsDirectory,
     slugify_subject,
 )
 from sange.core.lifecycle.store import filename_for
 
-
-_NOW = _dt.datetime(2026, 5, 15, 12, 0, 0, tzinfo=_dt.timezone.utc)
+_NOW = _dt.datetime(2026, 5, 15, 12, 0, 0, tzinfo=_dt.UTC)
 
 
 def _make_commit(

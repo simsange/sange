@@ -4,7 +4,10 @@
 # Target Python 3.12 (the project's floor — see pyproject.toml::project.requires-python).
 
 target-version = "py312"
-line-length = 100
+# 120 columns is the modern default (was 100). The Sange codebase emits long markdown
+# strings + multi-paragraph docstrings + audit-log messages; 100 columns caused too
+# many false positives. 120 keeps lines readable without forcing artificial wraps.
+line-length = 120
 src = ["src", "tests", "tools"]
 extend-exclude = [
     ".design",
@@ -29,8 +32,39 @@ select = [
     "RUF",  # ruff-specific rules
 ]
 # Rationale per Simtabi CLAUDE.md: "Don't suppress failures with `# noqa` … without
-# a one-line comment explaining why." If you ignore a rule globally here, add a
-# comment with the reason.
+# a one-line comment explaining why." Every ignore below carries a one-line reason.
+ignore = [
+    # SIM105 — `try/except/pass` is OK when there's an explanatory comment inside;
+    # `contextlib.suppress` would lose that context. Keep the explicit form.
+    "SIM105",
+    # UP042 — `str, enum.Enum` vs `enum.StrEnum` have different `str(member)` output;
+    # converting changes f-string behaviour, which is a semantic change, not a refactor.
+    "UP042",
+    # B008 — default-arg factories (`field(default_factory=...)`, `typer.Option(...)`)
+    # are idiomatic in pydantic + typer; flagging them creates noise.
+    "B008",
+    # B017 — `pytest.raises(Exception)` is intentional in some places where the test
+    # only cares that *any* error fires (e.g., FrozenInstanceError vs AttributeError
+    # cross-Python). Narrowing per-test is fine when needed; not globally enforced.
+    "B017",
+    # N818 — renaming custom exceptions to end in `Error` would break import-by-name
+    # for downstream consumers. The codebase chose `IllegalTransition`, `DriverError`,
+    # `EnhancerValidationError` etc. — mixed, intentional.
+    "N818",
+    # RUF001 — ambiguous-unicode characters (`—`, `→`, `✓`) are intentional in
+    # markdown / docstrings / error messages where they improve readability.
+    "RUF001",
+    # RUF012 — `ClassVar` annotations on mutable defaults catches real bugs in some
+    # codebases; in this one, dataclass / pydantic patterns make most reports false
+    # positives. Re-enable case-by-case.
+    "RUF012",
+    # SIM102/SIM103/SIM108 — collapsing nested `if`s, removing `if x: return True;
+    # return False` patterns, and `if-else-block → if-exp` are style preferences;
+    # the codebase favours readability of the explicit form.
+    "SIM102",
+    "SIM103",
+    "SIM108",
+]
 
 [lint.per-file-ignores]
 # Tests legitimately have long parameter lists, fixture-rebinding warnings, and
@@ -39,6 +73,21 @@ select = [
 # The version module is read by hatchling at build time; the lone __version__ assignment
 # trips no rule today, but if pyupgrade ever rewrites the string we want it untouched.
 "src/sange/_version.py" = ["UP"]
+# Generators emit long markdown strings + tables; per-line E501 noise isn't useful
+# for files whose JOB is to produce wide-format documentation. Per-file ignore
+# rather than global so application code still respects the 120-col cap.
+"tools/generators/**/*.py" = ["E501"]
+# The session-log verifier parses table rows that legitimately exceed 120 chars
+# (the table format is wide-by-design).
+"tools/generators/verify_session_log.py" = ["E501"]
+# Test fixtures with long expected-output strings + descriptive parametrize ids
+# don't benefit from forced wrapping.
+"tests/unit/test_lifecycle_*.py" = ["E501"]
+"tests/unit/test_threat_model.py" = ["E501"]
+"tests/unit/test_config_loader.py" = ["E501"]
+# Prompt-template strings are sent verbatim to AI providers; reflowing them
+# changes the bytes the model sees + invalidates the response cache.
+"src/sange/core/enhancer/tasks/commit_message.py" = ["E501"]
 
 [lint.isort]
 known-first-party = ["sange"]

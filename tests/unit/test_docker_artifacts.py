@@ -12,7 +12,6 @@ from pathlib import Path
 
 import pytest
 
-
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _DOCKERFILE = _REPO_ROOT / "Dockerfile"
 _DOCKERIGNORE = _REPO_ROOT / ".dockerignore"
@@ -41,7 +40,7 @@ class TestDockerfileMultiStage:
 
     def test_two_stages(self, dockerfile: str) -> None:
         lines = dockerfile.splitlines()
-        from_lines = [l for l in lines if l.startswith("FROM ")]
+        from_lines = [line for line in lines if line.startswith("FROM ")]
         assert len(from_lines) >= 2
 
     def test_builder_stage(self, dockerfile: str) -> None:
@@ -78,8 +77,8 @@ class TestDockerfileSecurity:
         # this statically, but we can check that no obvious patterns
         # appear in ENV declarations.
         env_lines = [
-            l for l in dockerfile.splitlines()
-            if l.strip().startswith("ENV ")
+            line for line in dockerfile.splitlines()
+            if line.strip().startswith("ENV ")
         ]
         joined = "\n".join(env_lines).upper()
         for forbidden in ("PASSWORD", "TOKEN", "SECRET", "API_KEY", "PRIVATE_KEY"):
@@ -91,8 +90,8 @@ class TestDockerfileSecurity:
         # The final USER directive in the file must be `sange` (or a
         # numeric id matching `sange`). Find the last USER line.
         user_lines = [
-            l.strip() for l in dockerfile.splitlines()
-            if l.strip().startswith("USER ")
+            line.strip() for line in dockerfile.splitlines()
+            if line.strip().startswith("USER ")
         ]
         assert user_lines, "Dockerfile must declare a USER"
         last = user_lines[-1]
@@ -123,15 +122,15 @@ class TestDockerfileBuildDiscipline:
     def test_pip_no_cache(self, dockerfile: str) -> None:
         # Don't ship pip's cache inside the image.
         pip_install_lines = [
-            l for l in dockerfile.splitlines()
-            if "pip install" in l or "pip wheel" in l
+            line for line in dockerfile.splitlines()
+            if "pip install" in line or "pip wheel" in line
         ]
         assert pip_install_lines
-        for line in pip_install_lines:
-            # Allow either --no-cache-dir on the line itself or in a
-            # following line continuation. Simple check: every line that
-            # has `pip install` or `pip wheel` should mention --no-cache-dir
-            # somewhere in the same logical RUN block.
+        # Every line with `pip install` / `pip wheel` should mention
+        # --no-cache-dir somewhere in the same logical RUN block. We
+        # check the whole file for the marker rather than per-line
+        # because of shell continuations.
+        for _line in pip_install_lines:
             assert "--no-cache-dir" in dockerfile
 
     def test_workdir_declared(self, dockerfile: str) -> None:
@@ -164,7 +163,7 @@ class TestDockerignore:
     ])
     def test_excludes_known_noise(self, dockerignore: str, entry: str) -> None:
         # Each entry should appear on its own line.
-        lines = {l.strip() for l in dockerignore.splitlines()}
+        lines = {line.strip() for line in dockerignore.splitlines()}
         assert entry in lines, f"{entry!r} missing from .dockerignore"
 
 
@@ -238,6 +237,6 @@ class TestCrossFile:
         artifact lives on the host, not in the image. The test asserts both
         invariants hold together: image excludes, runtime mounts in."""
 
-        assert ".sange/" in {l.strip() for l in dockerignore.splitlines()}
+        assert ".sange/" in {line.strip() for line in dockerignore.splitlines()}
         compose_text = _COMPOSE.read_text(encoding="utf-8")
         assert "/repo" in compose_text

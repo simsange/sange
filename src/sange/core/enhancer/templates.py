@@ -28,7 +28,6 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 from typing import Any
 
-
 # --------------------------------------------------------------------------- #
 # Exceptions
 # --------------------------------------------------------------------------- #
@@ -254,11 +253,11 @@ class TemplateRegistry:
             inc_id = match.group(1)
             if inc_id in _seen:
                 raise TemplateCycleError(
-                    f"template include cycle detected: {' -> '.join(_seen + [inc_id])}"
+                    f"template include cycle detected: {' -> '.join([*_seen, inc_id])}"
                 )
             inc = self.get(inc_id)  # raises TemplateNotFoundError if absent
             nested = self._expand_includes(
-                inc.user_template, _seen=_seen + [inc_id]
+                inc.user_template, _seen=[*_seen, inc_id]
             )
             return nested
 

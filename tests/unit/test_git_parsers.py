@@ -9,9 +9,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from sange.adapters.vcs.git import parsers as P
+from sange.adapters.vcs.git import (
+    parsers as P,  # noqa: N812 — single-letter alias mirrors the driver-side import pattern
+)
 from sange.core.models import FileState
-
 
 # --------------------------------------------------------------------------- #
 # parse_status_porcelain_v2

@@ -18,7 +18,6 @@ from pathlib import Path
 
 import typer
 
-
 commits_app = typer.Typer(
     name="commits",
     help="Manage the commit lifecycle queue (DRAFT → APPROVED → COMMITTED → PUSHED).",
@@ -65,13 +64,13 @@ def list_command(
     if status:
         try:
             status_filter = CommitStatus(status.lower())
-        except ValueError:
+        except ValueError as exc:
             valid = ", ".join(s.value for s in CommitStatus)
             typer.echo(
                 f"error: unknown status {status!r}; expected one of: {valid}",
                 err=True,
             )
-            raise typer.Exit(code=2)
+            raise typer.Exit(code=2) from exc
 
     rows = cd.list_all(
         status=status_filter,
@@ -214,7 +213,7 @@ def approve_command(
                 )
             except IllegalTransition as exc:
                 typer.echo(f"error: {exc}", err=True)
-                raise typer.Exit(code=2)
+                raise typer.Exit(code=2) from exc
             cd.save(rejected)
             typer.echo(f"rejected #{rejected.counter:04d}: {reason}")
             return
@@ -229,7 +228,7 @@ def approve_command(
         approved = engine.approve(commit, actor=actor_name, via=via)  # type: ignore[arg-type]
     except IllegalTransition as exc:
         typer.echo(f"error: {exc}", err=True)
-        raise typer.Exit(code=2)
+        raise typer.Exit(code=2) from exc
 
     path = cd.save(approved)
 
@@ -349,12 +348,12 @@ def push_command(
     # Resolve the repo (validates that path is inside a git working tree).
     try:
         repo = GitDriver.detect(repo_root.resolve())
-    except GitRepoNotFound:
+    except GitRepoNotFound as exc:
         typer.echo(
             f"error: {repo_root} is not a git working tree",
             err=True,
         )
-        raise typer.Exit(code=65)  # VCS-not-detected per §16
+        raise typer.Exit(code=65) from exc  # VCS-not-detected per §16
     driver = GitDriver()
 
     # Render the commit message.
@@ -371,14 +370,14 @@ def push_command(
         )
     except DriverError as exc:
         typer.echo(f"git commit failed: {exc}", err=True)
-        raise typer.Exit(code=65)
+        raise typer.Exit(code=65) from exc
 
     engine = LifecycleEngine()
     try:
         committed = engine.mark_committed(commit, sha=commit_ref.sha)
     except IllegalTransition as exc:
         typer.echo(f"error: {exc}", err=True)
-        raise typer.Exit(code=2)
+        raise typer.Exit(code=2) from exc
 
     cd.save(committed)
 
@@ -397,7 +396,7 @@ def push_command(
                 pushed = engine.mark_pushed(committed, remote=remote)
             except IllegalTransition as exc:
                 typer.echo(f"error: {exc}", err=True)
-                raise typer.Exit(code=2)
+                raise typer.Exit(code=2) from exc
             cd.save(pushed)
             committed = pushed
             push_status = f"pushed to {remote}"

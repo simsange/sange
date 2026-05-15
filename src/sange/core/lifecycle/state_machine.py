@@ -32,7 +32,6 @@ Transitions per §6.8.2:
 from __future__ import annotations
 
 import datetime as _dt
-from pathlib import Path
 from typing import Literal
 
 from sange.core.lifecycle.schema import (
@@ -45,7 +44,6 @@ from sange.core.lifecycle.store import (
     CommitsDirectory,
     filename_for,
 )
-
 
 Surface = Literal["cli", "tui", "web", "mcp"]
 
@@ -125,7 +123,7 @@ def is_terminal(state: CommitStatus) -> bool:
 
 
 def _now() -> _dt.datetime:
-    return _dt.datetime.now(tz=_dt.timezone.utc)
+    return _dt.datetime.now(tz=_dt.UTC)
 
 
 def _replace(commit: CommitJSON, **changes: object) -> CommitJSON:
@@ -335,10 +333,10 @@ class LifecycleEngine:
 
 
 __all__ = [
+    "TRANSITIONS",
     "IllegalTransition",
     "LifecycleEngine",
     "Surface",
-    "TRANSITIONS",
     "allowed_transitions_from",
     "is_terminal",
 ]

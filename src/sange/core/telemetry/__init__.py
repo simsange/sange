@@ -27,19 +27,19 @@ from sange.core.telemetry.collector import (
     TelemetryCollector,
 )
 from sange.core.telemetry.events import (
+    SCHEMA_VERSION,
     AiCallEvent,
     CommandEvent,
     ErrorEvent,
     EventKind,
-    SCHEMA_VERSION,
 )
 
 __all__ = [
+    "SCHEMA_VERSION",
     "AiCallEvent",
     "CollectorPolicy",
     "CommandEvent",
     "ErrorEvent",
     "EventKind",
-    "SCHEMA_VERSION",
     "TelemetryCollector",
 ]

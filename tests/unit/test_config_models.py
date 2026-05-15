@@ -33,7 +33,6 @@ from sange.core.config import (
 )
 from sange.core.config.models import SCHEMA_CURRENT
 
-
 # --------------------------------------------------------------------------- #
 # Default-minimal
 # --------------------------------------------------------------------------- #
@@ -213,7 +212,7 @@ class TestVariantFilter:
             )
 
     def test_filter_stage_must_be_declared(self) -> None:
-        with pytest.raises(ValidationError, match="match.stage"):
+        with pytest.raises(ValidationError, match=r"match\.stage"):
             VariantConfig(
                 stages=["dev", "production"],
                 filter=[VariantFilter(match={"stage": "missing"})],

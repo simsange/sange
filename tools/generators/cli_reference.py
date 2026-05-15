@@ -39,7 +39,6 @@ if str(HERE) not in sys.path:
 # --- Imports (after path bootstrap) --------------------------------------- #
 import click  # noqa: E402
 import typer  # noqa: E402
-
 from _lib import markdown  # noqa: E402
 from _lib.output import (  # noqa: E402
     GeneratorMetadata,
@@ -47,8 +46,8 @@ from _lib.output import (  # noqa: E402
     WriteOutcome,
     write_generated_file,
 )
-from sange.cli import app as _cli_app  # noqa: E402
 
+from sange.cli import app as _cli_app  # noqa: E402
 
 GENERATOR_VERSION = "1.0.0"
 GENERATED_BY = "tools/generators/cli_reference.py"
@@ -82,7 +81,7 @@ class _CommandNode:
     is_group: bool
     options: tuple[_Option, ...]
     arguments: tuple[_Argument, ...]
-    children: tuple["_CommandNode", ...]
+    children: tuple[_CommandNode, ...]
 
 
 def _root_command() -> click.Command:
@@ -345,7 +344,7 @@ if __name__ == "__main__":
         args.write = True
     mode = WriteMode.WRITE if args.write else WriteMode.CHECK
 
-    results = run(mode=mode, clock=_dt.datetime.now(tz=_dt.timezone.utc))
+    results = run(mode=mode, clock=_dt.datetime.now(tz=_dt.UTC))
     rc = 0
     for r in results:
         if r.result is not None and r.result.value != "match":

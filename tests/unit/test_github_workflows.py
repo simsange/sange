@@ -12,7 +12,6 @@ from pathlib import Path
 
 import pytest
 
-
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _CI = _REPO_ROOT / ".github" / "workflows" / "ci.yml"
 _RELEASE = _REPO_ROOT / ".github" / "workflows" / "release.yml"
@@ -66,13 +65,13 @@ class TestCIWorkflow:
 
     def test_matrix_covers_python_versions(self, ci_yaml: dict) -> None:
         matrix = ci_yaml["jobs"]["test"]["strategy"]["matrix"]
-        # The matrix must include at least 3.12 (project floor) and a
-        # newer version.
-        # PyYAML parses "3.10" → "3.10" (string). Stringify for safety.
+        # The matrix must include 3.12 (project floor per
+        # pyproject.toml::requires-python) and at least one newer
+        # version. PyYAML parses "3.10" → "3.10" (string).
         versions = [str(v) for v in matrix["python"]]
-        assert "3.12" in versions
-        # Verify multiple versions tested.
-        assert len(versions) >= 3
+        assert "3.12" in versions, "matrix must include the project floor (3.12)"
+        # At least one newer version covered — 3.13+ today.
+        assert len(versions) >= 2, "matrix must test at least 2 versions"
 
     def test_matrix_covers_native_arm(self, ci_yaml: dict) -> None:
         """ADR-033: native ARM runner required, not QEMU emulation."""

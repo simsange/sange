@@ -25,11 +25,9 @@ if str(GENERATORS_DIR) not in sys.path:
     sys.path.insert(0, str(GENERATORS_DIR))
 
 import threat_model_table  # noqa: E402
-
 from _lib.output import WriteMode  # noqa: E402
 
-
-FIXED_CLOCK = _dt.datetime(2026, 5, 14, 18, 0, 0, tzinfo=_dt.timezone.utc)
+FIXED_CLOCK = _dt.datetime(2026, 5, 14, 18, 0, 0, tzinfo=_dt.UTC)
 
 
 # --------------------------------------------------------------------------- #

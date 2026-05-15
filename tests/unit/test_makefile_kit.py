@@ -19,21 +19,20 @@ for p in (str(SRC_DIR), str(GENERATORS_DIR)):
 
 from _lib.output import VerificationResult, WriteMode  # noqa: E402
 from makefile_kit import (  # noqa: E402
-    CATEGORY_ORDER,
-    FRAGMENTS,
-    MAKEFILES_DIR,
-    SHIM_PATH,
     _CORE_COLORS,
     _CORE_ENV,
     _CORE_HELP,
     _LANG_PYTHON,
     _SHIM,
     _VCS_GIT,
+    CATEGORY_ORDER,
+    FRAGMENTS,
+    MAKEFILES_DIR,
+    SHIM_PATH,
     run,
 )
 
-
-_FIXED_CLOCK = _dt.datetime(2026, 5, 14, 12, 0, 0, tzinfo=_dt.timezone.utc)
+_FIXED_CLOCK = _dt.datetime(2026, 5, 14, 12, 0, 0, tzinfo=_dt.UTC)
 
 
 # --------------------------------------------------------------------------- #
@@ -177,12 +176,11 @@ class TestFragments:
 class TestRun:
     def test_write_creates_all_files(self, tmp_path: Path) -> None:
         # Redirect MAKEFILES_DIR + SHIM_PATH to tmp_path for the test.
-        from makefile_kit import (
-            _Fragment as Fragment,  # noqa: F401
-        )
-
         # Save originals.
         import makefile_kit
+        from makefile_kit import (
+            _Fragment as Fragment,
+        )
 
         original_mk_dir = makefile_kit.MAKEFILES_DIR
         original_shim = makefile_kit.SHIM_PATH
@@ -212,7 +210,7 @@ class TestRun:
         """Run WRITE then CHECK on the real templates/ dir; CHECK must
         report 'match' for every outcome."""
 
-        write_results = run(mode=WriteMode.WRITE, clock=_FIXED_CLOCK)
+        run(mode=WriteMode.WRITE, clock=_FIXED_CLOCK)
         check_results = run(mode=WriteMode.CHECK, clock=_FIXED_CLOCK)
         for outcome in check_results:
             assert outcome.result is VerificationResult.MATCH, (

@@ -27,9 +27,9 @@ ai_app = typer.Typer(
 
 @ai_app.command("providers", help="List registered AI providers + capabilities.")
 def providers_command() -> None:
-    from sange.adapters.ai import AIProviderNotInstalled, get_provider
-
     import click
+
+    from sange.adapters.ai import AIProviderNotInstalled, get_provider
 
     ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
@@ -51,7 +51,7 @@ def providers_command() -> None:
             )
         except AIProviderNotInstalled:
             rows.append({"name": name, "sdk": "missing"})
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             rows.append({"name": name, "sdk": "error", "error": str(exc)})
 
     if json_mode:
@@ -183,4 +183,4 @@ def _read_diff(diff_path: Path | None) -> str:
     return sys.stdin.read()
 
 
-__all__ = ["ai_app", "providers_command", "preview_command"]
+__all__ = ["ai_app", "preview_command", "providers_command"]

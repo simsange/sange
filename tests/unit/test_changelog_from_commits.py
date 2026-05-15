@@ -17,14 +17,15 @@ for p in (str(SRC_DIR), str(GENERATORS_DIR)):
 
 from _lib.output import VerificationResult, WriteMode  # noqa: E402
 from changelog_from_commits import (  # noqa: E402
-    _build_body,
+    _TYPE_TO_SECTION,
     _bucket,
+    _build_body,
     _Entry,
     _input_fingerprint,
     _pushed_commits,
-    _TYPE_TO_SECTION,
     run,
 )
+
 from sange.core.lifecycle import (  # noqa: E402
     CommitJSON,
     CommitMessage,
@@ -32,9 +33,8 @@ from sange.core.lifecycle import (  # noqa: E402
     CommitStatus,
 )
 
-
-_NOW = _dt.datetime(2026, 1, 1, 12, 0, 0, tzinfo=_dt.timezone.utc)
-_LATER = _dt.datetime(2026, 5, 1, 12, 0, 0, tzinfo=_dt.timezone.utc)
+_NOW = _dt.datetime(2026, 1, 1, 12, 0, 0, tzinfo=_dt.UTC)
+_LATER = _dt.datetime(2026, 5, 1, 12, 0, 0, tzinfo=_dt.UTC)
 _FIXED_CLOCK = _NOW
 
 
@@ -276,7 +276,7 @@ class TestRun:
         ])
         # Re-write to a temp output path so we don't touch docs/CHANGELOG.md.
         # We capture content via a manual round-trip.
-        from changelog_from_commits import _pushed_commits, _build_body
+        from changelog_from_commits import _build_body, _pushed_commits
         commits = _pushed_commits(tmp_path)
         body = _build_body(commits)
         assert "passkey support" in body

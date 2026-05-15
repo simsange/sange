@@ -15,11 +15,9 @@ if str(GENERATORS_DIR) not in sys.path:
     sys.path.insert(0, str(GENERATORS_DIR))
 
 import cross_vcs_map  # noqa: E402
-
 from _lib.output import WriteMode  # noqa: E402
 
-
-FIXED_CLOCK = _dt.datetime(2026, 5, 15, 2, 0, 0, tzinfo=_dt.timezone.utc)
+FIXED_CLOCK = _dt.datetime(2026, 5, 15, 2, 0, 0, tzinfo=_dt.UTC)
 
 
 # --------------------------------------------------------------------------- #

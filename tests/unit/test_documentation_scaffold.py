@@ -10,7 +10,6 @@ from pathlib import Path
 
 import pytest
 
-
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _DOC = _REPO_ROOT / "documentation"
 _MKDOCS = _DOC / "mkdocs.yml"

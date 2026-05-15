@@ -33,7 +33,7 @@ import json
 import sys
 from collections import defaultdict
 from collections.abc import Iterable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 # --- Path bootstrap ------------------------------------------------------- #
@@ -815,7 +815,7 @@ if __name__ == "__main__":
         args.write = True
     mode = WriteMode.WRITE if args.write else WriteMode.CHECK
 
-    results = run(mode=mode, clock=_dt.datetime.now(tz=_dt.timezone.utc))
+    results = run(mode=mode, clock=_dt.datetime.now(tz=_dt.UTC))
     rc = 0
     for r in results:
         if r.result is not None and r.result.value != "match":

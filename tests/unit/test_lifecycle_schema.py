@@ -8,6 +8,7 @@ import pytest
 from pydantic import ValidationError
 
 from sange.core.lifecycle.schema import (
+    SCHEMA_VERSION,
     AIProvenance,
     Approval,
     Author,
@@ -16,11 +17,9 @@ from sange.core.lifecycle.schema import (
     CommitMessage,
     CommitStatus,
     Rejection,
-    SCHEMA_VERSION,
 )
 
-
-_NOW = _dt.datetime(2026, 5, 15, 12, 0, 0, tzinfo=_dt.timezone.utc)
+_NOW = _dt.datetime(2026, 5, 15, 12, 0, 0, tzinfo=_dt.UTC)
 
 
 def _minimal_message() -> CommitMessage:

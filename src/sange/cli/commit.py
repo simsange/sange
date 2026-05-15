@@ -76,13 +76,13 @@ def commit_command(
 ) -> None:
     import datetime as _dt
 
+    import click
+
     from sange.core.enhancer.tasks.commit_message import (
         CommitMessageRequest,
         generate_commit_message,
     )
     from sange.core.telemetry import CollectorPolicy, TelemetryCollector
-
-    import click
 
     ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
@@ -108,15 +108,15 @@ def commit_command(
         )
     except ValueError as exc:
         typer.echo(f"error: {exc}", err=True)
-        raise typer.Exit(code=2)
+        raise typer.Exit(code=2) from exc
 
     try:
         result = generate_commit_message(
             request, provider=provider, model=model, collector=collector
         )
-    except Exception as exc:  # noqa: BLE001 — surface as exit-code-70 AI error.
+    except Exception as exc:
         typer.echo(f"AI provider error: {exc}", err=True)
-        raise typer.Exit(code=70)
+        raise typer.Exit(code=70) from exc
 
     saved_path: Path | None = None
     counter: int | None = None
@@ -130,7 +130,7 @@ def commit_command(
                 branch=branch,
                 repo_root=save_root,
             )
-        except Exception as exc:  # noqa: BLE001 — surface save failures explicitly
+        except Exception as exc:
             typer.echo(f"warning: failed to save DRAFT row: {exc}", err=True)
 
     if json_mode:
@@ -168,7 +168,7 @@ def commit_command(
 
     # Surface the telemetry recording path (per §12.1 transparency).
     if not no_telemetry:
-        now = _dt.datetime.now(tz=_dt.timezone.utc)
+        now = _dt.datetime.now(tz=_dt.UTC)
         iso_year, iso_week, _ = now.isocalendar()
         record_path = telemetry_dir / f"events-{iso_year}-W{iso_week:02d}.ndjson"
         if saved_path is None:
@@ -215,7 +215,7 @@ def _gather_repo_context(
         status = driver.status(repo)
         files = [entry.path for entry in status.entries]
         return branch or "", recent, files
-    except Exception:  # noqa: BLE001 — best-effort; degrade silently.
+    except Exception:
         return "", "", []
 
 
@@ -240,7 +240,7 @@ def _save_draft(
 
     cd = CommitsDirectory(repo_root)
     counter = cd.allocate_counter()
-    now = _dt.datetime.now(tz=_dt.timezone.utc)
+    now = _dt.datetime.now(tz=_dt.UTC)
 
     commit = CommitJSON(
         counter=counter,

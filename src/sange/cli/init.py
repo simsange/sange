@@ -31,7 +31,6 @@ from pathlib import Path
 
 import typer
 
-
 # Source roots — resolved relative to the installed package.
 _PACKAGE_ROOT = Path(__file__).resolve().parent.parent  # src/sange/
 _REPO_ROOT = _PACKAGE_ROOT.parent.parent                # repo root

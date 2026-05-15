@@ -20,11 +20,10 @@ if str(GENERATORS_DIR) not in sys.path:
     sys.path.insert(0, str(GENERATORS_DIR))
 
 import exit_codes as exit_codes_generator  # noqa: E402
-
-from sange.exit_codes import DESCRIPTIONS, ExitCode, describe  # noqa: E402
 from _lib.fingerprint import body_sha256  # noqa: E402
 from _lib.output import WriteMode  # noqa: E402
 
+from sange.exit_codes import DESCRIPTIONS, ExitCode, describe  # noqa: E402
 
 # --------------------------------------------------------------------------- #
 # Enum invariants
@@ -55,7 +54,7 @@ class TestExitCodeInvariants:
         # 0..2 reserved for Unix conventions; 64..69 cross-cutting; 70+ subsystem.
         for code in ExitCode:
             value = code.value
-            assert value in {0, 1, 2} or 64 <= value, (
+            assert value in {0, 1, 2} or value >= 64, (
                 f"{code} has value {value} which falls outside Unix-conventions / "
                 "cross-cutting / subsystem bands documented in §7.0.8"
             )
@@ -97,7 +96,7 @@ class TestKnownValues:
 # --------------------------------------------------------------------------- #
 
 
-CLOCK_FIXTURE = _dt.datetime(2026, 1, 2, 3, 4, 5, tzinfo=_dt.timezone.utc)
+CLOCK_FIXTURE = _dt.datetime(2026, 1, 2, 3, 4, 5, tzinfo=_dt.UTC)
 
 
 class TestExitCodesGenerator:

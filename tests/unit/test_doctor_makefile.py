@@ -10,7 +10,6 @@ import pytest
 
 from sange.cli.doctor import _check_makefile_tracked
 
-
 _GIT = shutil.which("git")
 
 _ENV = {

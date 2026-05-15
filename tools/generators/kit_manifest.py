@@ -170,7 +170,7 @@ def _render_manifest_toml(
     lines.append("[meta]")
     lines.append(f'generator = "{GENERATED_BY}"')
     lines.append(f'generator_version = "{GENERATOR_VERSION}"')
-    lines.append(f'generated_at = "{timestamp.astimezone(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}"')
+    lines.append(f'generated_at = "{timestamp.astimezone(_dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")}"')
     lines.append(f"file_count = {len(files)}")
     lines.append(f"total_bytes = {total_bytes}")
     lines.append('signature_required = true')
@@ -217,7 +217,8 @@ def _toml_key(name: str) -> str:
 
 
 def _write_toml_atomically(path: Path, content: str) -> None:
-    import os, tempfile  # noqa: E401
+    import os
+    import tempfile
 
     path.parent.mkdir(parents=True, exist_ok=True)
     encoded = content.encode("utf-8")
@@ -406,7 +407,7 @@ if __name__ == "__main__":
         args.write = True
     mode = WriteMode.WRITE if args.write else WriteMode.CHECK
 
-    results = run(mode=mode, clock=_dt.datetime.now(tz=_dt.timezone.utc))
+    results = run(mode=mode, clock=_dt.datetime.now(tz=_dt.UTC))
     rc = 0
     for r in results:
         if r.result is not None and r.result.value != "match":

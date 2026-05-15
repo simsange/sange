@@ -16,7 +16,6 @@ from __future__ import annotations
 import re
 from collections.abc import Iterable, Sequence
 
-
 _SLUG_NON_ALNUM = re.compile(r"[^a-z0-9\s\-]+")
 _SLUG_WHITESPACE = re.compile(r"[\s]+")
 

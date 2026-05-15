@@ -34,7 +34,6 @@ from __future__ import annotations
 import datetime as _dt
 import json
 import sys
-from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -1012,7 +1011,7 @@ if __name__ == "__main__":
 
     results = run(
         mode=mode,
-        clock=_dt.datetime.now(tz=_dt.timezone.utc),
+        clock=_dt.datetime.now(tz=_dt.UTC),
     )
     rc = 0
     for r in results:

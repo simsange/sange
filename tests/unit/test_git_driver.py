@@ -15,8 +15,8 @@ from pathlib import Path
 
 import pytest
 
-from sange.adapters.vcs.git import GitDriver, GitRepoNotFound
 from sange.adapters.vcs._protocol import DriverCapabilities, DriverError, VCSDriver
+from sange.adapters.vcs.git import GitDriver, GitRepoNotFound
 from sange.core.models import (
     BranchInfo,
     CommitRef,
@@ -24,7 +24,6 @@ from sange.core.models import (
     Repo,
     WorkingCopyStatus,
 )
-
 
 # Skip the entire module when git isn't available.
 pytestmark = pytest.mark.skipif(
@@ -352,6 +351,5 @@ class TestWriteMethodsImplemented:
         d = GitDriver()
         d.add(repo, [Path("new_file.txt")])
         commit = d.commit(repo, message="add new_file")
-        from sange.core.models import CommitRef
         assert isinstance(commit, CommitRef)
         assert commit.subject == "add new_file"

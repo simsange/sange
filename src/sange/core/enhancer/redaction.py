@@ -247,8 +247,8 @@ class Redactor:
 
 
 __all__ = [
-    "Redactor",
     "RedactionPolicy",
     "RedactionResult",
+    "Redactor",
     "shannon_entropy",
 ]

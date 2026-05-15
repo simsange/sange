@@ -42,7 +42,6 @@ import hashlib
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
-
 SCHEMA_VERSION = 1
 
 
@@ -58,7 +57,7 @@ class EventKind(str, enum.Enum):
 
 
 def _utcnow() -> _dt.datetime:
-    return _dt.datetime.now(tz=_dt.timezone.utc)
+    return _dt.datetime.now(tz=_dt.UTC)
 
 
 def _hash(text: str) -> str:
@@ -208,9 +207,9 @@ def _serialize(event: Any) -> dict[str, Any]:
 
 
 __all__ = [
+    "SCHEMA_VERSION",
     "AiCallEvent",
     "CommandEvent",
     "ErrorEvent",
     "EventKind",
-    "SCHEMA_VERSION",
 ]

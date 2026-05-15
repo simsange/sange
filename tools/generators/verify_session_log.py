@@ -40,7 +40,6 @@ from __future__ import annotations
 import argparse
 import re
 import sys
-from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -51,11 +50,9 @@ if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
 from _lib.output import (  # noqa: E402
-    GeneratorMetadata,
     WriteMode,
     WriteOutcome,
 )
-
 
 SESSION_LOG_PATH = REPO_ROOT / ".design" / "plans" / "session-log.md"
 DECISIONS_LOG_PATH = REPO_ROOT / ".design" / "plans" / "decisions-log.md"
@@ -153,9 +150,8 @@ def parse_session_log(text: str) -> list[SessionLogRow]:
         if len(cells) == _LEGACY_COLUMNS:
             row_id, ts, actor, surface, action, files_touched, linked, notes = cells
             grounding_raw = ""
-            audit_chain = ""
         elif len(cells) == _GROUNDING_COLUMNS:
-            row_id, ts, actor, surface, action, files_touched, grounding_raw, linked, audit_chain, notes = cells
+            row_id, ts, actor, surface, action, files_touched, grounding_raw, linked, _audit_chain, notes = cells
         else:
             # Unrecognized shape — skip silently rather than mis-bin.
             continue
@@ -360,10 +356,7 @@ def _looks_like_a_path(token: str) -> bool:
     # A real path either contains `/` (relative path) or ends with a known extension.
     if "/" in token:
         return True
-    for ext in _KNOWN_EXTENSIONS:
-        if token.endswith(ext):
-            return True
-    return False
+    return any(token.endswith(ext) for ext in _KNOWN_EXTENSIONS)
 
 
 def _extract_paths_from_files_touched(blob: str) -> list[str]:
@@ -473,7 +466,7 @@ def verify(
     )
 
 
-def run(*, mode: WriteMode, clock) -> list[WriteOutcome]:  # noqa: ARG001
+def run(*, mode: WriteMode, clock) -> list[WriteOutcome]:
     """Orchestrator entry-point — T-G-016 is CI-only; this is a no-op.
 
     Direct invocation via the `__main__` block is the actual verification

@@ -44,7 +44,7 @@ from __future__ import annotations
 import json
 import time
 from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from sange.adapters.ai._protocol import (
@@ -464,7 +464,7 @@ class PromptEnhancer:
 
             event = TelemetryCollector.from_audit(audit, latency_ms=latency_ms)
             self._collector.record(event)
-        except Exception:  # noqa: BLE001 — telemetry must never break the call path.
+        except Exception:
             pass
 
     def _record_error(
@@ -488,7 +488,7 @@ class PromptEnhancer:
                 error_message=error_message,
             )
             self._collector.record(event)
-        except Exception:  # noqa: BLE001 — telemetry must never break the call path.
+        except Exception:
             pass
 
     # ----- internals ----------------------------------------------- #
@@ -506,7 +506,8 @@ class PromptEnhancer:
             "declared schema. Re-emit ONLY valid JSON matching the schema; "
             "do not include any prose, fenced code, or explanatory text."
         )
-        return prior_messages + (
+        return (
+            *prior_messages,
             Message(role=MessageRole.ASSISTANT, content=prior_response or " "),
             Message(role=MessageRole.USER, content=retry_instruction),
         )

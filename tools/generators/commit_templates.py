@@ -945,7 +945,7 @@ def _render_library_toml() -> str:
     lines.append("")
 
     for preset in sorted(PRESETS, key=lambda p: (p.type, p.id)):
-        lines.append(f"[[preset]]")
+        lines.append("[[preset]]")
         lines.append(f"id = {_toml_quote(preset.id)}")
         lines.append(f"type = {_toml_quote(preset.type)}")
         if preset.scope:
@@ -1145,7 +1145,8 @@ def _input_sha256() -> str:
 
 
 def _write_toml_atomically(path: Path, content: str) -> None:
-    import os, tempfile  # noqa: E401 — local helper
+    import os
+    import tempfile
 
     path.parent.mkdir(parents=True, exist_ok=True)
     encoded = content.encode("utf-8")
@@ -1212,7 +1213,7 @@ if __name__ == "__main__":
         args.write = True
     mode = WriteMode.WRITE if args.write else WriteMode.CHECK
 
-    results = run(mode=mode, clock=_dt.datetime.now(tz=_dt.timezone.utc))
+    results = run(mode=mode, clock=_dt.datetime.now(tz=_dt.UTC))
     rc = 0
     for r in results:
         if r.result is not None and r.result.value != "match":

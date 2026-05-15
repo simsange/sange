@@ -14,7 +14,6 @@ from sange.core.enhancer.templates import (
     TemplateRegistry,
 )
 
-
 # --------------------------------------------------------------------------- #
 # PromptTemplate validators
 # --------------------------------------------------------------------------- #

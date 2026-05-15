@@ -13,22 +13,21 @@ from pathlib import Path
 import pytest
 
 from sange.core.lifecycle import (
+    TRANSITIONS,
     CommitJSON,
     CommitMessage,
-    CommitStatus,
     CommitsDirectory,
+    CommitStatus,
     IllegalTransition,
     LifecycleEngine,
-    TRANSITIONS,
     allowed_transitions_from,
     is_terminal,
 )
 
-
 # Past-dated fixture so the real clock used by the state machine's
 # `_replace()` is always >= this value (the cross-field validator
 # `updated_at >= created_at` requires monotonicity).
-_NOW = _dt.datetime(2026, 1, 1, 0, 0, 0, tzinfo=_dt.timezone.utc)
+_NOW = _dt.datetime(2026, 1, 1, 0, 0, 0, tzinfo=_dt.UTC)
 
 
 def _make_commit(

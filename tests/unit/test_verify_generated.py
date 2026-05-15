@@ -31,7 +31,7 @@ def _meta() -> GeneratorMetadata:
         generator_version="0.0.1",
         input_sha256="0" * 64,
         manual_edits_allowed=False,
-        generated_at=_dt.datetime(2026, 1, 1, 0, 0, 0, tzinfo=_dt.timezone.utc),
+        generated_at=_dt.datetime(2026, 1, 1, 0, 0, 0, tzinfo=_dt.UTC),
     )
 
 
@@ -67,7 +67,7 @@ def test_manual_edits_allowed_skips_body_hash(tmp_path: Path) -> None:
         generator_version="1",
         input_sha256="abc",
         manual_edits_allowed=True,
-        generated_at=_dt.datetime(2026, 1, 1, tzinfo=_dt.timezone.utc),
+        generated_at=_dt.datetime(2026, 1, 1, tzinfo=_dt.UTC),
     )
     write_generated_file(target, "Original body.\n", meta, mode=WriteMode.WRITE)
     # Now mutate the body — manual edits are explicitly allowed, so verification

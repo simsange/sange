@@ -7,7 +7,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
-
 VCSKind = Literal["git", "svn", "hg", "p4", "fossil", "pijul"]
 
 
@@ -32,7 +31,7 @@ class Repo:
     remote: str | None = None
     default_branch: str = "main"
     detected_at: _dt.datetime = field(
-        default_factory=lambda: _dt.datetime.now(tz=_dt.timezone.utc)
+        default_factory=lambda: _dt.datetime.now(tz=_dt.UTC)
     )
     metadata: dict[str, str] = field(default_factory=dict)
 

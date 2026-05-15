@@ -12,7 +12,6 @@ from pathlib import Path
 
 import pytest
 
-
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _ORG = _REPO_ROOT / "org-github"
 
@@ -236,12 +235,12 @@ class TestIssueConfig:
 
     def test_contact_link_to_security(self, config_yaml: dict) -> None:
         links = config_yaml["contact_links"]
-        urls = [l["url"] for l in links]
+        urls = [link["url"] for link in links]
         assert any("SECURITY.md" in u for u in urls)
 
     def test_contact_link_to_discussions(self, config_yaml: dict) -> None:
         links = config_yaml["contact_links"]
-        urls = [l["url"] for l in links]
+        urls = [link["url"] for link in links]
         assert any("discussions" in u.lower() for u in urls)
 
 

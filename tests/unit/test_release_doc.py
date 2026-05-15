@@ -6,7 +6,6 @@ from pathlib import Path
 
 import pytest
 
-
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _RELEASE_MD = _REPO_ROOT / "docs" / "release.md"
 

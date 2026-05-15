@@ -30,7 +30,6 @@ from sange.core.enhancer.tasks.commit_message import (
 )
 from sange.core.lifecycle.schema import CommitMessage as LifecycleCommitMessage
 
-
 # --------------------------------------------------------------------------- #
 # Conventional Commits types invariants
 # --------------------------------------------------------------------------- #

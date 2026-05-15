@@ -25,7 +25,6 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
-
 # --------------------------------------------------------------------------- #
 # Data shapes
 # --------------------------------------------------------------------------- #

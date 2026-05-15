@@ -29,9 +29,7 @@ interpolation.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
-
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sange.core.enhancer.enhancer import EnhancedResult, PromptEnhancer
 from sange.core.enhancer.templates import PromptTemplate, TemplateRegistry
@@ -217,7 +215,7 @@ def generate_commit_message(
     enhancer: PromptEnhancer | None = None,
     provider: str | None = None,
     model: str | None = None,
-    collector: "TelemetryCollector | None" = None,
+    collector: TelemetryCollector | None = None,
 ) -> CommitMessageResult:
     """Run the full pipeline and return a typed result.
 
@@ -304,10 +302,10 @@ def generate_commit_message(
 
 __all__ = [
     "CONVENTIONAL_COMMIT_TYPES",
-    "CommitMessageRequest",
-    "CommitMessageResult",
     "TEMPLATE_ID",
     "TEMPLATE_VERSION",
+    "CommitMessageRequest",
+    "CommitMessageResult",
     "build_commit_message_template",
     "generate_commit_message",
 ]

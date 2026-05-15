@@ -27,7 +27,6 @@ import re
 import tempfile
 from pathlib import Path
 
-
 COUNTER_FILENAME = ".counter"
 _JSON_NAME_RE = re.compile(r"^(\d{4,})-")
 
@@ -139,4 +138,4 @@ class CommitCounter:
             raise
 
 
-__all__ = ["CommitCounter", "COUNTER_FILENAME", "CounterError"]
+__all__ = ["COUNTER_FILENAME", "CommitCounter", "CounterError"]

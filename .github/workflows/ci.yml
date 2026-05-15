@@ -24,14 +24,16 @@ jobs:
         # natively. ubuntu-24.04-arm is the GitHub Actions native-ARM
         # runner (no QEMU emulation).
         os: [ubuntu-24.04, ubuntu-24.04-arm, macos-14]
-        python: ["3.10", "3.11", "3.12", "3.13"]
+        # Project floor is Python 3.12 (pyproject.toml::requires-python).
+        # 3.13 is the current supported ceiling. py3.10 / py3.11 were in
+        # the matrix until 2026-05-16 but never installed because the
+        # requires-python pin refused them — removed for consistency.
+        python: ["3.12", "3.13"]
         # macOS runners are slow + paid; only test the floor + ceiling
         # versions there. Linux covers the full matrix.
         exclude:
           - os: macos-14
-            python: "3.11"
-          - os: macos-14
-            python: "3.12"
+            python: "3.13"
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4

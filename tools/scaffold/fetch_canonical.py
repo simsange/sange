@@ -191,7 +191,7 @@ def _download(entry: CanonicalEntry) -> bytes:
         headers={"User-Agent": "sange-fetch-canonical/1.0", **entry.headers},
     )
     try:
-        with urllib.request.urlopen(req, timeout=30) as resp:  # noqa: S310 — known URL
+        with urllib.request.urlopen(req, timeout=30) as resp:
             return resp.read()
     except urllib.error.URLError as exc:
         print(f"error: network failure fetching {entry.upstream_url!r}: {exc}", file=sys.stderr)

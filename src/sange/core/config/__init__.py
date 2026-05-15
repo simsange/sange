@@ -33,9 +33,9 @@ resolves them at use-time.
 from __future__ import annotations
 
 from sange.core.config.loader import (
-    ConfigError,
-    DEFAULT_USER_DIR,
     DEFAULT_SYSTEM_DIR,
+    DEFAULT_USER_DIR,
+    ConfigError,
     EnvOverrideError,
     SchemaVersionError,
     discover_repo_config,
@@ -59,12 +59,12 @@ from sange.core.config.models import (
 )
 
 __all__ = [
+    "DEFAULT_SYSTEM_DIR",
+    "DEFAULT_USER_DIR",
     "AIConfig",
     "AIProviderConfig",
     "AuditConfig",
     "ConfigError",
-    "DEFAULT_USER_DIR",
-    "DEFAULT_SYSTEM_DIR",
     "DimensionConfig",
     "EnvOverrideError",
     "GitignoreConfig",

@@ -33,7 +33,7 @@ import datetime as _dt
 import json
 import sys
 from collections.abc import Iterable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 # --- Path bootstrap ------------------------------------------------------- #
@@ -768,7 +768,8 @@ def _write_toml_atomically(path: Path, content: str) -> None:
     but without the §16.4.1 frontmatter (TOMLs derive integrity from the
     `templates/MANIFEST.toml.sig` per ADR-020)."""
 
-    import os, tempfile  # noqa: E401 — local helper, keeps top-level imports tight
+    import os
+    import tempfile
 
     path.parent.mkdir(parents=True, exist_ok=True)
     encoded = content.encode("utf-8")
@@ -1052,7 +1053,7 @@ if __name__ == "__main__":
         args.write = True
     mode = WriteMode.WRITE if args.write else WriteMode.CHECK
 
-    results = run(mode=mode, clock=_dt.datetime.now(tz=_dt.timezone.utc))
+    results = run(mode=mode, clock=_dt.datetime.now(tz=_dt.UTC))
     rc = 0
     for r in results:
         if r.result is not None and r.result.value != "match":

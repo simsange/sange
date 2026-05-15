@@ -75,8 +75,8 @@ from sange.core.enhancer.templates import (
 )
 
 __all__ = [
-    "AuditRecord",
     "CONVENTIONAL_COMMIT_TYPES",
+    "AuditRecord",
     "CommitMessageRequest",
     "CommitMessageResult",
     "EnhancedResult",

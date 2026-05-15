@@ -49,7 +49,6 @@ from _lib.output import (  # noqa: E402
     write_generated_file,
 )
 
-
 GENERATOR_VERSION = "1.0.0"
 GENERATED_BY = "tools/generators/adr_scaffold.py"
 DECISIONS_LOG = REPO_ROOT / ".design" / "plans" / "decisions-log.md"
@@ -107,7 +106,7 @@ def _render_body(
     body = []
     body.append(markdown.heading(1, f"ADR-{number:04d}: {title}"))
     body.append("")
-    body.append(f"**Status:** Proposed")
+    body.append("**Status:** Proposed")
     body.append(f"**Date:** {today.isoformat()}")
     body.append("")
     body.append(f"**Context:** {summary or '<what is the situation? what forces are at play?>'}")
@@ -163,7 +162,7 @@ def scaffold(
             f"refusing to overwrite {target}; pass overwrite=True or pick a fresh number"
         )
 
-    clock = clock or _dt.datetime.now(tz=_dt.timezone.utc)
+    clock = clock or _dt.datetime.now(tz=_dt.UTC)
     body = _render_body(
         number=number,
         title=title,
@@ -174,7 +173,7 @@ def scaffold(
     # The input fingerprint is a deterministic function of (title, number)
     # so re-runs with the same title produce the same hash. Re-using the
     # body would be circular; we hash the *intent*.
-    input_payload = f"adr-{number:04d}\ntitle:{title}\nslug:{final_slug}\n".encode("utf-8")
+    input_payload = f"adr-{number:04d}\ntitle:{title}\nslug:{final_slug}\n".encode()
     input_sha = sha256_text(input_payload.decode("utf-8"))
 
     meta = GeneratorMetadata(
@@ -187,7 +186,7 @@ def scaffold(
     return write_generated_file(target, body, meta, mode=mode)
 
 
-def run(*, mode: WriteMode, clock: _dt.datetime) -> list[WriteOutcome]:  # noqa: ARG001
+def run(*, mode: WriteMode, clock: _dt.datetime) -> list[WriteOutcome]:
     """Orchestrator entry-point — T-G-007 is on-demand, not part of `--write`."""
 
     return []

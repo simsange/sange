@@ -114,7 +114,7 @@ def _check_ai_providers() -> CheckResult:
             statuses[name] = "installed"
         except AIProviderNotInstalled:
             statuses[name] = "missing-sdk (install sange[ai-" + name + "])"
-        except Exception as exc:  # noqa: BLE001 — informational only.
+        except Exception as exc:
             statuses[name] = f"error: {exc}"
 
     ok = statuses.get("mock") == "installed"

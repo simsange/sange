@@ -20,17 +20,16 @@ for p in (str(SRC_DIR), str(GENERATORS_DIR)):
 from _lib.output import WriteMode  # noqa: E402
 from cli_reference import (  # noqa: E402
     _Argument,
-    _CommandNode,
-    _Option,
     _build_body,
     _build_tree,
+    _CommandNode,
     _fingerprint,
+    _Option,
     _walk,
     run,
 )
 
-
-_FIXED_CLOCK = _dt.datetime(2026, 5, 14, 12, 0, 0, tzinfo=_dt.timezone.utc)
+_FIXED_CLOCK = _dt.datetime(2026, 5, 14, 12, 0, 0, tzinfo=_dt.UTC)
 
 
 # --------------------------------------------------------------------------- #

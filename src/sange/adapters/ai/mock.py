@@ -38,7 +38,6 @@ from sange.adapters.ai._protocol import (
     Usage,
 )
 
-
 _DEFAULT_CHUNK_COUNT = 4
 
 

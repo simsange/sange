@@ -17,12 +17,10 @@ import json
 import os
 import re
 import tempfile
-from collections.abc import Iterable
 from pathlib import Path
 
 from sange.core.lifecycle.counter import CommitCounter
 from sange.core.lifecycle.schema import CommitJSON, CommitStatus
-
 
 # --------------------------------------------------------------------------- #
 # Filename rules

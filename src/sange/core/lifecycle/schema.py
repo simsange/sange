@@ -23,7 +23,6 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-
 SCHEMA_VERSION = 1
 
 
@@ -292,6 +291,7 @@ class CommitJSON(BaseModel):
 
 
 __all__ = [
+    "SCHEMA_VERSION",
     "AIProvenance",
     "Approval",
     "Author",
@@ -301,5 +301,4 @@ __all__ = [
     "CommitStatus",
     "ConventionalType",
     "Rejection",
-    "SCHEMA_VERSION",
 ]

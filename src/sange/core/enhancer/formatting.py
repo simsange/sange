@@ -25,7 +25,6 @@ from dataclasses import dataclass
 from sange.adapters.ai._protocol import Message, MessageRole
 from sange.core.enhancer.templates import RenderedPrompt
 
-
 # --------------------------------------------------------------------------- #
 # Strategy interface (Protocol-ish — kept as a regular class for v0.1)
 # --------------------------------------------------------------------------- #

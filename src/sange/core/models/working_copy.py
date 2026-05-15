@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import enum
-from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 
@@ -27,7 +26,7 @@ class FileState(str, enum.Enum):
     UNCHANGED = "unchanged"   # Tracked + clean
 
     @classmethod
-    def all_dirty(cls) -> tuple["FileState", ...]:
+    def all_dirty(cls) -> tuple[FileState, ...]:
         """States that represent uncommitted changes (excludes IGNORED + UNCHANGED)."""
 
         return (

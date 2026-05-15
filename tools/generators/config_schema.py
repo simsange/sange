@@ -45,6 +45,7 @@ from _lib.output import (  # noqa: E402
     WriteOutcome,
     write_generated_file,
 )
+
 from sange.core.config import SangeConfig  # noqa: E402
 
 GENERATOR_VERSION = "1.0.0"
@@ -279,7 +280,6 @@ def _build_body() -> str:
     parts.append("")
 
     # Sub-models in deterministic order.
-    sub_defaults = {name: default_dump.get(name) for name in default_dump}
     seen_models = set()
     # Order: schema_version, project, variants, gitignore, ai, secrets, audit, telemetry
     # Plus nested types referenced from those.
@@ -356,7 +356,7 @@ if __name__ == "__main__":
         args.write = True
     mode = WriteMode.WRITE if args.write else WriteMode.CHECK
 
-    results = run(mode=mode, clock=_dt.datetime.now(tz=_dt.timezone.utc))
+    results = run(mode=mode, clock=_dt.datetime.now(tz=_dt.UTC))
     rc = 0
     for r in results:
         if r.result is not None and r.result.value != "match":

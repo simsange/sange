@@ -41,6 +41,7 @@ from __future__ import annotations
 
 from sange.core.lifecycle.counter import CommitCounter, CounterError
 from sange.core.lifecycle.schema import (
+    SCHEMA_VERSION,
     AIProvenance,
     Approval,
     Author,
@@ -49,13 +50,12 @@ from sange.core.lifecycle.schema import (
     CommitMessage,
     CommitStatus,
     Rejection,
-    SCHEMA_VERSION,
 )
 from sange.core.lifecycle.state_machine import (
+    TRANSITIONS,
     IllegalTransition,
     LifecycleEngine,
     Surface,
-    TRANSITIONS,
     allowed_transitions_from,
     is_terminal,
 )
@@ -67,6 +67,8 @@ from sange.core.lifecycle.store import (
 )
 
 __all__ = [
+    "SCHEMA_VERSION",
+    "TRANSITIONS",
     "AIProvenance",
     "Approval",
     "Author",
@@ -82,9 +84,7 @@ __all__ = [
     "IllegalTransition",
     "LifecycleEngine",
     "Rejection",
-    "SCHEMA_VERSION",
     "Surface",
-    "TRANSITIONS",
     "allowed_transitions_from",
     "is_terminal",
     "slugify_subject",

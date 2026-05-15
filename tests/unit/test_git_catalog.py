@@ -26,12 +26,10 @@ if str(GENERATORS_DIR) not in sys.path:
     sys.path.insert(0, str(GENERATORS_DIR))
 
 import git_catalog  # noqa: E402
-
 from _lib.fingerprint import body_sha256  # noqa: E402
 from _lib.output import WriteMode  # noqa: E402
 
-
-FIXED_CLOCK = _dt.datetime(2026, 5, 14, 12, 0, 0, tzinfo=_dt.timezone.utc)
+FIXED_CLOCK = _dt.datetime(2026, 5, 14, 12, 0, 0, tzinfo=_dt.UTC)
 
 
 # A minimal but realistic `git help -a` fixture — every Top-25 command + a few

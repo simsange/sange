@@ -32,11 +32,9 @@ if str(GENERATORS_DIR) not in sys.path:
     sys.path.insert(0, str(GENERATORS_DIR))
 
 import profile_registry  # noqa: E402
-
 from _lib.output import WriteMode  # noqa: E402
 
-
-FIXED_CLOCK = _dt.datetime(2026, 5, 14, 14, 0, 0, tzinfo=_dt.timezone.utc)
+FIXED_CLOCK = _dt.datetime(2026, 5, 14, 14, 0, 0, tzinfo=_dt.UTC)
 
 # The §6.5.1 v1.0 canonical row list (35 patterns-owning + 1 _core/license safety = 36 total).
 # Kotlin (`lang/kotlin`) is intentionally NOT in v1.0 — it's documented in the reference
@@ -216,7 +214,7 @@ class TestTomlEmission:
             with path.open("rb") as fh:
                 try:
                     data = tomllib.load(fh)
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:
                     pytest.fail(f"failed to parse {path}: {exc}")
             assert "profile" in data, f"{path}: missing [profile] table"
             assert "patterns" in data, f"{path}: missing [patterns] table"

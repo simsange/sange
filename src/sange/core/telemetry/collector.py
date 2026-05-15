@@ -40,7 +40,6 @@ from sange.core.telemetry.events import (
     EventKind,
 )
 
-
 _EventT = AiCallEvent | CommandEvent | ErrorEvent
 
 
@@ -108,7 +107,7 @@ class TelemetryCollector:
 
         # Pick the file based on the event's timestamp (not now()), so
         # back-filled / replay events land in the correct week.
-        timestamp = getattr(event, "timestamp", None) or _dt.datetime.now(tz=_dt.timezone.utc)
+        timestamp = getattr(event, "timestamp", None) or _dt.datetime.now(tz=_dt.UTC)
         path = _file_for(self._policy, timestamp)
         path.parent.mkdir(parents=True, exist_ok=True)
 

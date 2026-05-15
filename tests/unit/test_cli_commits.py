@@ -17,8 +17,7 @@ from sange.core.lifecycle import (
     CommitStatus,
 )
 
-
-_NOW = _dt.datetime(2026, 1, 1, 12, 0, 0, tzinfo=_dt.timezone.utc)
+_NOW = _dt.datetime(2026, 1, 1, 12, 0, 0, tzinfo=_dt.UTC)
 
 
 @pytest.fixture
