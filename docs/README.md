@@ -1,9 +1,9 @@
 ---
 generated_by: tools/generators/docs_index.py
 generator_version: 1.0.0
-generated_at: 2026-05-15T15:56:41Z
-input_sha256: 00058332c0645dee745cdbf55e2d9839afd5a8bbedd0d1bbefb94d67cda4b271
-output_sha256: ac3879fbbcf6aaae6e56e5c7ff7ca4c912f4d59f8b2e9164ba22bf63b1d0746f
+generated_at: 2026-05-15T16:01:19Z
+input_sha256: 58e7225caac8e947d52480b8c6296dbb8702974ec14365029e22d747cc204a28
+output_sha256: 2e9a39ae02aaacb2fa80e1f97e09932e31d346de0bd746238f4c40fe1c64f90b
 manual_edits_allowed: false
 ---
 # Sange documentation
@@ -18,8 +18,8 @@ manual_edits_allowed: false
 | `reference/` | Reference (catalogs + schemas) | 9 |
 | `security/` | Security | 1 |
 | `adr/` | Architecture Decision Records | 2 |
-| _top-level_ | Top-level | 2 |
-| **Total** |  | 15 |
+| _top-level_ | Top-level | 3 |
+| **Total** |  | 16 |
 
 
 ## `tools/` — Per-tool walkthroughs
@@ -50,6 +50,7 @@ manual_edits_allowed: false
 ## Top-level docs
 
 - [Changelog](CHANGELOG.md) — [`CHANGELOG.md`](./CHANGELOG.md)
+- [Quickstart](quickstart.md) — [`quickstart.md`](./quickstart.md)
 - [Releasing Sange](release.md) — [`release.md`](./release.md)
 
 ## Generated content

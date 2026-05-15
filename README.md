@@ -74,6 +74,8 @@ manuals are split per-tool, per-topic.
 
 | Topic | Path |
 |---|---|
+| Quickstart | [`docs/quickstart.md`](docs/quickstart.md) |
+| Commit lifecycle walkthrough | [`docs/tools/workflow/commit-lifecycle.md`](docs/tools/workflow/commit-lifecycle.md) |
 | Release procedure | [`docs/release.md`](docs/release.md) |
 | Changelog | [`CHANGELOG.md`](CHANGELOG.md) |
 | ADR index (33 decisions) | [`docs/adr/`](docs/adr/) and [`.design/plans/decisions-log.md`](.design/plans/decisions-log.md) |
@@ -97,9 +99,7 @@ manuals are split per-tool, per-topic.
 | Topic | Target | Gates on |
 |---|---|---|
 | Installation | `docs/installation.md` | v0.1.0 PyPI publish |
-| Quickstart | `docs/quickstart.md` | post-v0.1 polish |
 | Architecture (reader-oriented) | `docs/architecture.md` | post-v0.1 polish |
-| Commit lifecycle walkthrough | `docs/tools/workflow/commit-lifecycle.md` | per-tool docs sprint |
 | Release bundling | `docs/tools/release/bundle.md` | v0.5+ release engine |
 | History purge | `docs/tools/security/purge.md` | v1.0 purge subsystem |
 | Remote access | `docs/tools/ui/remote-access.md` | v1.0 Web UI |
