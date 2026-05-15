@@ -414,6 +414,181 @@ class TestCommitsNew:
 
 
 # --------------------------------------------------------------------------- #
+# `sange commits submit <counter|id>` (T-044a)
+# --------------------------------------------------------------------------- #
+
+
+class TestCommitsSubmit:
+    def test_submit_draft(self, runner: CliRunner, tmp_path: Path) -> None:
+        cd = CommitsDirectory(tmp_path)
+        cd.save(_draft(1, "feat", "auth", "add login"))
+        result = runner.invoke(
+            app,
+            ["commits", "submit", "1", "--repo", str(tmp_path)],
+        )
+        assert result.exit_code == 0
+        assert "submitted #0001" in result.output
+        assert "feat(auth): add login" in result.output
+
+        rows = cd.list_all()
+        assert rows[0].status is CommitStatus.PENDING_REVIEW
+
+    def test_submit_json(self, runner: CliRunner, tmp_path: Path) -> None:
+        cd = CommitsDirectory(tmp_path)
+        cd.save(_draft(1, "fix", "core", "tighten"))
+        result = runner.invoke(
+            app,
+            ["--json", "commits", "submit", "1", "--repo", str(tmp_path)],
+        )
+        assert result.exit_code == 0
+        payload = json.loads(result.output)
+        assert payload["counter"] == 1
+        assert payload["status"] == "pending_review"
+        assert payload["path"].endswith(".json")
+
+    def test_submit_missing_target_exits_2(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        result = runner.invoke(
+            app,
+            ["commits", "submit", "999", "--repo", str(tmp_path)],
+        )
+        assert result.exit_code == 2
+        assert "no commit found" in result.output
+
+    def test_submit_non_draft_exits_2(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        # Already-approved commit can't be re-submitted.
+        cd = CommitsDirectory(tmp_path)
+        cd.save(
+            CommitJSON(
+                counter=1,
+                created_at=_NOW,
+                updated_at=_NOW,
+                status=CommitStatus.APPROVED,
+                message=CommitMessage(type="feat", scope="", subject="x"),
+            )
+        )
+        result = runner.invoke(
+            app,
+            ["commits", "submit", "1", "--repo", str(tmp_path)],
+        )
+        assert result.exit_code == 2
+
+
+# --------------------------------------------------------------------------- #
+# `sange commits reject <counter|id>` (T-044b)
+# --------------------------------------------------------------------------- #
+
+
+class TestCommitsReject:
+    def test_reject_pending_review(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        cd = CommitsDirectory(tmp_path)
+        cd.save(
+            CommitJSON(
+                counter=1,
+                created_at=_NOW,
+                updated_at=_NOW,
+                status=CommitStatus.PENDING_REVIEW,
+                message=CommitMessage(type="feat", scope="auth", subject="add login"),
+            )
+        )
+        result = runner.invoke(
+            app,
+            [
+                "commits", "reject", "1",
+                "--reason", "scope creep",
+                "--repo", str(tmp_path),
+                "--actor", "alice",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "rejected #0001: scope creep" in result.output
+        assert "alice" in result.output
+
+        rows = cd.list_all()
+        c = rows[0]
+        assert c.status is CommitStatus.REJECTED
+        assert len(c.rejections) == 1
+        assert c.rejections[0].actor == "alice"
+        assert c.rejections[0].reason == "scope creep"
+
+    def test_reject_draft_auto_submits(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        # DRAFT goes through PENDING_REVIEW transparently — same UX as approve.
+        cd = CommitsDirectory(tmp_path)
+        cd.save(_draft(1, "fix", "cli", "bad idea"))
+        result = runner.invoke(
+            app,
+            [
+                "commits", "reject", "1",
+                "--reason", "wrong fix",
+                "--repo", str(tmp_path),
+                "--actor", "bob",
+            ],
+        )
+        assert result.exit_code == 0
+        rows = cd.list_all()
+        assert rows[0].status is CommitStatus.REJECTED
+
+    def test_reject_json(self, runner: CliRunner, tmp_path: Path) -> None:
+        cd = CommitsDirectory(tmp_path)
+        cd.save(_draft(1, "chore", "deps", "bump"))
+        result = runner.invoke(
+            app,
+            [
+                "--json", "commits", "reject", "1",
+                "--reason", "deferred",
+                "--repo", str(tmp_path),
+                "--actor", "alice",
+            ],
+        )
+        assert result.exit_code == 0
+        payload = json.loads(result.output)
+        assert payload["status"] == "rejected"
+        assert len(payload["rejections"]) == 1
+        assert payload["rejections"][0]["reason"] == "deferred"
+        assert payload["rejections"][0]["actor"] == "alice"
+
+    def test_reject_already_approved_exits_2(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        cd = CommitsDirectory(tmp_path)
+        cd.save(
+            CommitJSON(
+                counter=1,
+                created_at=_NOW,
+                updated_at=_NOW,
+                status=CommitStatus.APPROVED,
+                message=CommitMessage(type="feat", scope="", subject="x"),
+            )
+        )
+        result = runner.invoke(
+            app,
+            [
+                "commits", "reject", "1",
+                "--reason", "too late",
+                "--repo", str(tmp_path),
+            ],
+        )
+        assert result.exit_code == 2
+
+    def test_reject_requires_reason(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        # --reason has no default; omitting it must fail at typer's level.
+        result = runner.invoke(
+            app,
+            ["commits", "reject", "1", "--repo", str(tmp_path)],
+        )
+        assert result.exit_code != 0
+
+
+# --------------------------------------------------------------------------- #
 # `sange commits approve <counter|id>`
 # --------------------------------------------------------------------------- #
 
@@ -789,6 +964,85 @@ class TestPush:
         )
         assert "Override User" in out.stdout
         assert "override@example.com" in out.stdout
+
+
+# --------------------------------------------------------------------------- #
+# `sange commits commit <counter|id>` — APPROVED → COMMITTED (no push) (T-044c)
+# --------------------------------------------------------------------------- #
+
+
+@pytest.mark.skipif(_GIT is None, reason="git not on PATH")
+class TestCommitsCommit:
+    def test_commit_no_push(self, runner: CliRunner, tmp_path: Path) -> None:
+        repo = _setup_git_repo(tmp_path)
+        _seed_approved(repo)
+        result = runner.invoke(
+            app,
+            ["commits", "commit", "1", "--repo", str(repo)],
+        )
+        assert result.exit_code == 0
+        assert "committed #0001" in result.output
+        assert "local only" in result.output
+
+        rows = CommitsDirectory(repo).list_all()
+        assert rows[0].status is CommitStatus.COMMITTED
+        assert rows[0].committed_sha
+        # No push happened — pushed_remote must stay empty.
+        assert rows[0].pushed_remote == ""
+
+    def test_commit_json(self, runner: CliRunner, tmp_path: Path) -> None:
+        repo = _setup_git_repo(tmp_path)
+        _seed_approved(repo)
+        result = runner.invoke(
+            app,
+            ["--json", "commits", "commit", "1", "--repo", str(repo)],
+        )
+        assert result.exit_code == 0
+        payload = json.loads(result.output)
+        assert payload["status"] == "committed"
+        assert payload["committed_sha"]
+        assert "pushed_remote" not in payload or payload.get("pushed_remote") == ""
+
+    def test_commit_non_approved_exits_2(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        repo = _setup_git_repo(tmp_path)
+        cd = CommitsDirectory(repo)
+        cd.save(_draft(1, "feat", "auth", "add login"))
+        result = runner.invoke(
+            app,
+            ["commits", "commit", "1", "--repo", str(repo)],
+        )
+        assert result.exit_code == 2
+        assert "must be 'approved'" in result.output
+
+    def test_commit_not_git_repo_exits_65(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        # tmp_path is not a git working tree.
+        _seed_approved(tmp_path)
+        result = runner.invoke(
+            app,
+            ["commits", "commit", "1", "--repo", str(tmp_path)],
+        )
+        assert result.exit_code == 65
+
+    def test_commit_partial_author_exits_2(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        repo = _setup_git_repo(tmp_path)
+        _seed_approved(repo)
+        result = runner.invoke(
+            app,
+            [
+                "commits", "commit", "1",
+                "--repo", str(repo),
+                "--author-name", "Solo",
+                # No --author-email — must reject.
+            ],
+        )
+        assert result.exit_code == 2
+        assert "must be supplied together" in result.output
 
 
 # --------------------------------------------------------------------------- #

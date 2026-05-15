@@ -5,8 +5,11 @@ v0.1 ships:
 
   * `sange commits list`     — show pending + recent commits in the queue.
   * `sange commits new`      — write a manual DRAFT commit (no AI).
-  * `sange commits approve <id>` — DRAFT → APPROVED transition (T-72+).
-  * `sange commits push <id>`    — APPROVED → COMMITTED → PUSHED (T-73+).
+  * `sange commits submit`   — DRAFT → PENDING_REVIEW.
+  * `sange commits approve`  — PENDING_REVIEW → APPROVED (auto-submits DRAFT).
+  * `sange commits reject`   — PENDING_REVIEW → REJECTED.
+  * `sange commits commit`   — APPROVED → COMMITTED (git commit, no push).
+  * `sange commits push`     — APPROVED → COMMITTED → PUSHED.
 
 This module exposes the typer sub-app; individual commands live in
 their own modules so they remain easy to extend.
@@ -297,6 +300,169 @@ def _detect_branch(repo_root: Path) -> str:
 
 
 # --------------------------------------------------------------------------- #
+# `sange commits submit <counter|id>`
+# --------------------------------------------------------------------------- #
+
+
+@commits_app.command(
+    "submit",
+    help="Submit a DRAFT for review (DRAFT → PENDING_REVIEW).",
+)
+def submit_command(
+    target: str = typer.Argument(
+        ...,
+        help="Counter (e.g. `1` or `0001`) or full commit id.",
+    ),
+    repo_root: Path = typer.Option(
+        Path("."),
+        "--repo",
+        help="Repo root (the parent of .sange/commits/). Default: cwd.",
+    ),
+) -> None:
+    """Resolve the commit and run the DRAFT → PENDING_REVIEW transition."""
+
+    import click
+
+    from sange.core.lifecycle import (
+        CommitsDirectory,
+        IllegalTransition,
+        LifecycleEngine,
+    )
+
+    ctx = click.get_current_context()
+    json_mode = bool(ctx.obj and ctx.obj.get("json"))
+
+    cd = CommitsDirectory(repo_root)
+    commit = _resolve_target(cd, target)
+    if commit is None:
+        typer.echo(f"error: no commit found matching {target!r}", err=True)
+        raise typer.Exit(code=2)
+
+    engine = LifecycleEngine()
+    try:
+        submitted = engine.submit(commit)
+    except IllegalTransition as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(code=2) from exc
+
+    path = cd.save(submitted)
+
+    if json_mode:
+        payload = {
+            "counter": submitted.counter,
+            "id": submitted.id,
+            "status": submitted.status.value,
+            "path": str(path),
+        }
+        typer.echo(json.dumps(payload, indent=2))
+        return
+
+    typer.echo(
+        f"submitted #{submitted.counter:04d}: "
+        f"{submitted.message.type}"
+        + (f"({submitted.message.scope})" if submitted.message.scope else "")
+        + f": {submitted.message.subject}"
+    )
+
+
+# --------------------------------------------------------------------------- #
+# `sange commits reject <counter|id>`
+# --------------------------------------------------------------------------- #
+
+
+@commits_app.command(
+    "reject",
+    help="Reject a PENDING_REVIEW commit (PENDING_REVIEW → REJECTED).",
+)
+def reject_command(
+    target: str = typer.Argument(
+        ...,
+        help="Counter (e.g. `1` or `0001`) or full commit id.",
+    ),
+    reason: str = typer.Option(
+        ...,
+        "--reason",
+        help="Non-empty rejection reason (≤480 chars).",
+    ),
+    repo_root: Path = typer.Option(
+        Path("."),
+        "--repo",
+        help="Repo root (the parent of .sange/commits/). Default: cwd.",
+    ),
+    actor: str = typer.Option(
+        "",
+        "--actor",
+        help="Rejector name. Default: $USER environment variable.",
+    ),
+    via: str = typer.Option(
+        "cli",
+        "--via",
+        help="Surface the rejection came through (cli / tui / web / mcp).",
+    ),
+) -> None:
+    """Resolve the commit, optionally auto-submit a DRAFT, then run the
+    PENDING_REVIEW → REJECTED transition. Mirrors the solo-dev UX in
+    `commits approve` where DRAFT goes through PENDING_REVIEW transparently."""
+
+    import os
+
+    import click
+
+    from sange.core.lifecycle import (
+        CommitsDirectory,
+        CommitStatus,
+        IllegalTransition,
+        LifecycleEngine,
+    )
+
+    ctx = click.get_current_context()
+    json_mode = bool(ctx.obj and ctx.obj.get("json"))
+
+    cd = CommitsDirectory(repo_root)
+    commit = _resolve_target(cd, target)
+    if commit is None:
+        typer.echo(f"error: no commit found matching {target!r}", err=True)
+        raise typer.Exit(code=2)
+
+    actor_name = actor or os.environ.get("USER", "") or "unknown"
+    engine = LifecycleEngine()
+
+    try:
+        if commit.status is CommitStatus.DRAFT:
+            commit = engine.submit(commit)
+        rejected = engine.reject(
+            commit, actor=actor_name, reason=reason, via=via,  # type: ignore[arg-type]
+        )
+    except IllegalTransition as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(code=2) from exc
+    except ValueError as exc:
+        # engine.reject raises ValueError on empty reason — but typer's
+        # required-option enforcement already prevents that; defensive.
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(code=2) from exc
+
+    path = cd.save(rejected)
+
+    if json_mode:
+        payload = {
+            "counter": rejected.counter,
+            "id": rejected.id,
+            "status": rejected.status.value,
+            "rejections": [
+                {"actor": r.actor, "via": r.via, "at": r.at.isoformat(), "reason": r.reason}
+                for r in rejected.rejections
+            ],
+            "path": str(path),
+        }
+        typer.echo(json.dumps(payload, indent=2))
+        return
+
+    typer.echo(f"rejected #{rejected.counter:04d}: {reason}")
+    typer.echo(f"rejected by {actor_name} via {via} at {rejected.rejections[-1].at.isoformat()}")
+
+
+# --------------------------------------------------------------------------- #
 # `sange commits approve <counter|id>`
 # --------------------------------------------------------------------------- #
 
@@ -414,6 +580,126 @@ def approve_command(
         + f": {approved.message.subject}"
     )
     typer.echo(f"approved by {actor_name} via {via} at {approved.approvals[-1].at.isoformat()}")
+
+
+# --------------------------------------------------------------------------- #
+# `sange commits commit <counter|id>`
+# --------------------------------------------------------------------------- #
+
+
+@commits_app.command(
+    "commit",
+    help="Land an APPROVED commit locally (git commit, no push).",
+)
+def commit_command(
+    target: str = typer.Argument(
+        ...,
+        help="Counter (e.g. `1` or `0001`) or full commit id.",
+    ),
+    repo_root: Path = typer.Option(
+        Path("."),
+        "--repo",
+        help="Repo root (must be a working git checkout). Default: cwd.",
+    ),
+    author_name: str = typer.Option(
+        "",
+        "--author-name",
+        help="Override the author name (otherwise git config user.name).",
+    ),
+    author_email: str = typer.Option(
+        "",
+        "--author-email",
+        help="Override the author email (otherwise git config user.email).",
+    ),
+    sign: bool = typer.Option(
+        False,
+        "--sign",
+        help="GPG-sign the commit (`git commit -S`).",
+    ),
+) -> None:
+    """Resolve the commit, run `git commit`, mark COMMITTED. No push."""
+
+    import click
+
+    from sange.adapters.vcs._protocol import DriverError
+    from sange.adapters.vcs.git import GitDriver, GitRepoNotFound
+    from sange.core.lifecycle import (
+        CommitsDirectory,
+        CommitStatus,
+        IllegalTransition,
+        LifecycleEngine,
+    )
+
+    ctx = click.get_current_context()
+    json_mode = bool(ctx.obj and ctx.obj.get("json"))
+
+    if bool(author_name) != bool(author_email):
+        typer.echo(
+            "error: --author-name and --author-email must be supplied together",
+            err=True,
+        )
+        raise typer.Exit(code=2)
+
+    cd = CommitsDirectory(repo_root)
+    commit = _resolve_target(cd, target)
+    if commit is None:
+        typer.echo(f"error: no commit found matching {target!r}", err=True)
+        raise typer.Exit(code=2)
+
+    if commit.status is not CommitStatus.APPROVED:
+        typer.echo(
+            f"error: commit #{commit.counter} is in state "
+            f"{commit.status.value!r}; must be 'approved' before commit. "
+            "Run `sange commits approve` first.",
+            err=True,
+        )
+        raise typer.Exit(code=2)
+
+    try:
+        repo = GitDriver.detect(repo_root.resolve())
+    except GitRepoNotFound as exc:
+        typer.echo(f"error: {repo_root} is not a git working tree", err=True)
+        raise typer.Exit(code=65) from exc
+    driver = GitDriver()
+
+    message = _render_message(commit)
+
+    try:
+        commit_ref = driver.commit(
+            repo,
+            message=message,
+            author_name=author_name,
+            author_email=author_email,
+            sign=sign,
+        )
+    except DriverError as exc:
+        typer.echo(f"git commit failed: {exc}", err=True)
+        raise typer.Exit(code=65) from exc
+
+    engine = LifecycleEngine()
+    try:
+        committed = engine.mark_committed(commit, sha=commit_ref.sha)
+    except IllegalTransition as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(code=2) from exc
+
+    path = cd.save(committed)
+
+    if json_mode:
+        payload = {
+            "counter": committed.counter,
+            "id": committed.id,
+            "status": committed.status.value,
+            "committed_sha": committed.committed_sha,
+            "path": str(path),
+        }
+        typer.echo(json.dumps(payload, indent=2))
+        return
+
+    typer.echo(
+        f"committed #{committed.counter:04d} as {commit_ref.short_sha} "
+        f"(local only — run `sange commits push` to publish)"
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -689,8 +975,11 @@ def _resolve_target(cd, target: str):  # type: ignore[no-untyped-def]
 
 __all__ = [
     "approve_command",
+    "commit_command",
     "commits_app",
     "list_command",
     "new_command",
     "push_command",
+    "reject_command",
+    "submit_command",
 ]
