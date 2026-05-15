@@ -1,9 +1,9 @@
 ---
 generated_by: tools/generators/cli_reference.py
 generator_version: 1.0.0
-generated_at: 2026-05-14T22:40:21Z
-input_sha256: acc441a65fcef484b032ec394b0674117282931a6c53a9e4622c47125fdeb974
-output_sha256: 86a2eec8145e92495e166ca05f008dd1ca0302c7a7ed28f7167759d505361ef7
+generated_at: 2026-05-15T15:34:28Z
+input_sha256: f84331228926701d822d4454b2f4ce7748aa5bf57f8c5138d2083a5ff044b322
+output_sha256: d4917ddf5f71767f248dde3765e9901dfa45add257b41595619a21c18910a240
 manual_edits_allowed: false
 ---
 # Sange CLI reference
@@ -24,9 +24,14 @@ Every entry below is auto-introspected from the live click command tree, so flag
 | `sange ai providers` | List registered AI providers + capabilities. |
 | `sange commit` | Generate a commit message from a diff. |
 | `sange commits` | Manage the commit lifecycle queue. |
+| `sange commits ai` | Generate a commit message via AI and save as DRAFT. |
 | `sange commits approve` | Approve a commit (DRAFT → APPROVED). |
+| `sange commits commit` | Land an APPROVED commit locally (git commit, no push). |
 | `sange commits list` | Show the commit queue. |
+| `sange commits new` | Write a manual DRAFT commit to the queue (no AI involved). |
 | `sange commits push` | Land an APPROVED commit (git commit + optionally git push). |
+| `sange commits reject` | Reject a PENDING_REVIEW commit (PENDING_REVIEW → REJECTED). |
+| `sange commits submit` | Submit a DRAFT for review (DRAFT → PENDING_REVIEW). |
 | `sange doctor` | Environment health checks. |
 | `sange init` | Bootstrap .sange/ skeleton in the target repo. |
 
@@ -120,9 +125,33 @@ Manage the commit lifecycle queue.
 
 | Sub-command | Description |
 | :--- | :--- |
+| `sange commits ai` | Generate a commit message via AI and save as DRAFT. |
 | `sange commits approve` | Approve a commit (DRAFT → APPROVED). |
+| `sange commits commit` | Land an APPROVED commit locally (git commit, no push). |
 | `sange commits list` | Show the commit queue. |
+| `sange commits new` | Write a manual DRAFT commit to the queue (no AI involved). |
 | `sange commits push` | Land an APPROVED commit (git commit + optionally git push). |
+| `sange commits reject` | Reject a PENDING_REVIEW commit (PENDING_REVIEW → REJECTED). |
+| `sange commits submit` | Submit a DRAFT for review (DRAFT → PENDING_REVIEW). |
+
+
+### `sange commits ai`
+
+
+Generate a commit message via AI and save as DRAFT.
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--diff` | value |  | Path to a file containing the staged diff. When omitted, reads from stdin. |
+| `--model` | value | `mock-1` | Model identifier passed to the provider. |
+| `--no-save`, `--save` | flag | true | Save the generated commit as a DRAFT in <repo>/.sange/commits/. Disable for ephemeral one-shot use. |
+| `--no-telemetry` | flag | false | Disable local telemetry recording for this invocation. |
+| `--provider` | value | `mock` | AI provider to call (mock / anthropic / openai / ollama / ...). |
+| `--repo` | value |  | Repo root for context lookup (branch + recent commits). When omitted, the prompt receives empty repo context. |
+| `--scope` | value |  | Optional scope hint biasing the generated message. |
+| `--telemetry-dir` | value | `.sange/telemetry` | Where to write the NDJSON telemetry file. Default: .sange/telemetry in the current directory. |
 
 
 ### `sange commits approve`
@@ -147,6 +176,28 @@ Approve a commit (DRAFT → APPROVED).
 | `--via` | value | `cli` | Surface the approval came through (cli / tui / web / mcp). |
 
 
+### `sange commits commit`
+
+
+Land an APPROVED commit locally (git commit, no push).
+
+**Arguments:**
+
+| Name | Status |
+| :--- | :--- |
+| `target` | required |
+
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--author-email` | value |  | Override the author email (otherwise git config user.email). |
+| `--author-name` | value |  | Override the author name (otherwise git config user.name). |
+| `--repo` | value | `.` | Repo root (must be a working git checkout). Default: cwd. |
+| `--sign` | flag | false | GPG-sign the commit (`git commit -S`). |
+
+
 ### `sange commits list`
 
 
@@ -159,6 +210,32 @@ Show the commit queue.
 | `--include-archived` | flag | false | Include rows in .sange/commits/archive/. |
 | `--repo` | value | `.` | Repo root (the parent of .sange/commits/). Default: cwd. |
 | `--status` | value |  | Filter by status (draft / pending_review / approved / committed / pushed / archived / rejected / discarded). Empty = all. |
+
+
+### `sange commits new`
+
+
+Write a manual DRAFT commit to the queue (no AI involved).
+
+**Arguments:**
+
+| Name | Status |
+| :--- | :--- |
+| `subject` | required |
+| `type_` | required |
+
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--body` | value |  | Commit body. Pass `-` to read from stdin. |
+| `--branch` | value |  | Branch override. Default: auto-detect via GitDriver (falls back to empty string if not in a git repo). |
+| `--breaking-change` | flag | false | Mark this commit as introducing a BREAKING CHANGE. |
+| `--co-author` | value |  | Co-author (repeatable). Format: `Name <email>`. |
+| `--reference` | value |  | Issue / ticket reference (repeatable). Format: `#123` or `JIRA-42`. |
+| `--repo` | value | `.` | Repo root (the parent of .sange/commits/). Default: cwd. |
+| `--scope` | value |  | Optional scope (lowercase letters/digits/hyphens). |
 
 
 ### `sange commits push`
@@ -184,6 +261,47 @@ Land an APPROVED commit (git commit + optionally git push).
 | `--remote` | value | `origin` | Remote name when --push is on. Default: origin. |
 | `--repo` | value | `.` | Repo root (must be a working git checkout). Default: cwd. |
 | `--sign` | flag | false | GPG-sign the commit (`git commit -S`). |
+
+
+### `sange commits reject`
+
+
+Reject a PENDING_REVIEW commit (PENDING_REVIEW → REJECTED).
+
+**Arguments:**
+
+| Name | Status |
+| :--- | :--- |
+| `target` | required |
+
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--actor` | value |  | Rejector name. Default: $USER environment variable. |
+| `--reason` | value |  | Non-empty rejection reason (≤480 chars). |
+| `--repo` | value | `.` | Repo root (the parent of .sange/commits/). Default: cwd. |
+| `--via` | value | `cli` | Surface the rejection came through (cli / tui / web / mcp). |
+
+
+### `sange commits submit`
+
+
+Submit a DRAFT for review (DRAFT → PENDING_REVIEW).
+
+**Arguments:**
+
+| Name | Status |
+| :--- | :--- |
+| `target` | required |
+
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--repo` | value | `.` | Repo root (the parent of .sange/commits/). Default: cwd. |
 
 
 ### `sange doctor`
