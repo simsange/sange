@@ -1,9 +1,9 @@
 ---
 generated_by: tools/generators/docs_index.py
 generator_version: 1.0.0
-generated_at: 2026-05-15T16:07:10Z
-input_sha256: 26ec3ac9fa7907f08db91de585f4957c2ba419d414ef71bdc5af041938cd304c
-output_sha256: 41e8d48f221db6db68bd878f6599fabb95d5b8d65a33da12dcf4e8da6d018ac9
+generated_at: 2026-05-15T16:11:26Z
+input_sha256: fed3afad6025eed223605f33b62b75ab0c0a1b0209ac8a18c72619238031817e
+output_sha256: 5b195c0663b44ba095b46d444bda5691154a8b04d908bd998ea2c307a2858f80
 manual_edits_allowed: false
 ---
 # Sange documentation
@@ -18,9 +18,9 @@ manual_edits_allowed: false
 | `reference/` | Reference (catalogs + schemas) | 9 |
 | `security/` | Security | 1 |
 | `adr/` | Architecture Decision Records | 2 |
-| `governance/` | Governance + roadmap | 1 |
+| `governance/` | Governance + roadmap | 2 |
 | _top-level_ | Top-level | 3 |
-| **Total** |  | 17 |
+| **Total** |  | 18 |
 
 
 ## `tools/` — Per-tool walkthroughs
@@ -50,6 +50,7 @@ manual_edits_allowed: false
 
 ## `governance/` — Governance + roadmap
 
+- [How Sange records decisions (ADR process)](governance/adr-process.md) — [`governance/adr-process.md`](./governance/adr-process.md)
 - [Roadmap](governance/roadmap.md) — [`governance/roadmap.md`](./governance/roadmap.md)
 
 ## Top-level docs
