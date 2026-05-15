@@ -33,6 +33,35 @@ Post-v0.1.0 work queued for the next release (target: `v0.1.0.post1` or
   - `sange commits reject --reason "<text>"` — PENDING_REVIEW → REJECTED.
     DRAFT auto-submits transparently (solo-dev UX).
   - `sange commits commit` — APPROVED → COMMITTED via `git commit`, no push.
+- **Docs sprint** — 13 reader-facing docs added under `docs/`,
+  closing every `Planned` row in the README that didn't depend on
+  v0.5+/v1.0+ feature work:
+  - [`docs/installation.md`](docs/installation.md) — install paths
+    (source / PyPI / Docker / pipx) × per-platform notes.
+  - [`docs/quickstart.md`](docs/quickstart.md) — five-minute
+    end-to-end onramp.
+  - [`docs/architecture.md`](docs/architecture.md) — reader's
+    guide mapping the 1500-line canonical deliverable.
+  - [`docs/tools/workflow/commit-lifecycle.md`](docs/tools/workflow/commit-lifecycle.md)
+    — the 8-state lifecycle with three worked examples.
+  - [`docs/tools/vcs/git.md`](docs/tools/vcs/git.md) — what the
+    Git adapter adds over raw `git`.
+  - [`docs/tools/vcs/svn.md`](docs/tools/vcs/svn.md) — SVN adapter
+    plan + pointer to Appendix E.
+  - [`docs/tools/lang/python.md`](docs/tools/lang/python.md) —
+    Python workflows.
+  - [`docs/tools/lang/node.md`](docs/tools/lang/node.md) — Node.js
+    workflows.
+  - [`docs/governance/roadmap.md`](docs/governance/roadmap.md) —
+    version map v0.1 → v4.0+.
+  - [`docs/governance/adr-process.md`](docs/governance/adr-process.md)
+    — how Sange records decisions.
+  - [`docs/governance/privacy.md`](docs/governance/privacy.md) —
+    privacy + telemetry posture.
+  - [`docs/security/prompt-injection.md`](docs/security/prompt-injection.md)
+    — T-030 redaction layer in one place.
+  - [`docs/security/slsa-and-sbom.md`](docs/security/slsa-and-sbom.md)
+    — supply-chain integrity claims for every released artifact.
 
 ### Changed
 
@@ -58,6 +87,15 @@ Post-v0.1.0 work queued for the next release (target: `v0.1.0.post1` or
   `github.com/simsange/sange` across 36 files. The GitHub org was
   renamed in-place on 2026-05-15. The `v0.1.0` tag's annotation retains
   the historical `sangedev` URL per the release-as-immutable rule.
+- **README** — Documentation table refactored into a two-tier
+  "Live now / Planned" structure with explicit gate-conditions on
+  every planned row (e.g. "Release bundling: v0.5+ release
+  engine"; "JSON-RPC schema: T-162 (v1.0)"). Zero 404-prone links
+  in the live table.
+- **CONTRIBUTING.md** — Replaced the stale pointer to a
+  never-emitted `docs/governance/contributing.md` with a 4-item
+  link list into the actually-existing governance + architecture
+  docs.
 
 ### Fixed
 
