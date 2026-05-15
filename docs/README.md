@@ -1,9 +1,9 @@
 ---
 generated_by: tools/generators/docs_index.py
 generator_version: 1.0.0
-generated_at: 2026-05-15T16:46:45Z
-input_sha256: 9f839ff0286fb94b1db723a51e0b46ffce2617f9109faff5a15c5d7fe686ea5b
-output_sha256: 89fabe65fa97637506b80484dee4aef3044ccbdc01ef48bb9b04d785be767d34
+generated_at: 2026-05-15T17:25:56Z
+input_sha256: e47e7bda39add01999d3136b6b4bc9a70790be838dbbafa525ade89f81e2fb96
+output_sha256: baa2139eb2ca81b8d8d0b95bf78028570eded2239f19a2f5bb084ca1470de30d
 manual_edits_allowed: false
 ---
 # Sange documentation
@@ -17,10 +17,10 @@ manual_edits_allowed: false
 | `tools/` | Per-tool walkthroughs | 5 |
 | `reference/` | Reference (catalogs + schemas) | 9 |
 | `security/` | Security | 3 |
-| `adr/` | Architecture Decision Records | 2 |
+| `adr/` | Architecture Decision Records | 3 |
 | `governance/` | Governance + roadmap | 3 |
 | _top-level_ | Top-level | 5 |
-| **Total** |  | 27 |
+| **Total** |  | 28 |
 
 
 ## `tools/` — Per-tool walkthroughs
@@ -51,6 +51,7 @@ manual_edits_allowed: false
 
 ## `adr/` — Architecture Decision Records
 
+- [ADR-0007: License — Apache 2.0, © Simtabi LLC](adr/0007-license-apache-2.md) — [`adr/0007-license-apache-2.md`](./adr/0007-license-apache-2.md)
 - [ADR-0032: Multi-dimensional variant matrix for gitignore-swap (Android-Studio-inspired)](adr/0032-variant-matrix-android-studio-inspired.md) — [`adr/0032-variant-matrix-android-studio-inspired.md`](./adr/0032-variant-matrix-android-studio-inspired.md)
 - [ADR-0033: Multi-arch Docker + Linux images (amd64 / arm64 / armv7)](adr/0033-multi-arch-docker.md) — [`adr/0033-multi-arch-docker.md`](./adr/0033-multi-arch-docker.md)
 
