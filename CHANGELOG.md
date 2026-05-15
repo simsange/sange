@@ -12,7 +12,34 @@ dogfoods its own lifecycle. Until then, this file is maintained by hand.
 
 ## [Unreleased]
 
-_No changes queued yet._
+### Added
+
+- **T-100a — SVN adapter scaffold + read-only `detect` + `status`.**
+  First slice of the Phase 2 (v0.5 beta) work. New module
+  `src/sange/adapters/vcs/svn/` mirrors the Git adapter layout:
+  - `_subprocess.py` — `run_svn()` with env-discipline (LC_ALL=C
+    / LANG=C / LC_MESSAGES=C / PAGER=cat / SVN_EDITOR=true) +
+    `SvnNotInstalled` / `SvnCommandFailed` errors.
+  - `parsers.py` — pure XML parsers via `xml.etree.ElementTree`:
+    `parse_version` (from `svn --version --quiet`),
+    `parse_status_xml` (maps SVN's 14-state `item=` attribute
+    to `FileState`), `parse_info_xml` (returns `SvnInfo` with
+    revision / URL / repo root / UUID / WC root / schedule /
+    depth / last-commit fields).
+  - `driver.py` — `SvnDriver` class implementing `VCSDriver`'s
+    `detect` + `capabilities` + `status`. Detect walks up from
+    any starting path looking for `.svn/` (SVN 1.7+ stores
+    metadata only at the WC root). Capabilities correctly
+    report `supports_{stash,bisect,rebase,lfs}=False`.
+    Remaining read + write methods raise `NotImplementedError`
+    with `T-100b` / `T-100c` markers pointing at the follow-up.
+  - 22 tests in `tests/unit/test_svn_{parsers,driver}.py`. Parser
+    tests are pure-fixture (no subprocess); driver tests use real
+    `svnadmin create` + `svn checkout` and are
+    `@pytest.mark.skipif(_SVN is None)`-guarded.
+  - `docs/tools/vcs/svn.md` updated to reflect that read-only
+    `detect` + `status` ship today; the "v0.5+ planned" framing
+    moved to the still-`NotImplementedError` methods.
 
 ## [0.1.0.post1] — 2026-05-16
 

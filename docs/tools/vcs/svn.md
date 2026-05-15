@@ -1,10 +1,11 @@
 # SVN adapter
 
-> **Status: planned for v0.5.** The SVN adapter (T-100 in
-> [`../../../.design/plans/checklist.md`](../../../.design/plans/checklist.md))
-> ships in the Phase-1 beta cycle. This doc is the placeholder that
-> reflects what's already specified + what's already generated for
-> SVN — even though the runtime code lands later.
+> **Status: read-only scaffold landed (v0.1.0.post1+).** T-100a shipped
+> the `SvnDriver` scaffold + `detect()` + `status()` against a real
+> `svn` binary; T-100b is the remaining read methods (log / diff /
+> branches / etc.); T-100c is write ops. Tracking in
+> [`../../../.design/plans/checklist.md`](../../../.design/plans/checklist.md).
+> The doc below covers both what's live today and what's planned.
 
 For the full SVN command catalog with every Sange wrapper + AI
 augmentation + safety class + confirmation gate, see
@@ -20,8 +21,10 @@ a live `svn help`.
 | Command catalog | **Generated today** (46 commands) | [`reference/appendix-e-svn-catalog.md`](../../reference/appendix-e-svn-catalog.md), emitted by `tools/generators/svn_catalog.py` (T-G-002). |
 | Cross-VCS concept map | **Generated today** | [`reference/appendix-f-cross-vcs.md`](../../reference/appendix-f-cross-vcs.md) — how every Git concept maps onto SVN (and Hg, P4, etc.). |
 | Adapter Protocol | **Implemented today** | `src/sange/adapters/vcs/_protocol.py::VCSDriver`. The SVN concrete driver implements this same Protocol. |
-| Adapter implementation | v0.5+ | T-100. Lands alongside the gitignore-swap engine + the secret-scanning rules library. |
-| Wrappers (`sange commits`...) | v0.5+ | Once the adapter is wired, the same `sange commits` verbs (`new` / `ai` / `submit` / `approve` / `reject` / `commit` / `push`) work against SVN working copies. |
+| Adapter scaffold (`SvnDriver`) | **Live (T-100a)** | `src/sange/adapters/vcs/svn/` — subprocess wrapper + XML parsers + `SvnDriver.detect()` + `SvnDriver.status()`. 22 tests under `tests/unit/test_svn_{driver,parsers}.py`. |
+| Remaining read methods (log / diff / branches / current_branch / remotes / tags / show_commit) | v0.5 (T-100b) | Raise `NotImplementedError("T-100b")` today. |
+| Write methods (add / commit / branch_create / etc.) | v0.5 (T-100c) | Raise `NotImplementedError("T-100c")` today. |
+| Wrappers (`sange commits`...) | v0.5+ | Once T-100c lands, the same `sange commits` verbs (`new` / `ai` / `submit` / `approve` / `reject` / `commit` / `push`) work against SVN working copies. |
 | Purge executor | v2.0 | `svnadmin dump → svndumpfilter exclude → swap`. T-246. |
 
 ## What it will look like when it ships
