@@ -1,10 +1,10 @@
-# MkDocs site build deps for sangedev/documentation.
+# MkDocs site build deps for simsange/documentation.
 # Pinned to specific minor versions for reproducibility; Dependabot
 # bumps under the docker / pip ecosystems already cover these.
 #
 # Install with:
 #   pip install -r documentation/requirements.txt
 
-mkdocs>=1.6
-mkdocs-material>=9.5
-pymdown-extensions>=10.0
+mkdocs>=1.6.1
+mkdocs-material>=9.7.6
+pymdown-extensions>=10.21.3
