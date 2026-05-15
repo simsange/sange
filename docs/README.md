@@ -1,9 +1,9 @@
 ---
 generated_by: tools/generators/docs_index.py
 generator_version: 1.0.0
-generated_at: 2026-05-15T16:21:07Z
-input_sha256: d79dd72344688349bdd2a358dda332ba952d5e4c6c2ff6e38b051bea2c0f12cf
-output_sha256: 523c6bb8f33a857e60fe7689f355eff2ec6c8bbe3a133d17e848412d68ffac38
+generated_at: 2026-05-15T16:25:52Z
+input_sha256: 42e813dfd7937a2590b1aecaf4376be4e07a6963fe7c6db29bba4aeb3656bc25
+output_sha256: d4ce5df5489ba5d91cbd3e7c50de588ebb404163d5697c521e425733d7d9fdb8
 manual_edits_allowed: false
 ---
 # Sange documentation
@@ -16,11 +16,11 @@ manual_edits_allowed: false
 | :--- | :--- | ---: |
 | `tools/` | Per-tool walkthroughs | 1 |
 | `reference/` | Reference (catalogs + schemas) | 9 |
-| `security/` | Security | 2 |
+| `security/` | Security | 3 |
 | `adr/` | Architecture Decision Records | 2 |
 | `governance/` | Governance + roadmap | 2 |
 | _top-level_ | Top-level | 3 |
-| **Total** |  | 19 |
+| **Total** |  | 20 |
 
 
 ## `tools/` — Per-tool walkthroughs
@@ -42,6 +42,7 @@ manual_edits_allowed: false
 ## `security/` — Security
 
 - [Prompt-injection defense](security/prompt-injection.md) — [`security/prompt-injection.md`](./security/prompt-injection.md)
+- [SLSA provenance + SBOM](security/slsa-and-sbom.md) — [`security/slsa-and-sbom.md`](./security/slsa-and-sbom.md)
 - [Sange threat model — STRIDE](security/stride.md) — [`security/stride.md`](./security/stride.md)
 
 ## `adr/` — Architecture Decision Records
