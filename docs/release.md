@@ -95,6 +95,40 @@ After the first release pushes an image:
 Once the one-time setup is done, every release follows the same
 recipe.
 
+### Step 0 — Pre-flight checklist
+
+Before any tag push, walk this list. Skipping it cost ~6 minutes
+of wasted CI on the v0.1.0 release attempt; doing it takes ~90
+seconds.
+
+- [ ] **PyPI trusted-publisher record is _active_** (not "pending")
+      for the current `owner` + `repository` + `workflow` +
+      `environment` tuple. The record turns active only after the
+      first successful publish. Visit
+      <https://pypi.org/manage/account/publishing/>. If the record
+      is still listed under "Pending publishers", the tag push
+      will trigger an `invalid-publisher` failure even though the
+      workflow OIDC token is valid.
+- [ ] **`pypi` GitHub Environment exists** in this repo's settings
+      with the deployment-protection rule restricting deploys to
+      `main` + `v*.*.*` tag refs.
+- [ ] **`git remote -v` matches the org you mean to push to.** If
+      the repo was renamed (e.g. an in-place GitHub org rename or
+      a transfer), `git remote set-url origin <new-url>` first.
+      Out-of-date remotes silently push to the redirected location
+      but bake the **new** URL into the upload metadata while the
+      tag annotation may still reference the **old** URL — that
+      mismatch is permanent.
+- [ ] **Auth method matches the remote URL.** HTTPS remotes use
+      the local credential helper, which is scoped per GitHub
+      user; an HTTPS remote pointing at a different org may fail
+      with `403: Permission denied` even when the SSH key on that
+      account would have worked. If unsure, switch to SSH:
+      `git remote set-url origin git@github.com:<org>/<repo>.git`.
+- [ ] **Local CI gates pass** before tagging. The release pipeline
+      doesn't re-run `pytest` / `ruff` / `mypy` — if main is red,
+      the release ships red.
+
 ### Step 1 — Pre-release smoke
 
 In a fresh venv, validate the end-to-end flow:
@@ -270,6 +304,19 @@ git tag -a v0.1.0 -m "..."  # retag at the corrected commit
 This is what we did for the v0.1.0 → v0.1.0 retag during the URL
 migration (session-log row S-003-T-43). The operation is unsafe
 ONLY after a push.
+
+### Failure modes seen in production
+
+Empirical record of what's actually gone wrong, in chronological
+order. Each row links to the session-log audit entry that documents
+the incident in full. The pattern across all three: the failure
+was preventable by a Step 0 pre-flight check.
+
+| Release | Job that failed | Root cause | Fix |
+|---|---|---|---|
+| `v0.1.0` (2026-05-15) | `pypi` | Trusted-publisher record still in "pending" — the pending → active transition requires a first successful publish, which is exactly what's being attempted. The pending record was filed only **after** the tag push. (`S-003-T-54`) | Configure the record **before** tag push (Step 0). After the fact: configure it, then re-run only the failed `pypi` job + the auto-triggered `release` job. The `build` artifact is preserved on the workflow run. |
+| `v0.1.0` (2026-05-15) — pre-flight | `git push` itself | HTTPS remote URL with credential-helper scope mismatched the org. `403: Permission denied` to the `sangedev` org despite valid PAT. (`S-003-T-54`) | Switched to SSH via `git remote set-url`. Step 0's auth-method check would have caught this. |
+| `v0.1.0` (2026-05-15) — post-release | n/a — tag-annotation drift | GitHub org renamed `sangedev` → `simsange` after the tag was pushed. The annotated tag body says `Source: https://github.com/sangedev/sange` — immutable. The codebase + GHCR image migrated cleanly via redirect, but the tag annotation is now a permanent historical artifact pointing at the old URL. (`S-003-T-55`) | Per CLAUDE.md "release-as-immutable": **the tag is not retagged**. Future releases ship with the new URL baked in correctly; the v0.1.0 annotation is the historical record of when the rename happened. |
 
 ## Pre-release versions
 
