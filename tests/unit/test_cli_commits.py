@@ -557,6 +557,109 @@ class TestCommitsAi:
 
 
 # --------------------------------------------------------------------------- #
+# `sange commits reopen <counter|id>` — the only backward transition
+# --------------------------------------------------------------------------- #
+
+
+class TestCommitsReopen:
+    def test_reopen_approved_to_draft(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        cd = CommitsDirectory(tmp_path)
+        cd.save(
+            CommitJSON(
+                counter=1,
+                created_at=_NOW,
+                updated_at=_NOW,
+                status=CommitStatus.APPROVED,
+                message=CommitMessage(type="feat", scope="auth", subject="x"),
+            )
+        )
+        result = runner.invoke(
+            app,
+            ["commits", "reopen", "1", "--repo", str(tmp_path)],
+        )
+        assert result.exit_code == 0
+        assert "reopened #0001" in result.output
+        assert "approved → draft" in result.output
+
+        rows = cd.list_all()
+        assert rows[0].status is CommitStatus.DRAFT
+
+    def test_reopen_draft_is_no_op(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        cd = CommitsDirectory(tmp_path)
+        cd.save(_draft(1, "feat", "auth", "x"))
+        result = runner.invoke(
+            app,
+            ["commits", "reopen", "1", "--repo", str(tmp_path)],
+        )
+        assert result.exit_code == 0
+        assert "no-op" in result.output
+
+        rows = cd.list_all()
+        assert rows[0].status is CommitStatus.DRAFT
+
+    def test_reopen_clears_committed_sha_and_remote(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        # COMMITTED commit gets reopened — committed_sha must clear.
+        cd = CommitsDirectory(tmp_path)
+        cd.save(
+            CommitJSON(
+                counter=1,
+                created_at=_NOW,
+                updated_at=_NOW,
+                status=CommitStatus.COMMITTED,
+                message=CommitMessage(type="feat", scope="", subject="x"),
+                committed_sha="abc123def456",
+            )
+        )
+        result = runner.invoke(
+            app,
+            ["commits", "reopen", "1", "--repo", str(tmp_path)],
+        )
+        assert result.exit_code == 0
+
+        rows = cd.list_all()
+        assert rows[0].status is CommitStatus.DRAFT
+        assert rows[0].committed_sha == ""
+        assert rows[0].pushed_remote == ""
+
+    def test_reopen_json(self, runner: CliRunner, tmp_path: Path) -> None:
+        cd = CommitsDirectory(tmp_path)
+        cd.save(
+            CommitJSON(
+                counter=1,
+                created_at=_NOW,
+                updated_at=_NOW,
+                status=CommitStatus.APPROVED,
+                message=CommitMessage(type="fix", scope="", subject="x"),
+            )
+        )
+        result = runner.invoke(
+            app,
+            ["--json", "commits", "reopen", "1", "--repo", str(tmp_path)],
+        )
+        assert result.exit_code == 0
+        payload = json.loads(result.output)
+        assert payload["status"] == "draft"
+        assert payload["previous_status"] == "approved"
+        assert payload["no_op"] is False
+
+    def test_reopen_missing_target_exits_2(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        result = runner.invoke(
+            app,
+            ["commits", "reopen", "999", "--repo", str(tmp_path)],
+        )
+        assert result.exit_code == 2
+        assert "no commit found" in result.output
+
+
+# --------------------------------------------------------------------------- #
 # `sange commits submit <counter|id>` (T-044a)
 # --------------------------------------------------------------------------- #
 

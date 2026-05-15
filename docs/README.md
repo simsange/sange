@@ -1,9 +1,9 @@
 ---
 generated_by: tools/generators/docs_index.py
 generator_version: 1.0.0
-generated_at: 2026-05-15T17:25:56Z
-input_sha256: e47e7bda39add01999d3136b6b4bc9a70790be838dbbafa525ade89f81e2fb96
-output_sha256: baa2139eb2ca81b8d8d0b95bf78028570eded2239f19a2f5bb084ca1470de30d
+generated_at: 2026-05-15T17:36:03Z
+input_sha256: 56bf2f0663eee2b17d95843582113e97655f6f0b371c4ead38ae9dff96b04305
+output_sha256: 5f1d672b4c886fedd1bf3bc2f986a02962590225d79a470c8b62e1f41e98ca53
 manual_edits_allowed: false
 ---
 # Sange documentation
@@ -17,10 +17,10 @@ manual_edits_allowed: false
 | `tools/` | Per-tool walkthroughs | 5 |
 | `reference/` | Reference (catalogs + schemas) | 9 |
 | `security/` | Security | 3 |
-| `adr/` | Architecture Decision Records | 3 |
+| `adr/` | Architecture Decision Records | 5 |
 | `governance/` | Governance + roadmap | 3 |
 | _top-level_ | Top-level | 5 |
-| **Total** |  | 28 |
+| **Total** |  | 30 |
 
 
 ## `tools/` — Per-tool walkthroughs
@@ -52,6 +52,8 @@ manual_edits_allowed: false
 ## `adr/` — Architecture Decision Records
 
 - [ADR-0007: License — Apache 2.0, © Simtabi LLC](adr/0007-license-apache-2.md) — [`adr/0007-license-apache-2.md`](./adr/0007-license-apache-2.md)
+- [ADR-0029: Generators scaffold everything (strengthens ADR-023)](adr/0029-generate-first-everything.md) — [`adr/0029-generate-first-everything.md`](./adr/0029-generate-first-everything.md)
+- [ADR-0031: Memory preservation + crash-recovery + resumability (audit-trail append-only)](adr/0031-audit-trail-append-only.md) — [`adr/0031-audit-trail-append-only.md`](./adr/0031-audit-trail-append-only.md)
 - [ADR-0032: Multi-dimensional variant matrix for gitignore-swap (Android-Studio-inspired)](adr/0032-variant-matrix-android-studio-inspired.md) — [`adr/0032-variant-matrix-android-studio-inspired.md`](./adr/0032-variant-matrix-android-studio-inspired.md)
 - [ADR-0033: Multi-arch Docker + Linux images (amd64 / arm64 / armv7)](adr/0033-multi-arch-docker.md) — [`adr/0033-multi-arch-docker.md`](./adr/0033-multi-arch-docker.md)
 

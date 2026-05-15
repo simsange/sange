@@ -33,6 +33,24 @@ Post-v0.1.0 work queued for the next release (target: `v0.1.0.post1` or
   - `sange commits reject --reason "<text>"` — PENDING_REVIEW → REJECTED.
     DRAFT auto-submits transparently (solo-dev UX).
   - `sange commits commit` — APPROVED → COMMITTED via `git commit`, no push.
+- **`sange commits reopen`** — the only backward transition.
+  Brings any non-DRAFT commit back to DRAFT, clearing
+  `committed_sha` + `pushed_remote`. The
+  `LifecycleEngine.reopen()` method existed since the engine
+  was implemented; this commit adds the CLI surface (mirrors
+  `submit` in shape). 5 tests in `TestCommitsReopen`.
+- **ADR detail files** — three backfills closing part of the
+  31-of-33 detail-file gap that `docs/governance/adr-process.md`
+  called out:
+  - [`docs/adr/0007-license-apache-2.md`](docs/adr/0007-license-apache-2.md)
+    — why Apache 2.0 over MIT / BSD / MPL / GPL / AGPL / LGPL /
+    BSL / dual-license.
+  - [`docs/adr/0029-generate-first-everything.md`](docs/adr/0029-generate-first-everything.md)
+    — why generators scaffold every reference doc, not just
+    catalogs.
+  - [`docs/adr/0031-audit-trail-append-only.md`](docs/adr/0031-audit-trail-append-only.md)
+    — why session-log + snapshots + audit-chain are all
+    append-only, and the §22 step 11.5 Continuity Check.
 - **Docs sprint** — 13 reader-facing docs added under `docs/`,
   closing every `Planned` row in the README that didn't depend on
   v0.5+/v1.0+ feature work:

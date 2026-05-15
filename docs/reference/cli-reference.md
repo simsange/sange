@@ -1,9 +1,9 @@
 ---
 generated_by: tools/generators/cli_reference.py
 generator_version: 1.0.0
-generated_at: 2026-05-15T15:34:28Z
-input_sha256: f84331228926701d822d4454b2f4ce7748aa5bf57f8c5138d2083a5ff044b322
-output_sha256: d4917ddf5f71767f248dde3765e9901dfa45add257b41595619a21c18910a240
+generated_at: 2026-05-15T17:36:03Z
+input_sha256: 8d72b7833dc51bf56c3e148697184ecf22fcc59ed44b59331169a95ea4bcfae7
+output_sha256: 2e07278fefcea1d48ef0e4df36fa07c4a16779386c8c3f76c9d7753acc2e1aaa
 manual_edits_allowed: false
 ---
 # Sange CLI reference
@@ -31,6 +31,7 @@ Every entry below is auto-introspected from the live click command tree, so flag
 | `sange commits new` | Write a manual DRAFT commit to the queue (no AI involved). |
 | `sange commits push` | Land an APPROVED commit (git commit + optionally git push). |
 | `sange commits reject` | Reject a PENDING_REVIEW commit (PENDING_REVIEW → REJECTED). |
+| `sange commits reopen` | Re-open a non-DRAFT commit back to DRAFT (the only backward transition). |
 | `sange commits submit` | Submit a DRAFT for review (DRAFT → PENDING_REVIEW). |
 | `sange doctor` | Environment health checks. |
 | `sange init` | Bootstrap .sange/ skeleton in the target repo. |
@@ -132,6 +133,7 @@ Manage the commit lifecycle queue.
 | `sange commits new` | Write a manual DRAFT commit to the queue (no AI involved). |
 | `sange commits push` | Land an APPROVED commit (git commit + optionally git push). |
 | `sange commits reject` | Reject a PENDING_REVIEW commit (PENDING_REVIEW → REJECTED). |
+| `sange commits reopen` | Re-open a non-DRAFT commit back to DRAFT (the only backward transition). |
 | `sange commits submit` | Submit a DRAFT for review (DRAFT → PENDING_REVIEW). |
 
 
@@ -283,6 +285,25 @@ Reject a PENDING_REVIEW commit (PENDING_REVIEW → REJECTED).
 | `--reason` | value |  | Non-empty rejection reason (≤480 chars). |
 | `--repo` | value | `.` | Repo root (the parent of .sange/commits/). Default: cwd. |
 | `--via` | value | `cli` | Surface the rejection came through (cli / tui / web / mcp). |
+
+
+### `sange commits reopen`
+
+
+Re-open a non-DRAFT commit back to DRAFT (the only backward transition).
+
+**Arguments:**
+
+| Name | Status |
+| :--- | :--- |
+| `target` | required |
+
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--repo` | value | `.` | Repo root (the parent of .sange/commits/). Default: cwd. |
 
 
 ### `sange commits submit`

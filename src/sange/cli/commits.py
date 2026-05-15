@@ -6,6 +6,7 @@ v0.1 ships:
   * `sange commits list`     — show pending + recent commits in the queue.
   * `sange commits new`      — write a manual DRAFT commit (no AI).
   * `sange commits ai`       — generate a DRAFT via AI (alias for `sange commit`).
+  * `sange commits reopen`   — any non-DRAFT → DRAFT (only backward transition).
   * `sange commits submit`   — DRAFT → PENDING_REVIEW.
   * `sange commits approve`  — PENDING_REVIEW → APPROVED (auto-submits DRAFT).
   * `sange commits reject`   — PENDING_REVIEW → REJECTED.
@@ -322,6 +323,77 @@ commits_app.command(
     "ai",
     help="Generate a commit message via AI and save as DRAFT.",
 )(_commit_command)
+
+
+# --------------------------------------------------------------------------- #
+# `sange commits reopen <counter|id>`
+# --------------------------------------------------------------------------- #
+
+
+@commits_app.command(
+    "reopen",
+    help="Re-open a non-DRAFT commit back to DRAFT (the only backward transition).",
+)
+def reopen_command(
+    target: str = typer.Argument(
+        ...,
+        help="Counter (e.g. `1` or `0001`) or full commit id.",
+    ),
+    repo_root: Path = typer.Option(
+        Path("."),
+        "--repo",
+        help="Repo root (the parent of .sange/commits/). Default: cwd.",
+    ),
+) -> None:
+    """Move any non-DRAFT commit back to DRAFT.
+
+    Per §6.8.2 this is the *only* backward transition. Clears
+    `committed_sha` + `pushed_remote` so the next forward path starts
+    fresh; the cross-field invariants in the schema enforce that those
+    fields must be empty when status != COMMITTED+. A DRAFT input is a
+    no-op (the engine returns the input unchanged)."""
+
+    import click
+
+    from sange.core.lifecycle import (
+        CommitsDirectory,
+        CommitStatus,
+        LifecycleEngine,
+    )
+
+    ctx = click.get_current_context()
+    json_mode = bool(ctx.obj and ctx.obj.get("json"))
+
+    cd = CommitsDirectory(repo_root)
+    commit = _resolve_target(cd, target)
+    if commit is None:
+        typer.echo(f"error: no commit found matching {target!r}", err=True)
+        raise typer.Exit(code=2)
+
+    was_status = commit.status
+    engine = LifecycleEngine()
+    reopened = engine.reopen(commit)
+    path = cd.save(reopened)
+
+    if json_mode:
+        payload = {
+            "counter": reopened.counter,
+            "id": reopened.id,
+            "status": reopened.status.value,
+            "previous_status": was_status.value,
+            "path": str(path),
+            "no_op": was_status is CommitStatus.DRAFT,
+        }
+        typer.echo(json.dumps(payload, indent=2))
+        return
+
+    if was_status is CommitStatus.DRAFT:
+        typer.echo(f"reopened #{reopened.counter:04d}: already DRAFT (no-op)")
+    else:
+        typer.echo(
+            f"reopened #{reopened.counter:04d}: "
+            f"{was_status.value} → draft"
+        )
 
 
 # --------------------------------------------------------------------------- #
@@ -1006,5 +1078,6 @@ __all__ = [
     "new_command",
     "push_command",
     "reject_command",
+    "reopen_command",
     "submit_command",
 ]

@@ -58,6 +58,7 @@ Eight states, six forward transitions, one backward transition.
 | `sange commits new TYPE SUBJECT` | (creates DRAFT) | Manual draft — you supply type/subject/body. |
 | `sange commits ai` | (creates DRAFT) | AI-driven draft — you supply the diff; the prompt enhancer fills the rest. |
 | `sange commits list` | (read-only) | Show the queue. Filter by `--status`, include archived with `--include-archived`. |
+| `sange commits reopen ID` | any non-DRAFT → DRAFT | **The only backward transition.** Clears `committed_sha` + `pushed_remote`. A DRAFT input is a no-op. |
 | `sange commits submit ID` | DRAFT → PENDING_REVIEW | Explicit submit. Skipped automatically by `approve`/`reject` in solo-dev mode. |
 | `sange commits approve ID` | PENDING_REVIEW → APPROVED | Auto-submits DRAFT first. Records the approver + surface. |
 | `sange commits reject ID --reason "..."` | PENDING_REVIEW → REJECTED | Auto-submits DRAFT first. Records the rejection reason + surface. |
@@ -157,9 +158,25 @@ sange commits list
 #    3   rejected       fix       cli            patch the wrong thing
 ```
 
-`REJECTED` is terminal in v0.1. To revive a rejected draft you
-would call `LifecycleEngine.reopen()` directly (the engine
-supports it; the CLI verb lands in v0.5+).
+`REJECTED` is terminal in the forward direction, but **`reopen`
+can bring it back to DRAFT**:
+
+```bash
+sange commits reopen 3
+# reopened #0003: rejected → draft
+
+# Now the draft is editable again. Update it manually:
+# (rewrite the body / scope / subject via your editor, or just
+# delete + re-create with `sange commits new`).
+sange commits approve 3
+sange commits push 3
+```
+
+`reopen` works from any state — `PENDING_REVIEW`, `APPROVED`,
+`REJECTED`, `COMMITTED`, `PUSHED`. When called on a `COMMITTED`
+or `PUSHED` record, the engine clears `committed_sha` +
+`pushed_remote` so the next forward path starts fresh; the
+cross-field invariants in the schema enforce that.
 
 ## JSON mode
 
@@ -243,8 +260,9 @@ Multi-user workflows use the full sequence — `new`/`ai` → `submit`
 These ship in later releases:
 
 - **Interactive TUI** for browsing the queue (v0.5+).
-- **Reopen verb** at the CLI surface (the engine method exists; v0.5+).
-- **Archive verb** + automatic archival policy (v0.5+).
+- **Archive verb** + automatic archival policy (v0.5+). The
+  `LifecycleEngine.archive()` method exists; the CLI surface lands
+  with the §6.8.5 archive policy.
 - **`sange commits regenerate <id>`** to re-run AI on an existing
   draft with a different provider/model (v0.5+).
 - **Web UI** lifecycle view at `https://sange.test` (v1.0).
