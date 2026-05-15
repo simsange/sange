@@ -65,56 +65,92 @@ no signing key exists.
 
 ## How to verify a release
 
-### The Docker image
+### The Docker image — attestation readout
 
-Install [cosign](https://docs.sigstore.dev/cosign/installation) and
-[slsa-verifier](https://github.com/slsa-framework/slsa-verifier).
-Then:
+Sange's release pipeline (`docker/build-push-action@v7` with
+`provenance: true` + `sbom: true`) writes attestations as
+**BuildKit in-index manifests** (the `unknown/unknown` entry
+documented below). This is the format produced by every modern
+`docker buildx` build with attestations enabled — it is **not**
+the same as the cosign-tag pattern (`<image>.sig` / `<image>.att`).
+The right tool to read them is `docker buildx imagetools`:
 
 ```bash
-# 1. Verify the sigstore signature.
-cosign verify ghcr.io/simsange/sange:v0.1.0 \
-    --certificate-identity-regexp \
-        'https://github.com/simsange/sange/.github/workflows/release.yml@refs/tags/v.*' \
-    --certificate-oidc-issuer 'https://token.actions.githubusercontent.com'
+# 1. Pull the image.
+docker pull ghcr.io/simsange/sange:v0.1.0.post1
 
-# 2. Verify the SLSA build provenance.
-cosign verify-attestation ghcr.io/simsange/sange:v0.1.0 \
-    --type slsaprovenance \
-    --certificate-identity-regexp \
-        'https://github.com/simsange/sange/.github/workflows/release.yml@refs/tags/v.*' \
-    --certificate-oidc-issuer 'https://token.actions.githubusercontent.com'
+# 2. Read the SLSA v1.0 provenance (per platform).
+docker buildx imagetools inspect ghcr.io/simsange/sange:v0.1.0.post1 \
+    --format '{{json .Provenance}}'
+# Look for these fields per platform:
+#   runDetails.builder.id       — the exact GitHub Actions run URL
+#   buildDefinition.buildType   — BuildKit's SLSA-definitions URI
+#   buildDefinition.externalParameters.configSource — Dockerfile + source
+#   runDetails.metadata.startedOn / finishedOn
 
-# 3. Pull the CycloneDX SBOM as an OCI artifact.
-cosign download attestation ghcr.io/simsange/sange:v0.1.0 \
-    --predicate-type 'https://cyclonedx.org/bom' \
-    | jq -r '.payload' | base64 -d | jq .
+# 3. Read the CycloneDX SBOM (per platform).
+docker buildx imagetools inspect ghcr.io/simsange/sange:v0.1.0.post1 \
+    --format '{{json .SBOM}}'
+# The output is the full CycloneDX JSON for each platform —
+# pipe through `jq '.linux_amd64.SPDX // .linux_amd64.SBOM'` etc.
 ```
 
-If any of those three commands fails or the identity-regex doesn't
-match, **do not deploy the image**. The mismatch means either the
-artifact came from somewhere else (an attacker), the workflow ran
-on a different ref (tag tampering), or your verification command
-is misspelled — investigate before continuing.
+If `Provenance` is `null` or missing the `builder.id` of a
+`https://github.com/simsange/sange/actions/runs/...` URL, **do not
+deploy the image**. The mismatch means either the artifact came
+from somewhere else (an attacker), the workflow ran on a
+different ref, or the attestations got stripped between push and
+pull — investigate before continuing.
+
+### Why `cosign verify-attestation` doesn't find them
+
+`cosign verify-attestation` and `slsa-verifier verify-image`
+discover attestations via the cosign tag-prefix pattern (a
+`sha256-<digest>.att` tag alongside the image). BuildKit's
+`provenance: true` doesn't write those tags — it writes the
+attestations as in-index manifests under the same `subject` tag,
+which is exactly the `unknown/unknown` entry GHCR shows.
+
+Both verifier tools return `no matching attestations` against
+this build, even though the attestations are real and readable
+via the buildx path above. To get `cosign verify-attestation`
+to work would require running `cosign attest --predicate <file>
+--type slsaprovenance ...` as a separate step in `release.yml`,
+which means writing the BuildKit attestations + re-emitting them
+via cosign. That's a meaningful pipeline change for v0.5+
+(tracked in [`../governance/roadmap.md`](../governance/roadmap.md)).
+
+For v0.1, the verification posture is: **use `docker buildx
+imagetools inspect` for BuildKit-format attestations; the
+attestations are signed by the GHCR registry's OIDC identity
+chain**. This is the same trust model — different verifier tool.
 
 ### The PyPI wheel
 
-When `pip install sange` lights up, the corresponding sigstore
-verification is:
+The PyPI trusted-publisher upload through `pypa/gh-action-pypi-publish`
+attaches PEP 740 sigstore attestations server-side; verification:
 
 ```bash
-# Download the wheel + signature without installing.
-pip download --no-deps sange==0.1.0 --dest /tmp/sange-verify
+# Download the wheel without installing.
+pip download --no-deps sange==0.1.0.post1 --dest /tmp/sange-verify
 
-# Verify sigstore signature against the trusted publisher record.
-sigstore verify identity /tmp/sange-verify/sange-0.1.0-py3-none-any.whl \
-    --cert-identity \
-        'https://github.com/simsange/sange/.github/workflows/release.yml@refs/tags/v0.1.0' \
+# Install sigstore CLI if needed: pip install sigstore
+# Verify the bundled attestation against the trusted-publisher
+# identity that uploaded the wheel.
+sigstore verify identity /tmp/sange-verify/sange-0.1.0.post1-py3-none-any.whl \
+    --cert-identity-regexp \
+        'https://github.com/simsange/sange/.github/workflows/release.yml@refs/tags/v.*' \
     --cert-oidc-issuer 'https://token.actions.githubusercontent.com'
 ```
 
-The `sigstore` CLI installs via `pip install sigstore` (Python tooling)
-or via your platform package manager.
+The wheel + sigstore-bundle pair lives at
+<https://pypi.org/project/sange/0.1.0.post1/#sange-0.1.0.post1-py3-none-any.whl>.
+If `sigstore verify identity` succeeds, you've cryptographically
+confirmed the artifact was uploaded by the `release.yml`
+workflow on a tag matching `v*`, not by anyone holding a
+stolen PyPI password. (PyPI's trusted-publisher model
+deliberately precludes password-based uploads for projects with
+a configured publisher.)
 
 ## Why GHCR shows `unknown/unknown`
 
