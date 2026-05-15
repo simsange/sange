@@ -1,0 +1,90 @@
+name: Bug report
+description: Something is broken or behaving unexpectedly.
+title: "[bug] "
+labels:
+  - bug
+  - triage
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. The more reproducible the report,
+        the faster we can fix it. **Security vulnerabilities go to
+        [SECURITY.md](https://github.com/sangedev/.github/blob/main/SECURITY.md)
+        instead — please do not open a public issue for them.**
+
+  - type: input
+    id: version
+    attributes:
+      label: Affected version
+      description: Output of `<tool> --version`.
+      placeholder: "sange 0.1.0"
+    validations:
+      required: true
+
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      description: OS + version + arch.
+      placeholder: "macOS 14.5 (arm64)"
+    validations:
+      required: true
+
+  - type: input
+    id: python
+    attributes:
+      label: Python / runtime version
+      description: For Python projects, `python3 --version`. For PHP / Node, the equivalent.
+      placeholder: "Python 3.12.4"
+    validations:
+      required: false
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: |
+        The smallest example that triggers the bug. A failing test, a
+        shell-command sequence, a `git`-init-able repo state. The
+        smaller this is, the faster the fix.
+      placeholder: |
+        1. `mkdir /tmp/repro && cd /tmp/repro`
+        2. `git init`
+        3. `sange init`
+        4. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: Include the exact error message + stack trace if any.
+    validations:
+      required: true
+
+  - type: textarea
+    id: tried
+    attributes:
+      label: What you've already tried
+      description: Saves us from suggesting the same fixes you already explored.
+
+  - type: checkboxes
+    id: pre-flight
+    attributes:
+      label: Pre-flight
+      options:
+        - label: I've searched existing issues and this is not a duplicate.
+          required: true
+        - label: I've read the [Code of Conduct](https://github.com/sangedev/.github/blob/main/CODE_OF_CONDUCT.md).
+          required: true
+        - label: This is NOT a security vulnerability. (Those go to opensource@simtabi.com.)
+          required: true

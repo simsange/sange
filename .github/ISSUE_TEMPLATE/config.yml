@@ -1,0 +1,22 @@
+blank_issues_enabled: false
+
+# Route off-template intent to the right surface. The links below
+# appear on the "New issue" picker page above the templated options.
+contact_links:
+  - name: Security vulnerability disclosure
+    url: https://github.com/sangedev/.github/blob/main/SECURITY.md
+    about: |
+      Found a security issue? Do NOT open a public issue. Email
+      opensource@simtabi.com per the SECURITY.md disclosure process.
+
+  - name: General question / discussion
+    url: https://github.com/orgs/sangedev/discussions
+    about: |
+      Open-ended questions, "is this the right approach?", "how do
+      others handle X?" — GitHub Discussions is the better venue.
+
+  - name: Commercial support / consulting
+    url: mailto:imani@simtabi.com
+    about: |
+      Custom development, support contracts, sponsorship — email
+      Imani Manyara (maintainer) directly.
