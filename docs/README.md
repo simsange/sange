@@ -1,9 +1,9 @@
 ---
 generated_by: tools/generators/docs_index.py
 generator_version: 1.0.0
-generated_at: 2026-05-14T22:49:17Z
-input_sha256: ef24cbd1c38cba4e3205f1f5058cfedd751ad5a2c938318faa0200e678c2981c
-output_sha256: d526a2c34916d132c3d73a2adea96340d8498cae27ece459a13bf3ec58947f9c
+generated_at: 2026-05-15T00:51:26Z
+input_sha256: 0b2e8c2538960e7c5063312105ad49b983432ca516a9f1d2b0c02d19d0619543
+output_sha256: 8a989f81ef3ac04dfcad6753b4f3db7f6e017da4e1139ea6ee7b149912cbe041
 manual_edits_allowed: false
 ---
 # Sange documentation
@@ -17,8 +17,8 @@ manual_edits_allowed: false
 | `reference/` | Reference (catalogs + schemas) | 9 |
 | `security/` | Security | 1 |
 | `adr/` | Architecture Decision Records | 2 |
-| _top-level_ | Top-level | 1 |
-| **Total** |  | 13 |
+| _top-level_ | Top-level | 2 |
+| **Total** |  | 14 |
 
 
 ## `reference/` — Reference (catalogs + schemas)
@@ -45,6 +45,7 @@ manual_edits_allowed: false
 ## Top-level docs
 
 - [Changelog](CHANGELOG.md) — [`CHANGELOG.md`](./CHANGELOG.md)
+- [Releasing Sange](release.md) — [`release.md`](./release.md)
 
 ## Generated content
 
