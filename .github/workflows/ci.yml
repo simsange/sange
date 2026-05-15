@@ -129,7 +129,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
       - name: Build (single-arch, no-push)
         # Build for the runner's arch only — multi-arch is the release
         # workflow's job. This step verifies the Dockerfile is sound.
