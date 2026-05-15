@@ -14,6 +14,39 @@ dogfoods its own lifecycle. Until then, this file is maintained by hand.
 
 ### Added
 
+- **T-100b — SVN adapter read methods.** Seven `VCSDriver` reads
+  now ship for SVN, all gated on a real `svn` binary:
+  - `log(repo, *, revision_range, max_count)` — runs
+    `svn log --xml`, returns `tuple[CommitRef, ...]` newest-first.
+    Revision range maps to SVN's `-r FROM:TO` syntax. `max_count=0`
+    short-circuits (SVN rejects `--limit 0`). Empty-message
+    commits get the placeholder `"(no commit message)"` so the
+    non-empty-subject CommitRef invariant holds.
+  - `diff(repo, *, paths, revision_range)` — runs `svn diff` and
+    parses the unified-diff payload for `(files, insertions,
+    deletions)` via a new `parse_diff_stat()`. Counts `Index:`
+    markers for the file tally; falls back to `+++ ` headers when
+    `Index:` is absent. `content_hash` = sha256 of the diff text.
+  - `branches(repo)` — lists `^/trunk` (when present) + every
+    directory under `^/branches/`. Current branch derived from
+    `repo.metadata['relative_url']`; sort: current first then
+    alphabetical.
+  - `current_branch(repo)` — parses the WC's relative-URL
+    (`^/trunk` / `^/branches/<name>` / `^/tags/<name>`) via a new
+    `extract_branch_from_url()`. Returns `None` for repo-root
+    checkouts or tag URLs (tags aren't branches).
+  - `remotes(repo)` — SVN has one canonical remote (the
+    repository root); returned as `RemoteInfo("origin", url)`.
+  - `tags(repo)` — lists `^/tags/` dirs as `TagInfo` records;
+    `created_at` carries SVN's commit timestamp.
+  - `show_commit(repo, sha)` — single-revision log lookup. `sha`
+    accepts numeric revisions and SVN's symbolic keywords
+    (`HEAD` / `BASE` / `PREV` / `COMMITTED`).
+  New parsers: `parse_log_xml`, `parse_ls_xml` + `SvnLsEntry`,
+  `extract_branch_from_url`, `parse_diff_stat`. +36 tests in
+  `tests/unit/test_svn_{parsers,driver}.py` (58 SVN tests total).
+  T-100c (write methods — add / commit / branch_create / etc.)
+  is the remaining slice.
 - **T-100a — SVN adapter scaffold + read-only `detect` + `status`.**
   First slice of the Phase 2 (v0.5 beta) work. New module
   `src/sange/adapters/vcs/svn/` mirrors the Git adapter layout:

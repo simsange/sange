@@ -21,8 +21,8 @@ a live `svn help`.
 | Command catalog | **Generated today** (46 commands) | [`reference/appendix-e-svn-catalog.md`](../../reference/appendix-e-svn-catalog.md), emitted by `tools/generators/svn_catalog.py` (T-G-002). |
 | Cross-VCS concept map | **Generated today** | [`reference/appendix-f-cross-vcs.md`](../../reference/appendix-f-cross-vcs.md) — how every Git concept maps onto SVN (and Hg, P4, etc.). |
 | Adapter Protocol | **Implemented today** | `src/sange/adapters/vcs/_protocol.py::VCSDriver`. The SVN concrete driver implements this same Protocol. |
-| Adapter scaffold (`SvnDriver`) | **Live (T-100a)** | `src/sange/adapters/vcs/svn/` — subprocess wrapper + XML parsers + `SvnDriver.detect()` + `SvnDriver.status()`. 22 tests under `tests/unit/test_svn_{driver,parsers}.py`. |
-| Remaining read methods (log / diff / branches / current_branch / remotes / tags / show_commit) | v0.5 (T-100b) | Raise `NotImplementedError("T-100b")` today. |
+| Adapter scaffold (`SvnDriver`) | **Live (T-100a)** | `src/sange/adapters/vcs/svn/` — subprocess wrapper + XML parsers + `SvnDriver.detect()` + `SvnDriver.status()`. |
+| Read methods (`log` / `diff` / `branches` / `current_branch` / `remotes` / `tags` / `show_commit`) | **Live (T-100b)** | All seven implemented. `branches()` lists `^/trunk` + every dir under `^/branches/`; `current_branch()` derives from the WC's relative-URL; `tags()` lists `^/tags/` dirs. Total: 58 tests across `tests/unit/test_svn_{driver,parsers}.py`. |
 | Write methods (add / commit / branch_create / etc.) | v0.5 (T-100c) | Raise `NotImplementedError("T-100c")` today. |
 | Wrappers (`sange commits`...) | v0.5+ | Once T-100c lands, the same `sange commits` verbs (`new` / `ai` / `submit` / `approve` / `reject` / `commit` / `push`) work against SVN working copies. |
 | Purge executor | v2.0 | `svnadmin dump → svndumpfilter exclude → swap`. T-246. |

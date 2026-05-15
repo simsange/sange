@@ -13,8 +13,13 @@ import pytest
 
 from sange.adapters.vcs.svn.parsers import (
     SvnInfo,
+    SvnLsEntry,
     SvnVersion,
+    extract_branch_from_url,
+    parse_diff_stat,
     parse_info_xml,
+    parse_log_xml,
+    parse_ls_xml,
     parse_status_xml,
     parse_version,
 )
@@ -241,3 +246,235 @@ class TestParseInfoXml:
         assert info.revision == 0
         assert info.commit_revision == -1
         assert info.commit_author == ""
+
+
+# --------------------------------------------------------------------------- #
+# parse_log_xml
+# --------------------------------------------------------------------------- #
+
+
+_LOG_FIXTURE = '''<?xml version="1.0" encoding="UTF-8"?>
+<log>
+<logentry revision="3">
+<author>alice</author>
+<date>2026-05-15T21:16:49.101972Z</date>
+<msg>commit 3 subject
+
+extra body line
+second body line</msg>
+</logentry>
+<logentry revision="2">
+<author>bob</author>
+<date>2026-05-15T21:16:48.103957Z</date>
+<msg>commit 2</msg>
+</logentry>
+<logentry revision="1">
+<date>2026-05-15T21:16:47.095798Z</date>
+<msg></msg>
+</logentry>
+</log>
+'''
+
+
+class TestParseLogXml:
+    def test_basic_parsing(self) -> None:
+        refs = parse_log_xml(_LOG_FIXTURE)
+        assert len(refs) == 3
+        assert [r.sha for r in refs] == ["3", "2", "1"]
+
+    def test_subject_and_body_split(self) -> None:
+        refs = parse_log_xml(_LOG_FIXTURE)
+        r3 = refs[0]
+        assert r3.subject == "commit 3 subject"
+        assert "extra body line" in r3.body
+        assert "second body line" in r3.body
+
+    def test_single_line_message_has_empty_body(self) -> None:
+        refs = parse_log_xml(_LOG_FIXTURE)
+        r2 = refs[1]
+        assert r2.subject == "commit 2"
+        assert r2.body == ""
+
+    def test_empty_author(self) -> None:
+        refs = parse_log_xml(_LOG_FIXTURE)
+        r1 = refs[2]
+        assert r1.author_name == ""
+        assert r1.author_email == ""   # SVN never populates email
+
+    def test_empty_message_gets_placeholder(self) -> None:
+        # CommitRef requires a non-empty subject (per its __post_init__);
+        # SVN's empty messages get the documented placeholder.
+        refs = parse_log_xml(_LOG_FIXTURE)
+        r1 = refs[2]
+        assert r1.subject == "(no commit message)"
+        assert r1.body == ""
+
+    def test_date_parsed_as_utc(self) -> None:
+        refs = parse_log_xml(_LOG_FIXTURE)
+        r3 = refs[0]
+        assert r3.committed_at.tzinfo is not None
+        assert r3.committed_at.year == 2026
+        assert r3.committed_at.month == 5
+
+    def test_parents_always_empty(self) -> None:
+        # v0.5 does not reconstruct merge parents.
+        for ref in parse_log_xml(_LOG_FIXTURE):
+            assert ref.parents == ()
+
+    def test_empty_input(self) -> None:
+        assert parse_log_xml("") == ()
+        assert parse_log_xml("\n\n   ") == ()
+
+
+# --------------------------------------------------------------------------- #
+# parse_ls_xml
+# --------------------------------------------------------------------------- #
+
+
+_LS_FIXTURE = '''<?xml version="1.0" encoding="UTF-8"?>
+<lists>
+<list path="file:///srv/r/branches">
+<entry kind="dir">
+<name>feature-x</name>
+<commit revision="2">
+<author>alice</author>
+<date>2026-05-15T21:17:07.073668Z</date>
+</commit>
+</entry>
+<entry kind="dir">
+<name>feature-y</name>
+<commit revision="5">
+<author>bob</author>
+<date>2026-05-15T22:00:00.000000Z</date>
+</commit>
+</entry>
+<entry kind="file">
+<name>readme.txt</name>
+<commit revision="3">
+<author>alice</author>
+<date>2026-05-15T22:00:00.000000Z</date>
+</commit>
+</entry>
+</list>
+</lists>
+'''
+
+
+class TestParseLsXml:
+    def test_dirs_and_files(self) -> None:
+        entries = parse_ls_xml(_LS_FIXTURE)
+        assert len(entries) == 3
+        kinds = {e.name: e.kind for e in entries}
+        assert kinds["feature-x"] == "dir"
+        assert kinds["feature-y"] == "dir"
+        assert kinds["readme.txt"] == "file"
+
+    def test_revision_parsed(self) -> None:
+        entries = {e.name: e for e in parse_ls_xml(_LS_FIXTURE)}
+        assert entries["feature-x"].revision == 2
+        assert entries["feature-y"].revision == 5
+
+    def test_author_and_date(self) -> None:
+        entries = {e.name: e for e in parse_ls_xml(_LS_FIXTURE)}
+        assert entries["feature-x"].author == "alice"
+        assert entries["feature-x"].date.year == 2026
+        assert entries["feature-x"].date.tzinfo is not None
+
+    def test_empty(self) -> None:
+        assert parse_ls_xml("") == ()
+        assert parse_ls_xml(
+            '<?xml version="1.0"?>\n<lists><list path="x"></list></lists>'
+        ) == ()
+
+
+# --------------------------------------------------------------------------- #
+# extract_branch_from_url
+# --------------------------------------------------------------------------- #
+
+
+class TestExtractBranchFromUrl:
+    def test_trunk(self) -> None:
+        assert extract_branch_from_url("^/trunk") == ("trunk", "trunk")
+        assert extract_branch_from_url("^/trunk/sub/dir") == ("trunk", "trunk")
+
+    def test_branch(self) -> None:
+        assert extract_branch_from_url("^/branches/feature-x") == ("branch", "feature-x")
+        assert extract_branch_from_url("^/branches/feature-x/sub") == (
+            "branch", "feature-x"
+        )
+
+    def test_tag(self) -> None:
+        assert extract_branch_from_url("^/tags/v1") == ("tag", "v1")
+        assert extract_branch_from_url("^/tags/v1/path") == ("tag", "v1")
+
+    def test_repo_root_returns_none(self) -> None:
+        assert extract_branch_from_url("^/") is None
+        assert extract_branch_from_url("") is None
+
+    def test_unknown_convention_returns_none(self) -> None:
+        assert extract_branch_from_url("^/something-else") is None
+        assert extract_branch_from_url("^/lib/utils") is None
+
+    def test_branches_root_without_name_returns_none(self) -> None:
+        # `^/branches` itself (no sub) is not a specific branch.
+        assert extract_branch_from_url("^/branches") is None
+        assert extract_branch_from_url("^/tags") is None
+
+
+# --------------------------------------------------------------------------- #
+# parse_diff_stat
+# --------------------------------------------------------------------------- #
+
+
+_DIFF_FIXTURE = """Index: a.txt
+===================================================================
+--- a.txt	(revision 1)
++++ a.txt	(working copy)
+@@ -1 +1,2 @@
+ unchanged line
++added line 1
++added line 2
+Index: b.txt
+===================================================================
+--- b.txt	(revision 1)
++++ b.txt	(working copy)
+@@ -1,2 +1 @@
+-removed line 1
+-removed line 2
++just one new
+"""
+
+
+class TestParseDiffStat:
+    def test_basic_counts(self) -> None:
+        files, ins, dels = parse_diff_stat(_DIFF_FIXTURE)
+        assert files == 2          # two `Index:` lines
+        assert ins == 3            # +added line 1, +added line 2, +just one new
+        assert dels == 2           # -removed line 1, -removed line 2
+
+    def test_empty_diff(self) -> None:
+        assert parse_diff_stat("") == (0, 0, 0)
+        assert parse_diff_stat("\n\n") == (0, 0, 0)
+
+    def test_no_index_lines_falls_back_to_plus_headers(self) -> None:
+        # Some `svn diff` invocations elide the `Index:` marker;
+        # files should still be counted from `+++ ` headers.
+        fixture = """--- a.txt	(rev 1)
++++ a.txt	(rev 2)
+@@ -1 +1 @@
+-old
++new
+"""
+        files, ins, dels = parse_diff_stat(fixture)
+        assert files == 1
+        assert ins == 1
+        assert dels == 1
+
+    def test_header_lines_not_counted_as_changes(self) -> None:
+        # The +++ and --- lines start with + and - but must NOT
+        # be counted toward insertions/deletions.
+        _, ins, dels = parse_diff_stat(_DIFF_FIXTURE)
+        # If header counting were wrong, ins would be 5 (3 real + 2 +++).
+        assert ins == 3
+        # And dels would be 4 (2 real + 2 ---).
+        assert dels == 2

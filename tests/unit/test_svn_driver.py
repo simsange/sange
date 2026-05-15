@@ -132,15 +132,207 @@ class TestSvnDriverIntegration:
         assert st.is_clean
         assert st.is_pristine
 
-    def test_not_yet_implemented_surfaces_raise(self, svn_wc: Path) -> None:
+    def test_write_methods_still_not_yet_implemented(self, svn_wc: Path) -> None:
         d = SvnDriver()
         repo = d.detect(svn_wc)
-        for verb in ("log", "diff", "branches", "current_branch",
-                     "remotes", "tags", "show_commit"):
-            with pytest.raises(NotImplementedError, match="T-100b"):
-                getattr(d, verb)(repo)
         for verb in ("add", "remove", "revert_working_copy", "commit",
                      "branch_create", "branch_delete", "switch",
                      "fetch", "pull", "push", "tag_create", "tag_delete"):
             with pytest.raises(NotImplementedError, match="T-100c"):
                 getattr(d, verb)(repo)
+
+
+# --------------------------------------------------------------------------- #
+# T-100b — log / diff / branches / current_branch / remotes / tags / show_commit
+# --------------------------------------------------------------------------- #
+
+
+@pytest.fixture
+def trunk_wc(tmp_path: Path) -> Path:
+    """Working copy checked out at trunk, with branches + tags populated.
+
+    Layout in the repo:
+
+      ^/trunk/a.txt            (modified locally → dirty WC)
+      ^/branches/feature-x/    (svn copy from trunk @ r2)
+      ^/tags/v0.1/             (svn copy from trunk @ r2)
+
+    Returns the path to the trunk working-copy checkout.
+    """
+
+    repo = tmp_path / "repo"
+    wc = tmp_path / "wc"
+    trunk_wc = tmp_path / "trunk-wc"
+
+    subprocess.run(["svnadmin", "create", str(repo)], check=True)
+    subprocess.run(["svn", "checkout", "-q", f"file://{repo}", str(wc)], check=True)
+    subprocess.run(["svn", "mkdir", "-q", "trunk", "branches", "tags"], cwd=wc, check=True)
+    subprocess.run(["svn", "commit", "-q", "-m", "layout"], cwd=wc, check=True)
+    subprocess.run(["svn", "update", "-q"], cwd=wc, check=True)
+
+    # Initial trunk commit.
+    (wc / "trunk" / "a.txt").write_text("v1\n")
+    subprocess.run(["svn", "add", "-q", "trunk/a.txt"], cwd=wc, check=True)
+    subprocess.run(["svn", "commit", "-q", "-m", "trunk c1"], cwd=wc, check=True)
+    subprocess.run(["svn", "update", "-q"], cwd=wc, check=True)
+
+    # Branch + tag (copies of trunk @ r2).
+    subprocess.run(
+        ["svn", "copy", "-q", "^/trunk", "^/branches/feature-x", "-m", "branch off"],
+        cwd=wc, check=True,
+    )
+    subprocess.run(
+        ["svn", "copy", "-q", "^/trunk", "^/tags/v0.1", "-m", "tag v0.1"],
+        cwd=wc, check=True,
+    )
+
+    # Check out trunk as a standalone working copy + dirty it.
+    subprocess.run(
+        ["svn", "checkout", "-q", f"file://{repo}/trunk", str(trunk_wc)],
+        check=True,
+    )
+    (trunk_wc / "a.txt").write_text("v1\nmodified\n")
+
+    return trunk_wc
+
+
+@pytest.mark.skipif(_SVN is None or _SVNADMIN is None, reason="svn / svnadmin not on PATH")
+class TestSvnDriverReadOps:
+    def test_log_returns_history_newest_first(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        refs = d.log(repo, max_count=5)
+        assert len(refs) >= 2
+        revs = [int(r.sha) for r in refs]
+        assert revs == sorted(revs, reverse=True)
+        # Each entry has author + non-empty subject.
+        for r in refs:
+            assert r.author_name  # populated
+            assert r.author_email == ""  # SVN doesn't have email
+
+    def test_log_max_count_zero(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        refs = d.log(repo, max_count=0)
+        assert refs == ()
+
+    def test_log_revision_range(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        refs = d.log(repo, revision_range="1:HEAD")
+        assert len(refs) >= 1
+
+    def test_diff_returns_positive_stats(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        summary = d.diff(repo)
+        # a.txt was modified after checkout.
+        assert summary.files_changed >= 1
+        assert summary.insertions >= 1
+        assert summary.content_hash  # sha256 hex non-empty
+
+    def test_diff_clean_returns_zero(self, tmp_path: Path) -> None:
+        # Build a clean WC.
+        repo = tmp_path / "repo"
+        wc = tmp_path / "wc"
+        subprocess.run(["svnadmin", "create", str(repo)], check=True)
+        subprocess.run(["svn", "checkout", "-q", f"file://{repo}", str(wc)], check=True)
+        (wc / "x.txt").write_text("x\n")
+        subprocess.run(["svn", "add", "-q", "x.txt"], cwd=wc, check=True)
+        subprocess.run(["svn", "commit", "-q", "-m", "init"], cwd=wc, check=True)
+        subprocess.run(["svn", "update", "-q"], cwd=wc, check=True)
+
+        d = SvnDriver()
+        r = d.detect(wc)
+        s = d.diff(r)
+        assert s.files_changed == 0
+        assert s.insertions == 0
+        assert s.deletions == 0
+        assert s.content_hash == ""
+
+    def test_branches_lists_trunk_plus_branches(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        bs = d.branches(repo)
+        names = [b.name for b in bs]
+        assert "trunk" in names
+        assert "feature-x" in names
+        # Current marker: the WC is at trunk, so trunk is_current.
+        by_name = {b.name: b for b in bs}
+        assert by_name["trunk"].is_current
+        assert not by_name["feature-x"].is_current
+
+    def test_current_branch_is_trunk(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        cb = d.current_branch(repo)
+        assert cb is not None
+        assert cb.name == "trunk"
+        assert cb.is_current
+
+    def test_current_branch_repo_root_is_none(self, tmp_path: Path) -> None:
+        # A WC checked out at the repo root (no trunk/branches/tags
+        # convention) returns None for current_branch.
+        repo = tmp_path / "repo"
+        wc = tmp_path / "wc"
+        subprocess.run(["svnadmin", "create", str(repo)], check=True)
+        subprocess.run(["svn", "checkout", "-q", f"file://{repo}", str(wc)], check=True)
+
+        d = SvnDriver()
+        r = d.detect(wc)
+        assert d.current_branch(r) is None
+
+    def test_remotes_returns_origin(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        remotes = d.remotes(repo)
+        assert len(remotes) == 1
+        assert remotes[0].name == "origin"
+        assert remotes[0].url.startswith("file://")
+
+    def test_tags_lists_tags_dir(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        tags = d.tags(repo)
+        names = [t.name for t in tags]
+        assert "v0.1" in names
+        v01 = next(t for t in tags if t.name == "v0.1")
+        assert v01.target_sha  # non-empty
+        assert v01.is_annotated is False
+        assert v01.is_signed is False
+        assert v01.created_at is not None  # SVN's commit timestamp
+
+    def test_tags_no_tags_dir(self, tmp_path: Path) -> None:
+        # Repo without a ^/tags directory.
+        repo = tmp_path / "repo"
+        wc = tmp_path / "wc"
+        subprocess.run(["svnadmin", "create", str(repo)], check=True)
+        subprocess.run(["svn", "checkout", "-q", f"file://{repo}", str(wc)], check=True)
+
+        d = SvnDriver()
+        r = d.detect(wc)
+        assert d.tags(r) == ()
+
+    def test_show_commit_returns_single_ref(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        ref = d.show_commit(repo, "2")
+        assert ref.sha == "2"
+        assert ref.author_name  # populated
+        assert ref.committed_at.tzinfo is not None
+
+    def test_show_commit_missing_sha_raises(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        from sange.adapters.vcs._protocol import DriverError
+        with pytest.raises(DriverError, match="non-empty"):
+            d.show_commit(repo, "")
+
+    def test_show_commit_nonexistent_revision_raises(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        # Revision 9999 doesn't exist in this repo; svn returns
+        # a SvnCommandFailed which propagates as DriverError.
+        from sange.adapters.vcs._protocol import DriverError
+        with pytest.raises(DriverError):
+            d.show_commit(repo, "9999")

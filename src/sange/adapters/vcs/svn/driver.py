@@ -12,10 +12,16 @@ subprocess + parser + Domain-model construction.
 
 from __future__ import annotations
 
+import hashlib
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from sange.adapters.vcs._protocol import DriverCapabilities, DriverError
+from sange.adapters.vcs._protocol import (
+    DriverCapabilities,
+    DriverError,
+    TagInfo,
+)
 from sange.adapters.vcs.svn._subprocess import (
     SvnCommandFailed,
     run_svn,
@@ -23,10 +29,16 @@ from sange.adapters.vcs.svn._subprocess import (
 from sange.adapters.vcs.svn.parsers import (
     SvnInfo,
     SvnVersion,
+    extract_branch_from_url,
+    parse_diff_stat,
     parse_info_xml,
+    parse_log_xml,
+    parse_ls_xml,
     parse_status_xml,
     parse_version,
 )
+from sange.core.models.branch import BranchInfo, RemoteInfo
+from sange.core.models.commit import CommitRef, DiffSummary
 from sange.core.models.repo import Repo
 from sange.core.models.working_copy import WorkingCopyStatus
 
@@ -231,28 +243,265 @@ class SvnDriver:
             branch=repo.default_branch,
         )
 
-    # ----- not-yet-implemented surfaces ------------------------------- #
+    # ----- log -------------------------------------------------------- #
 
-    def log(self, *_: Any, **__: Any) -> Any:
-        raise NotImplementedError("T-100b: SvnDriver.log lands with the read-ops follow-up")
+    def log(
+        self,
+        repo: Repo,
+        *,
+        revision_range: str = "",
+        max_count: int | None = None,
+    ) -> tuple[CommitRef, ...]:
+        """Return revision history (newest first).
 
-    def diff(self, *_: Any, **__: Any) -> Any:
-        raise NotImplementedError("T-100b: SvnDriver.diff lands with the read-ops follow-up")
+        `revision_range` follows SVN's `-r` syntax: `BASE:HEAD`,
+        `42:50`, `HEAD:1`, etc. `max_count` maps to `--limit`.
+        """
 
-    def branches(self, *_: Any, **__: Any) -> Any:
-        raise NotImplementedError("T-100b: SvnDriver.branches lands with the read-ops follow-up")
+        # SVN rejects `--limit 0` ("Argument to --limit must be positive"),
+        # so short-circuit that case before invoking the subprocess. None
+        # or negative means "no limit"; 0 means "no results"; positive
+        # is `--limit N`.
+        if max_count == 0:
+            return ()
 
-    def current_branch(self, *_: Any, **__: Any) -> Any:
-        raise NotImplementedError("T-100b: SvnDriver.current_branch lands with the read-ops follow-up")
+        args: list[str] = ["log", "--xml", "--non-interactive"]
+        if revision_range:
+            args.extend(("-r", revision_range))
+        if max_count is not None and max_count > 0:
+            args.extend(("--limit", str(max_count)))
+        out = run_svn(args, cwd=repo.path)
+        return parse_log_xml(out)
 
-    def remotes(self, *_: Any, **__: Any) -> Any:
-        raise NotImplementedError("T-100b: SvnDriver.remotes lands with the read-ops follow-up")
+    # ----- diff ------------------------------------------------------- #
 
-    def tags(self, *_: Any, **__: Any) -> Any:
-        raise NotImplementedError("T-100b: SvnDriver.tags lands with the read-ops follow-up")
+    def diff(
+        self,
+        repo: Repo,
+        *,
+        paths: Sequence[Path] = (),
+        revision_range: str = "",
+    ) -> DiffSummary:
+        """Aggregate diff statistics + content hash.
 
-    def show_commit(self, *_: Any, **__: Any) -> Any:
-        raise NotImplementedError("T-100b: SvnDriver.show_commit lands with the read-ops follow-up")
+        SVN doesn't have a clean `--shortstat` equivalent — we compute
+        (files, insertions, deletions) by parsing the unified diff
+        directly via `parse_diff_stat`. The content_hash is sha256 of
+        the diff payload, matching Git adapter semantics.
+        """
+
+        args: list[str] = ["diff", "--non-interactive"]
+        if revision_range:
+            args.extend(("-r", revision_range))
+        for p in paths:
+            args.append(str(p))
+        diff_out = run_svn(args, cwd=repo.path)
+
+        files, ins, dels = parse_diff_stat(diff_out)
+        if files == 0 and ins == 0 and dels == 0:
+            return DiffSummary(
+                files_changed=0, insertions=0, deletions=0, content_hash=""
+            )
+        content_hash = hashlib.sha256(diff_out.encode("utf-8")).hexdigest()
+        return DiffSummary(
+            files_changed=files,
+            insertions=ins,
+            deletions=dels,
+            content_hash=content_hash,
+        )
+
+    # ----- branches --------------------------------------------------- #
+
+    def branches(self, repo: Repo) -> tuple[BranchInfo, ...]:
+        """List branches under the conventional `^/branches/` URL plus trunk.
+
+        SVN doesn't enforce the `trunk/branches/tags` layout. If
+        `^/branches` doesn't exist, we still return `trunk` (when
+        `^/trunk` exists). If neither exists, we return `()` rather
+        than raising — the caller can detect "no convention" and act
+        accordingly.
+        """
+
+        current = self.current_branch(repo)
+        result: list[BranchInfo] = []
+
+        trunk_exists = self._ls_exists(repo, "^/trunk")
+        if trunk_exists:
+            tip = self._ls_tip_revision(repo, "^/trunk")
+            result.append(
+                BranchInfo(
+                    name="trunk",
+                    tip_sha=str(tip) if tip >= 0 else "",
+                    tracking=None,
+                    is_current=(current is not None and current.name == "trunk"),
+                )
+            )
+
+        branches_xml = run_svn(
+            ("ls", "--xml", "--non-interactive", "^/branches"),
+            cwd=repo.path,
+            allow_failure=True,
+        )
+        if branches_xml:
+            for entry in parse_ls_xml(branches_xml):
+                if entry.kind != "dir":
+                    continue
+                result.append(
+                    BranchInfo(
+                        name=entry.name,
+                        tip_sha=str(entry.revision) if entry.revision >= 0 else "",
+                        tracking=None,
+                        is_current=(
+                            current is not None and current.name == entry.name
+                        ),
+                    )
+                )
+
+        # Sort: current first, then alphabetical.
+        return tuple(sorted(result, key=lambda b: (not b.is_current, b.name)))
+
+    def current_branch(self, repo: Repo) -> BranchInfo | None:
+        """Derive the current branch from `repo.metadata['relative_url']`.
+
+        Returns None if the WC's URL doesn't follow the
+        trunk/branches/tags convention, or points at a tag (tags
+        aren't branches).
+        """
+
+        rel = repo.metadata.get("relative_url", "")
+        if not rel:
+            # Fresh detect — query svn info now.
+            info = self._info(repo)
+            rel = info.relative_url
+
+        extracted = extract_branch_from_url(rel)
+        if extracted is None:
+            return None
+        kind, name = extracted
+        if kind == "tag":
+            return None  # Tags aren't branches.
+
+        # Last-commit revision from info is the closest analog to "tip".
+        info = self._info(repo)
+        tip = str(info.revision) if info.revision >= 0 else ""
+
+        return BranchInfo(
+            name=name,
+            tip_sha=tip,
+            tracking=None,
+            is_current=True,
+        )
+
+    # ----- remotes ---------------------------------------------------- #
+
+    def remotes(self, repo: Repo) -> tuple[RemoteInfo, ...]:
+        """SVN has a single canonical remote — the repository root URL.
+
+        We return it under the conventional name `origin` so cross-VCS
+        tooling can treat SVN + Git uniformly.
+        """
+
+        url = repo.remote
+        if not url:
+            return ()
+        return (RemoteInfo(name="origin", url=url),)
+
+    # ----- tags ------------------------------------------------------- #
+
+    def tags(self, repo: Repo) -> tuple[TagInfo, ...]:
+        """List tags under the conventional `^/tags/` URL.
+
+        Returns `()` if `^/tags` doesn't exist.
+        """
+
+        out = run_svn(
+            ("ls", "--xml", "--non-interactive", "^/tags"),
+            cwd=repo.path,
+            allow_failure=True,
+        )
+        if not out:
+            return ()
+
+        result: list[TagInfo] = []
+        for entry in parse_ls_xml(out):
+            if entry.kind != "dir":
+                continue
+            result.append(
+                TagInfo(
+                    name=entry.name,
+                    target_sha=str(entry.revision) if entry.revision >= 0 else "",
+                    is_annotated=False,  # SVN tags are dir-copies.
+                    is_signed=False,
+                    message="",
+                    created_at=entry.date,
+                )
+            )
+        return tuple(result)
+
+    # ----- show commit ------------------------------------------------ #
+
+    def show_commit(self, repo: Repo, sha: str) -> CommitRef:
+        """Return a single CommitRef for the given revision.
+
+        SVN uses revision numbers (or `HEAD` / `BASE` / `PREV` /
+        `COMMITTED`) as the opaque `sha` field. Accepts any value
+        SVN's `-r` understands.
+        """
+
+        if not sha:
+            raise DriverError("show_commit requires a non-empty revision")
+        out = run_svn(
+            ("log", "--xml", "--non-interactive", "-r", sha, "-l", "1"),
+            cwd=repo.path,
+        )
+        refs = parse_log_xml(out)
+        if not refs:
+            raise DriverError(f"revision {sha} not found in {repo.path}")
+        return refs[0]
+
+    # ----- internal helpers ------------------------------------------- #
+
+    def _ls_exists(self, repo: Repo, url: str) -> bool:
+        """True if `svn ls <url>` succeeds (path is present in the repo)."""
+
+        out = run_svn(
+            ("ls", "--non-interactive", url),
+            cwd=repo.path,
+            allow_failure=True,
+        )
+        return bool(out.strip()) or self._ls_path_known(repo, url)
+
+    def _ls_path_known(self, repo: Repo, url: str) -> bool:
+        """Disambiguate empty-but-existing from missing.
+
+        `svn ls` on an existing-but-empty directory returns empty
+        stdout AND exit 0; on a missing path it returns empty AND
+        exit non-zero. We re-run with `--depth empty` which gives
+        a non-empty response on existing paths.
+        """
+
+        out = run_svn(
+            ("info", "--non-interactive", "--depth", "empty", url),
+            cwd=repo.path,
+            allow_failure=True,
+        )
+        return bool(out.strip())
+
+    def _ls_tip_revision(self, repo: Repo, url: str) -> int:
+        """Last-changed revision of `url` (or -1 on failure)."""
+
+        out = run_svn(
+            ("info", "--xml", "--non-interactive", "--depth", "empty", url),
+            cwd=repo.path,
+            allow_failure=True,
+        )
+        if not out:
+            return -1
+        try:
+            info = parse_info_xml(out)
+        except ValueError:
+            return -1
+        return info.revision if info.revision >= 0 else -1
 
     # Write methods — T-100c.
     def add(self, *_: Any, **__: Any) -> Any:
