@@ -12,8 +12,18 @@ dogfoods its own lifecycle. Until then, this file is maintained by hand.
 
 ## [Unreleased]
 
-Post-v0.1.0 work queued for the next release (target: `v0.1.0.post1` or
-`v0.1.1`, depending on whether new functionality lands before cut).
+_No changes queued yet._
+
+## [0.1.0.post1] — 2026-05-16
+
+**The real first published release.** v0.1.0 shipped against
+`__version__ = "0.1.0.dev0"` (a wart — the version string wasn't
+bumped before tagging). PyPI permanently reserves
+`sange==0.1.0.dev0` from that publish; `pip install sange` (no
+`--pre`) skipped it. **v0.1.0.post1 is the real `pip install`-able
+v0.1**. The v0.1.0 git tag stays at its original commit per
+"release-as-immutable"; this `.post1` carries the same code shape
+plus everything the [Unreleased] section accumulated:
 
 ### Added
 
@@ -249,5 +259,6 @@ exit-criteria: `sange init` → `git diff | sange commit` →
 - Breaking changes are recorded as superseding ADRs in
   `.design/plans/decisions-log.md`.
 
-[Unreleased]: https://github.com/simsange/sange/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/simsange/sange/compare/v0.1.0.post1...HEAD
+[0.1.0.post1]: https://github.com/simsange/sange/releases/tag/v0.1.0.post1
 [0.1.0]: https://github.com/simsange/sange/releases/tag/v0.1.0
