@@ -7,44 +7,191 @@ All notable changes to Sange are recorded here. The format follows
 From v0.1.0 onward the changelog is emitted by `tools/generators/changelog_from_commits.py`
 (T-G-013) from the `.sange/commits/*.json` lifecycle records. Hand-edits between
 generator runs are allowed, with every edit recorded as a session-log row per
-ADR-028 — but the generator is the source of truth, and CI verifies the
-`output_sha256` frontmatter of this file against a fresh run.
+ADR-028 — but the generator becomes the source of truth once the project
+dogfoods its own lifecycle. Until then, this file is maintained by hand.
 
 ## [Unreleased]
 
-The current build phase (Phase 0a — generators-scaffold-everything, per ADR-029).
-No commits are tagged yet; entries land here as each task in
-`.design/plans/checklist.md` flips to `completed`.
+Post-v0.1.0 work queued for the next release (target: `v0.1.0.post1` or
+`v0.1.1`, depending on whether new functionality lands before cut).
 
 ### Added
 
-- **T-001** — Repository scaffolding: `pyproject.toml` (hatchling, Python 3.12+,
-  ADR-019-pinned deps), `ruff.toml`, `mypy.ini` (`--strict`), `.pre-commit-config.yaml`,
-  `src/sange/{__init__,_version,py.typed}`, `tests/__init__.py`, `LICENSE` (Apache 2.0
-  per ADR-007), `NOTICE`, `.editorconfig`, `.gitignore`, `.gitattributes`,
-  `CHANGELOG.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`,
-  `AUTHORS.md`, `README.md`.
+- **T-042** — `sange commits new`: manual DRAFT-commit creation, no AI
+  involved. Takes `TYPE` + `SUBJECT` positional args plus `--scope`,
+  `--body` (or `-` to read from stdin), `--breaking-change`,
+  `--co-author`, `--reference`, `--repo`, `--branch`. Validates type
+  against the 11-element Conventional Commits set; auto-detects the
+  current branch via `GitDriver`. Plain-text + `--json` output.
+- **T-043** — `sange commits ai`: AI-driven DRAFT-commit creation,
+  registered as a typer alias for the existing `sange commit`
+  happy-path. Gives the granular sub-app a complete parallel:
+  `commits new` (manual) ↔ `commits ai` (AI).
+- **T-044** — Three new lifecycle CLI verbs closing the remaining
+  state-machine transitions:
+  - `sange commits submit` — DRAFT → PENDING_REVIEW
+  - `sange commits reject --reason "<text>"` — PENDING_REVIEW → REJECTED.
+    DRAFT auto-submits transparently (solo-dev UX).
+  - `sange commits commit` — APPROVED → COMMITTED via `git commit`, no push.
 
 ### Changed
 
-_None — Phase 0a is greenfield._
+- **Docs** — `docs/reference/cli-reference.md` regenerated (T-G-009) to
+  reflect the five new verbs in both the top-level command index and
+  the `sange commits` sub-command tree.
+- **Docs** — `docs/release.md`: added a "Step 0 — Pre-flight checklist"
+  subsection plus a "Failure modes seen in production" table folding
+  in the v0.1.0 release lessons (PyPI trusted-publisher pending vs
+  active, HTTPS-vs-SSH auth mismatch, org-rename tag-annotation drift).
+- **CI** — `.github/workflows/ci.yml`: bumped action versions to
+  node24-using majors (`actions/checkout@v6`, `actions/setup-python@v6`,
+  `actions/upload-artifact@v7`, `actions/download-artifact@v8`,
+  `docker/build-push-action@v7`, `docker/login-action@v4`,
+  `docker/setup-buildx-action@v4`, `docker/setup-qemu-action@v4`).
+  Each version verified via `api.github.com/repos/<action>/releases/latest`
+  before pinning.
+- **CI** — `generators` job now runs `all.py --check --skip T-G-001 T-G-002`.
+  The two skipped generators introspect the installed `git --version` /
+  `svn --version` and embed those in their outputs, so CI's toolchain
+  version never byte-matches a contributor's local toolchain.
+- **URLs** — Migrated from `github.com/sangedev/sange` to
+  `github.com/simsange/sange` across 36 files. The GitHub org was
+  renamed in-place on 2026-05-15. The `v0.1.0` tag's annotation retains
+  the historical `sangedev` URL per the release-as-immutable rule.
 
-### Removed
+### Fixed
 
-_None — the held `sange-v1/` and `sange-v2/` trees remain in place per R-017
-(`.design/plans/risk-register.md`); they are scheduled for removal at the
-v0.1.0 beta gate._
+- **Tests** — `tests/unit/test_cli_commits.py:_setup_git_repo`: added
+  `-u` flag to the fixture's `git push` so the test repo's `main` has
+  upstream tracking. Required by newer git versions when
+  `GitDriver.push()` runs bare `git push origin` with no branch
+  argument.
+- **mypy** — 25 errors → 0 across the source tree. One real bug
+  caught (`_gather_repo_context` returned `BranchInfo` where `str`
+  was declared); the rest were missing type ignores for optional AI
+  extras + `cast(AIProvider, ...)` on three lazy-loaded provider
+  constructions.
+- **ruff** — 375 errors → 0. Targeted fixes (B904 raise-from, RUF005,
+  N806, RUF043, B007, RUF059, F841, SIM110) plus config-level ignores
+  (SIM105 / UP042 / B008 / B017 / N818 / RUF001 / RUF012 / SIM102 /
+  SIM103 / SIM108). Per-file E501 ignores for generator scripts +
+  test fixtures.
+- **Docs site** —
+  `documentation/docs/architecture/redaction.md`: converted regex-
+  bearing markdown table to a fenced code block. Python's HTML parser
+  was interpreting `[A-Za-z0-9]{36,}` in table cells as a
+  `<![CDATA[...]]>` marked-section, crashing `mkdocs build --strict`.
 
-### Security
+## [0.1.0] — 2026-05-14
 
-_See `SECURITY.md` for the disclosure process. v0.1.0 ships with the §11 threat
-model fully reified via `docs/security/stride.md` (emitted by T-G-012)._
+First public release. Functional MVP closing the §14.1 v0.1
+exit-criteria: `sange init` → `git diff | sange commit` →
+`commits approve` → `commits push`.
+
+### Added
+
+- **Foundation** (Phase 0)
+  - `pyproject.toml` with hatchling backend, Python 3.12+ floor,
+    pinned deps per ADR-019; `src/sange/{__init__,_version,py.typed}`
+    layout (PEP 561).
+  - `SangeConfig` Pydantic v2 model with TOML + JSON merge.
+  - `VCSDriver` Protocol + 4 capability sub-protocols
+    (`SupportsStash`, `SupportsBisect`, `SupportsRebase`,
+    `SupportsLFS`).
+  - Git adapter: read operations (status, log, diff, branches,
+    current_branch, remotes, tags, show_commit) plus 12 write
+    operations (add, remove, revert, commit, branch_create/delete,
+    switch, fetch, pull, push, tag_create/delete).
+  - 8-state `CommitJSON` lifecycle schema + storage
+    (`.sange/commits/`) + pure-function `LifecycleEngine` state
+    machine + atomic-write counter with filesystem-rescan crash
+    recovery.
+  - `AIProvider` Protocol + adapters for mock / anthropic / openai
+    / ollama / gemini / bedrock (optional extras gated by
+    `pip install 'sange[<provider>]'`).
+  - PromptEnhancer with T-030 redaction → template render →
+    provider completion → schema validate → AuditRecord pipeline.
+  - Commit-message enhancement template (Conventional Commits 1.0.0
+    output schema).
+  - Modular Makefile generator with Category convention (§10.4).
+  - Doctor checks including `--makefile-tracked` detection (§10.3).
+  - Local NDJSON telemetry collector (opt-in, ISO-week sharded).
+
+- **Generators** (Phase 0a — generate-first per ADR-023 + ADR-029)
+  - Shared helpers: `_lib/{output,manpage,markdown,fingerprint}.py`.
+  - 14 of 16 generators implemented (T-G-010 + T-G-014 deferred to
+    Phase 3 / Phase 4 respectively): git-catalog, svn-catalog,
+    cross-vcs-map, commit-templates, kit-manifest, docs-index,
+    adr-scaffold, exit-codes, cli-reference, config-schema,
+    threat-model-table, changelog-from-commits, profile-registry
+    (35 templates), verify-session-log.
+  - `tools/generators/all.py` orchestrator with topological
+    dependency ordering, shared clock, deterministic `output_sha256`
+    frontmatter, and `--write` / `--check` modes.
+
+- **CLI** (Phase 1 — happy path)
+  - `sange --version`, `--json` global flag, `--help`.
+  - `sange init` — bootstrap `.sange/` skeleton with
+    Makefile-tracking detection.
+  - `sange commit` — happy-path AI-driven commit message
+    generation with optional DRAFT save.
+  - `sange commits {list,approve,push}` — initial lifecycle verbs.
+    The remaining verbs (`new`, `ai`, `submit`, `reject`,
+    `commit`) land in v0.1.0.post1 / v0.1.1.
+  - `sange doctor` — environment health checks.
+  - `sange ai providers` — list registered providers.
+
+- **Release infrastructure**
+  - `.github/workflows/release.yml` — tag-driven pipeline: sdist+wheel
+    build, PyPI trusted-publisher OIDC publish, multi-arch Docker
+    buildx push to GHCR (linux/amd64 + linux/arm64 per ADR-033) with
+    sigstore provenance + SBOM, GitHub Release creation with
+    auto-extracted notes from `docs/CHANGELOG.md`.
+  - `.github/workflows/ci.yml` — pytest matrix (3.12/3.13 ×
+    ubuntu-x64/ubuntu-arm64/macos), ruff, mypy `--strict`, generators
+    `--check`, package build, single-arch docker sanity.
+  - Multi-stage `Dockerfile` per ADR-033: `python:3.12-slim` base,
+    non-root `sange` user (UID 1000), 310 MB final image, doctor
+    smoke at container start.
+
+- **Docs**
+  - `docs/release.md` — operator-facing release recipe (one-time
+    setup + per-release procedure + recovery paths).
+  - `docs/CHANGELOG.md` — T-G-013-generated changelog (will populate
+    as the project dogfoods `sange commits push`).
+  - 33 ADRs in `.design/plans/decisions-log.md` documenting every
+    non-trivial design choice.
+  - Two sister-repo seeds in this checkout pending bootstrap:
+    `documentation/` (MkDocs Material site for
+    `simsange/documentation`) and `org-github/` (community-health
+    files for `simsange/.github`).
+
+### Known issues at release time
+
+- **PyPI publish blocked**. The v0.1.0 tag push at 2026-05-15
+  successfully built sdist+wheel and pushed multi-arch images to
+  GHCR, but the `publish to PyPI (OIDC)` job failed with
+  `invalid-publisher` — the trusted-publisher record on PyPI was
+  filed as "pending" rather than active. Pre-flight checklist now
+  in `docs/release.md::Step 0` to prevent this on the next release.
+  `pip install sange` will work once the maintainer completes the
+  one-time trusted-publisher setup and re-runs the failed `pypi` +
+  `release` jobs.
+- **GHCR image is private by default**. Anonymous
+  `docker pull ghcr.io/simsange/sange:v0.1.0` requires the
+  maintainer to flip the package visibility to "Public" at
+  `github.com/orgs/simsange/packages`.
 
 ## Versioning policy
 
 - **MAJOR.MINOR.PATCH** per SemVer 2.0.0.
-- **`.devN`** suffixes denote pre-release builds during a Phase (current).
-- **`-rcN`** is reserved for release candidates near a tagged version.
-- Breaking changes are recorded as superseding ADRs (`.design/plans/decisions-log.md`).
+- **`.postN`** suffixes for fix-forward releases against an immutable
+  tag (per PEP 440; e.g. `v0.1.0.post1` fixes bugs without bumping
+  `0.1.0` → `0.1.1`).
+- **`-rcN`** for release candidates near a tagged version.
+- **`-bN`** / **`-aN`** for betas / alphas.
+- Breaking changes are recorded as superseding ADRs in
+  `.design/plans/decisions-log.md`.
 
-[Unreleased]: https://github.com/simsange/sange/compare/HEAD...HEAD
+[Unreleased]: https://github.com/simsange/sange/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/simsange/sange/releases/tag/v0.1.0
