@@ -462,7 +462,10 @@ def _setup_git_repo(tmp_path: Path) -> Path:
         cwd=repo, env=env, check=True,
     )
     subprocess.run(
-        ["git", "push", "-q", "origin", "main"], cwd=repo, env=env, check=True
+        # `-u` sets upstream so newer git accepts subsequent `git push origin`
+        # without explicit branch argument (which is what GitDriver.push() does
+        # when no branch override is supplied).
+        ["git", "push", "-q", "-u", "origin", "main"], cwd=repo, env=env, check=True
     )
     # Stage a change for the next commit.
     (repo / "README.md").write_text("y\n")
