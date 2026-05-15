@@ -1,9 +1,9 @@
 ---
 generated_by: tools/generators/docs_index.py
 generator_version: 1.0.0
-generated_at: 2026-05-15T00:51:26Z
-input_sha256: 0b2e8c2538960e7c5063312105ad49b983432ca516a9f1d2b0c02d19d0619543
-output_sha256: 8a989f81ef3ac04dfcad6753b4f3db7f6e017da4e1139ea6ee7b149912cbe041
+generated_at: 2026-05-15T15:56:41Z
+input_sha256: 00058332c0645dee745cdbf55e2d9839afd5a8bbedd0d1bbefb94d67cda4b271
+output_sha256: ac3879fbbcf6aaae6e56e5c7ff7ca4c912f4d59f8b2e9164ba22bf63b1d0746f
 manual_edits_allowed: false
 ---
 # Sange documentation
@@ -14,12 +14,17 @@ manual_edits_allowed: false
 
 | Section | Title | Files |
 | :--- | :--- | ---: |
+| `tools/` | Per-tool walkthroughs | 1 |
 | `reference/` | Reference (catalogs + schemas) | 9 |
 | `security/` | Security | 1 |
 | `adr/` | Architecture Decision Records | 2 |
 | _top-level_ | Top-level | 2 |
-| **Total** |  | 14 |
+| **Total** |  | 15 |
 
+
+## `tools/` — Per-tool walkthroughs
+
+- [Commit lifecycle walkthrough](tools/workflow/commit-lifecycle.md) — [`tools/workflow/commit-lifecycle.md`](./tools/workflow/commit-lifecycle.md)
 
 ## `reference/` — Reference (catalogs + schemas)
 
