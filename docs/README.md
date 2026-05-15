@@ -1,9 +1,9 @@
 ---
 generated_by: tools/generators/docs_index.py
 generator_version: 1.0.0
-generated_at: 2026-05-15T16:38:42Z
-input_sha256: 869e3152a4494d23bd0d6a9b5c3d8f74c833a1ac47f6c5d5494411f919263e07
-output_sha256: 04769232a87e3c412d0504df54f8acc5c261f4a4328b1e8666faa98e6352dd06
+generated_at: 2026-05-15T16:46:45Z
+input_sha256: 9f839ff0286fb94b1db723a51e0b46ffce2617f9109faff5a15c5d7fe686ea5b
+output_sha256: 89fabe65fa97637506b80484dee4aef3044ccbdc01ef48bb9b04d785be767d34
 manual_edits_allowed: false
 ---
 # Sange documentation
@@ -14,19 +14,21 @@ manual_edits_allowed: false
 
 | Section | Title | Files |
 | :--- | :--- | ---: |
-| `tools/` | Per-tool walkthroughs | 3 |
+| `tools/` | Per-tool walkthroughs | 5 |
 | `reference/` | Reference (catalogs + schemas) | 9 |
 | `security/` | Security | 3 |
 | `adr/` | Architecture Decision Records | 2 |
-| `governance/` | Governance + roadmap | 2 |
+| `governance/` | Governance + roadmap | 3 |
 | _top-level_ | Top-level | 5 |
-| **Total** |  | 24 |
+| **Total** |  | 27 |
 
 
 ## `tools/` — Per-tool walkthroughs
 
+- [Node.js projects with Sange](tools/lang/node.md) — [`tools/lang/node.md`](./tools/lang/node.md)
 - [Python projects with Sange](tools/lang/python.md) — [`tools/lang/python.md`](./tools/lang/python.md)
 - [Git adapter](tools/vcs/git.md) — [`tools/vcs/git.md`](./tools/vcs/git.md)
+- [SVN adapter](tools/vcs/svn.md) — [`tools/vcs/svn.md`](./tools/vcs/svn.md)
 - [Commit lifecycle walkthrough](tools/workflow/commit-lifecycle.md) — [`tools/workflow/commit-lifecycle.md`](./tools/workflow/commit-lifecycle.md)
 
 ## `reference/` — Reference (catalogs + schemas)
@@ -55,6 +57,7 @@ manual_edits_allowed: false
 ## `governance/` — Governance + roadmap
 
 - [How Sange records decisions (ADR process)](governance/adr-process.md) — [`governance/adr-process.md`](./governance/adr-process.md)
+- [Privacy & telemetry](governance/privacy.md) — [`governance/privacy.md`](./governance/privacy.md)
 - [Roadmap](governance/roadmap.md) — [`governance/roadmap.md`](./governance/roadmap.md)
 
 ## Top-level docs

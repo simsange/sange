@@ -1,9 +1,9 @@
 ---
 generated_by: tools/generators/docs_index.py
 generator_version: 1.0.0
-generated_at: 2026-05-15T16:38:42Z
-input_sha256: 869e3152a4494d23bd0d6a9b5c3d8f74c833a1ac47f6c5d5494411f919263e07
-output_sha256: b1faa781ce846f33a9f15a0c3ad7a416d9a1c5e77d95201c50ddc4bc8cd7bfb6
+generated_at: 2026-05-15T16:46:45Z
+input_sha256: 9f839ff0286fb94b1db723a51e0b46ffce2617f9109faff5a15c5d7fe686ea5b
+output_sha256: b2f3306d99f2f64030528ca943d2a79915a397d937dea88066c66ed669d852e9
 manual_edits_allowed: false
 ---
 # Per-tool documentation
@@ -12,11 +12,13 @@ manual_edits_allowed: false
 
 ## `lang/`
 
+- [Node.js projects with Sange](../tools/lang/node.md) — `tools/lang/node.md`
 - [Python projects with Sange](../tools/lang/python.md) — `tools/lang/python.md`
 
 ## `vcs/`
 
 - [Git adapter](../tools/vcs/git.md) — `tools/vcs/git.md`
+- [SVN adapter](../tools/vcs/svn.md) — `tools/vcs/svn.md`
 
 ## `workflow/`
 

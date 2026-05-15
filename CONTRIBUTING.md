@@ -6,9 +6,12 @@ layer between humans and their VCS — and the audience scope (§3 of
 from non-developer founders, CTOs, junior engineers, senior staff engineers,
 DevOps/SRE, OSS maintainers, and cyber-security reviewers are all welcome.
 
-This file is the lightweight summary. The full process lives in
-[`docs/governance/contributing.md`](docs/governance/contributing.md) once the
-generators emit it (T-G-006).
+This file is the lightweight summary. For the broader project process see:
+
+- [`docs/governance/roadmap.md`](docs/governance/roadmap.md) — where Sange is going.
+- [`docs/governance/adr-process.md`](docs/governance/adr-process.md) — how to propose architectural changes.
+- [`docs/governance/privacy.md`](docs/governance/privacy.md) — privacy + telemetry posture.
+- [`docs/architecture.md`](docs/architecture.md) — reader's guide to the canonical architecture deliverable.
 
 ## The short version
 

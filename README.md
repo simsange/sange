@@ -79,9 +79,12 @@ manuals are split per-tool, per-topic.
 | Architecture (reader's guide) | [`docs/architecture.md`](docs/architecture.md) |
 | Commit lifecycle walkthrough | [`docs/tools/workflow/commit-lifecycle.md`](docs/tools/workflow/commit-lifecycle.md) |
 | Git adapter | [`docs/tools/vcs/git.md`](docs/tools/vcs/git.md) |
+| SVN adapter (planned for v0.5) | [`docs/tools/vcs/svn.md`](docs/tools/vcs/svn.md) |
 | Python projects with Sange | [`docs/tools/lang/python.md`](docs/tools/lang/python.md) |
+| Node.js projects with Sange | [`docs/tools/lang/node.md`](docs/tools/lang/node.md) |
 | Roadmap (v0.1 → v4.0+) | [`docs/governance/roadmap.md`](docs/governance/roadmap.md) |
 | ADR process | [`docs/governance/adr-process.md`](docs/governance/adr-process.md) |
+| Privacy & telemetry | [`docs/governance/privacy.md`](docs/governance/privacy.md) |
 | Release procedure | [`docs/release.md`](docs/release.md) |
 | Changelog | [`CHANGELOG.md`](CHANGELOG.md) |
 | ADR index (33 decisions) | [`docs/adr/`](docs/adr/) and [`.design/plans/decisions-log.md`](.design/plans/decisions-log.md) |
