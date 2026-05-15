@@ -1,9 +1,9 @@
 ---
 generated_by: tools/generators/docs_index.py
 generator_version: 1.0.0
-generated_at: 2026-05-15T16:30:17Z
-input_sha256: 3541ac5399a05cd09a249dc96d781e0d29943321b939a51efae2026220fad7cb
-output_sha256: 507fff36830e73afd19f92971b8d472e02e6847e9d504c84735e9cd48dd99441
+generated_at: 2026-05-15T16:38:42Z
+input_sha256: 869e3152a4494d23bd0d6a9b5c3d8f74c833a1ac47f6c5d5494411f919263e07
+output_sha256: 04769232a87e3c412d0504df54f8acc5c261f4a4328b1e8666faa98e6352dd06
 manual_edits_allowed: false
 ---
 # Sange documentation
@@ -14,17 +14,19 @@ manual_edits_allowed: false
 
 | Section | Title | Files |
 | :--- | :--- | ---: |
-| `tools/` | Per-tool walkthroughs | 1 |
+| `tools/` | Per-tool walkthroughs | 3 |
 | `reference/` | Reference (catalogs + schemas) | 9 |
 | `security/` | Security | 3 |
 | `adr/` | Architecture Decision Records | 2 |
 | `governance/` | Governance + roadmap | 2 |
-| _top-level_ | Top-level | 4 |
-| **Total** |  | 21 |
+| _top-level_ | Top-level | 5 |
+| **Total** |  | 24 |
 
 
 ## `tools/` — Per-tool walkthroughs
 
+- [Python projects with Sange](tools/lang/python.md) — [`tools/lang/python.md`](./tools/lang/python.md)
+- [Git adapter](tools/vcs/git.md) — [`tools/vcs/git.md`](./tools/vcs/git.md)
 - [Commit lifecycle walkthrough](tools/workflow/commit-lifecycle.md) — [`tools/workflow/commit-lifecycle.md`](./tools/workflow/commit-lifecycle.md)
 
 ## `reference/` — Reference (catalogs + schemas)
@@ -59,6 +61,7 @@ manual_edits_allowed: false
 
 - [Changelog](CHANGELOG.md) — [`CHANGELOG.md`](./CHANGELOG.md)
 - [Architecture (reader's guide)](architecture.md) — [`architecture.md`](./architecture.md)
+- [Installation](installation.md) — [`installation.md`](./installation.md)
 - [Quickstart](quickstart.md) — [`quickstart.md`](./quickstart.md)
 - [Releasing Sange](release.md) — [`release.md`](./release.md)
 

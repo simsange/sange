@@ -74,9 +74,12 @@ manuals are split per-tool, per-topic.
 
 | Topic | Path |
 |---|---|
+| Installation | [`docs/installation.md`](docs/installation.md) |
 | Quickstart | [`docs/quickstart.md`](docs/quickstart.md) |
 | Architecture (reader's guide) | [`docs/architecture.md`](docs/architecture.md) |
 | Commit lifecycle walkthrough | [`docs/tools/workflow/commit-lifecycle.md`](docs/tools/workflow/commit-lifecycle.md) |
+| Git adapter | [`docs/tools/vcs/git.md`](docs/tools/vcs/git.md) |
+| Python projects with Sange | [`docs/tools/lang/python.md`](docs/tools/lang/python.md) |
 | Roadmap (v0.1 → v4.0+) | [`docs/governance/roadmap.md`](docs/governance/roadmap.md) |
 | ADR process | [`docs/governance/adr-process.md`](docs/governance/adr-process.md) |
 | Release procedure | [`docs/release.md`](docs/release.md) |
@@ -103,13 +106,12 @@ manuals are split per-tool, per-topic.
 
 | Topic | Target | Gates on |
 |---|---|---|
-| Installation | `docs/installation.md` | v0.1.0 PyPI publish |
 | Release bundling | `docs/tools/release/bundle.md` | v0.5+ release engine |
 | History purge | `docs/tools/security/purge.md` | v1.0 purge subsystem |
 | Remote access | `docs/tools/ui/remote-access.md` | v1.0 Web UI |
 | Premade ops kit | `docs/tools/ui/vps-setup.md` | v1.0 kit surface |
-| Per-VCS reference | `docs/tools/vcs/` | per-tool docs sprint |
-| Per-language profiles | `docs/tools/lang/` | per-tool docs sprint |
+| Per-VCS reference (SVN / Hg / P4 / Pijul / Fossil / Plastic / Sapling) | `docs/tools/vcs/<vcs>.md` | per adapter shipping |
+| Per-language profiles (beyond Python) | `docs/tools/lang/<lang>.md` | per-language sprint |
 | JSON-RPC schema | `docs/reference/json-rpc-schema.md` | T-162 (v1.0) |
 | Operations runbook | `docs/operations/` | v0.5+ operator-facing |
 
