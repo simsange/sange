@@ -24,8 +24,12 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import typer
+
+if TYPE_CHECKING:
+    from sange.core.enhancer.tasks.commit_message import CommitMessageResult
 
 
 def commit_command(
@@ -208,20 +212,21 @@ def _gather_repo_context(
         repo = GitDriver.detect(repo_path.resolve())
         driver = GitDriver()
 
-        branch = driver.current_branch(repo)
+        branch_info = driver.current_branch(repo)
+        branch = branch_info.name if branch_info is not None else ""
         commits = driver.log(repo, max_count=5)
         recent = "\n".join(c.subject for c in commits)
         # files_changed is the working-copy status set.
         status = driver.status(repo)
-        files = [entry.path for entry in status.entries]
-        return branch or "", recent, files
+        files = [str(entry.path) for entry in status.entries]
+        return branch, recent, files
     except Exception:
         return "", "", []
 
 
 def _save_draft(
     *,
-    result,  # type: ignore[no-untyped-def] — CommitMessageResult, lazily-imported above
+    result: CommitMessageResult,
     branch: str,
     repo_root: Path,
 ) -> tuple[Path, int]:
@@ -247,7 +252,9 @@ def _save_draft(
         created_at=now,
         updated_at=now,
         message=CommitMessage(
-            type=result.type,
+            # result.type is `str` but validated to be one of the 11
+            # Conventional Commits types by CommitMessageResult.__post_init__.
+            type=result.type,  # type: ignore[arg-type]
             scope=result.scope,
             subject=result.subject,
             body=result.body,

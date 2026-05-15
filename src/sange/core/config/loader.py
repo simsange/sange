@@ -49,15 +49,15 @@ import json
 import os
 import re
 import shutil
+
+# tomllib is stdlib in Python 3.11+. The project floor is 3.12
+# (pyproject.toml::requires-python) so tomllib is always available; the
+# legacy try/except fallback to `tomli` was kept for paranoia but mypy
+# correctly flags it as dead code. Plain import — no fallback needed.
+import tomllib
 import warnings
 from pathlib import Path
 from typing import Any
-
-# tomllib (Python 3.11+) → fall back to tomli on 3.10
-try:
-    import tomllib  # type: ignore[import-not-found]
-except ImportError:  # pragma: no cover — Python 3.10 fallback
-    import tomli as tomllib  # type: ignore[import-not-found]
 
 from sange.core.config.models import (
     SCHEMA_CURRENT,
@@ -146,7 +146,8 @@ def _parse_config_file(path: Path) -> dict[str, Any]:
     if path.suffix.lower() == ".toml":
         return tomllib.loads(text)
     if path.suffix.lower() == ".json":
-        return json.loads(text)
+        parsed: dict[str, Any] = json.loads(text)
+        return parsed
     raise ConfigError(
         f"config file {path} has unrecognized extension; expected .toml or .json"
     )
@@ -274,7 +275,7 @@ def env_overrides(environ: dict[str, str] | None = None) -> dict[str, Any]:
             existing = cursor.get(segment)
             if not isinstance(existing, dict):
                 cursor[segment] = {}
-            cursor = cursor[segment]  # type: ignore[assignment]
+            cursor = cursor[segment]
         cursor[path_parts[-1]] = _env_value_cast(raw_value)
     return out
 

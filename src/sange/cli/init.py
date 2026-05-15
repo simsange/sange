@@ -28,8 +28,11 @@ from __future__ import annotations
 import json
 import shutil
 from pathlib import Path
+from typing import Any
 
 import typer
+
+_Action = dict[str, Any]
 
 # Source roots — resolved relative to the installed package.
 _PACKAGE_ROOT = Path(__file__).resolve().parent.parent  # src/sange/
@@ -66,7 +69,7 @@ def init_command(
     ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
-    actions: list[dict] = []
+    actions: list[_Action] = []
 
     repo = repo_root.resolve()
     if not repo.is_dir():
@@ -125,11 +128,11 @@ def init_command(
 # --------------------------------------------------------------------------- #
 
 
-def _install_makefile_kit(repo: Path, *, force: bool) -> list[dict]:
+def _install_makefile_kit(repo: Path, *, force: bool) -> list[_Action]:
     """Copy templates/Makefile.template → <repo>/Makefile + every .mk
     fragment under templates/makefiles/ to <repo>/.sange/makefiles/."""
 
-    actions: list[dict] = []
+    actions: list[_Action] = []
 
     shim_src = _TEMPLATES_DIR / "Makefile.template"
     shim_dst = repo / "Makefile"
@@ -145,7 +148,7 @@ def _install_makefile_kit(repo: Path, *, force: bool) -> list[dict]:
     return actions
 
 
-def _copy_file(src: Path, dst: Path, repo: Path, *, force: bool) -> dict:
+def _copy_file(src: Path, dst: Path, repo: Path, *, force: bool) -> _Action:
     """Copy `src` → `dst`. Returns an action record."""
 
     rel = str(dst.relative_to(repo))
@@ -169,7 +172,7 @@ _GITIGNORE_ENTRIES = ("/Makefile", "/.sange/commits/", "/.sange/telemetry/")
 _GITIGNORE_HEADER = "# Sange-managed entries (sange init)"
 
 
-def _update_gitignore(repo: Path) -> dict:
+def _update_gitignore(repo: Path) -> _Action:
     """Append the §10.3 + §6.4 entries to `.gitignore` (idempotent)."""
 
     gitignore = repo / ".gitignore"

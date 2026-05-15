@@ -33,7 +33,7 @@ from __future__ import annotations
 import enum
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
 
 # --------------------------------------------------------------------------- #
 # Exceptions
@@ -364,6 +364,10 @@ def get_provider(
         from sange.adapters.ai.mock import MockProvider
         return MockProvider(**kwargs)
 
+    # Optional-extra providers — the modules live under sange.adapters.ai.*
+    # but only when the matching pip extra is installed. mypy resolves their
+    # types as `Any` (ignore_missing_imports), so the constructor calls need
+    # an explicit cast to satisfy the AIProvider return type.
     if name == "anthropic":
         try:
             from sange.adapters.ai.anthropic import AnthropicProvider
@@ -371,7 +375,10 @@ def get_provider(
             raise AIProviderNotInstalled(
                 "anthropic SDK not installed — run `pip install sange[ai-anthropic]`"
             ) from exc
-        return AnthropicProvider(api_key=api_key, base_url=base_url, **kwargs)
+        return cast(
+            AIProvider,
+            AnthropicProvider(api_key=api_key, base_url=base_url, **kwargs),
+        )
 
     if name == "openai":
         try:
@@ -380,7 +387,10 @@ def get_provider(
             raise AIProviderNotInstalled(
                 "openai SDK not installed — run `pip install sange[ai-openai]`"
             ) from exc
-        return OpenAIProvider(api_key=api_key, base_url=base_url, **kwargs)
+        return cast(
+            AIProvider,
+            OpenAIProvider(api_key=api_key, base_url=base_url, **kwargs),
+        )
 
     if name == "ollama":
         try:
@@ -389,7 +399,7 @@ def get_provider(
             raise AIProviderNotInstalled(
                 "ollama SDK not installed — run `pip install sange[ai-ollama]`"
             ) from exc
-        return OllamaProvider(base_url=base_url, **kwargs)
+        return cast(AIProvider, OllamaProvider(base_url=base_url, **kwargs))
 
     raise AIError(
         f"unknown AI provider {name!r}; "

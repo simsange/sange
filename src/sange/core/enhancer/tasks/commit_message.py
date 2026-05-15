@@ -240,8 +240,8 @@ def generate_commit_message(
     if enhancer is None:
         registry = TemplateRegistry([build_commit_message_template()])
         enhancer = PromptEnhancer(templates=registry, collector=collector)
-    elif not enhancer._templates.has(TEMPLATE_ID, TEMPLATE_VERSION):  # type: ignore[attr-defined]
-        enhancer._templates.register(build_commit_message_template())  # type: ignore[attr-defined]
+    elif not enhancer._templates.has(TEMPLATE_ID, TEMPLATE_VERSION):
+        enhancer._templates.register(build_commit_message_template())
 
     files_changed_summary = (
         "\n".join(f"- {p}" for p in request.files_changed)

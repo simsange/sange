@@ -382,7 +382,7 @@ def push_command(
     cd.save(committed)
 
     push_status = "(--no-push)"
-    push_result_payload: dict | None = None
+    push_result_payload: dict[str, object] | None = None
     if push:
         try:
             push_result = driver.push(repo, remote=remote, branch=branch or "")
@@ -458,7 +458,9 @@ def _interactive_decision(commit) -> str:  # type: ignore[no-untyped-def]
     if answer is None:
         # Ctrl-C / EOF.
         return "skip"
-    return answer
+    # questionary's stubs return Any; we know the value is one of the
+    # registered choices (approve/reject/skip), all strings.
+    return str(answer)
 
 
 def _interactive_reject_reason() -> str:

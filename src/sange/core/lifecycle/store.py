@@ -230,7 +230,7 @@ class CommitsDirectory:
     def read(self, path: Path) -> CommitJSON:
         return self.store.read(path)
 
-    def list_all(self, **kwargs: object) -> list[CommitJSON]:  # type: ignore[no-untyped-def]
+    def list_all(self, **kwargs: object) -> list[CommitJSON]:
         return self.store.list_commits(**kwargs)  # type: ignore[arg-type]
 
     def by_counter(self, counter: int) -> CommitJSON | None:

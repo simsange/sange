@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 import typer
 
@@ -34,7 +35,7 @@ def providers_command() -> None:
     ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
-    rows: list[dict] = []
+    rows: list[dict[str, Any]] = []
     for name in ("mock", "anthropic", "openai", "ollama", "gemini", "bedrock"):
         try:
             provider = get_provider(name)

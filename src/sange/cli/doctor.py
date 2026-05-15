@@ -25,6 +25,7 @@ import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 import typer
 
@@ -34,7 +35,7 @@ class CheckResult:
     name: str
     ok: bool
     message: str
-    details: dict = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
 
 
 def _check_python() -> CheckResult:
