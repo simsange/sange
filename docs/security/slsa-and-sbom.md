@@ -116,6 +116,39 @@ sigstore verify identity /tmp/sange-verify/sange-0.1.0-py3-none-any.whl \
 The `sigstore` CLI installs via `pip install sigstore` (Python tooling)
 or via your platform package manager.
 
+## Why GHCR shows `unknown/unknown`
+
+When you browse <https://github.com/orgs/simsange/packages/container/sange>
+you'll see three entries under **OS / Arch**:
+
+| Entry | What it is |
+| :--- | :--- |
+| `linux/amd64` | The runnable x86-64 image. `docker pull` on Intel/AMD picks this. |
+| `linux/arm64` | The runnable arm64 image. `docker pull` on Apple Silicon / Graviton / ARM cloud hosts picks this. |
+| `unknown/unknown` | **The SLSA provenance attestation + CycloneDX SBOM**. Not a misconfigured platform — this is the OCI manifest carrying the attestations, referencing the two platform manifests as its `subject`. |
+
+The `unknown/unknown` label comes from the OCI spec: attestation
+manifests aren't platform-specific (they're metadata *about* the
+platform images), so they declare `platform: { architecture:
+"unknown", os: "unknown" }`. The GHCR UI lists every manifest in
+the index without special-casing attestations; Docker Hub's
+recently-updated UI hides them.
+
+It is **the artifact that makes `cosign verify-attestation` work**.
+Dropping it (by setting `provenance: false` + `sbom: false` in
+`release.yml`) would clean up the UI at the cost of every supply-
+chain claim documented in this file.
+
+The modern alternative — OCI 1.1 referrers attached as separate
+tags via `cosign attest` rather than as in-index manifests —
+requires a meaningful rewrite of the build pipeline and breaks the
+single-tag `cosign verify-attestation <image>` syntax for
+consumers. Not worth the trade for the GHCR cosmetic.
+
+If GHCR's UI is the only complaint, the answer is **wait** —
+their UI will catch up with attestation-manifest detection
+(Docker Hub did in 2024).
+
 ## The SBOM
 
 The CycloneDX SBOM attached to each release records:
