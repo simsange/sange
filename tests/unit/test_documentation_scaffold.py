@@ -210,3 +210,39 @@ class TestGitignore:
     def test_documentation_site_dir_ignored(self) -> None:
         gi = (_REPO_ROOT / ".gitignore").read_text(encoding="utf-8")
         assert "documentation/site" in gi
+
+
+# --------------------------------------------------------------------------- #
+# `mkdocs build --strict` smoke (skipped if mkdocs not installed)
+# --------------------------------------------------------------------------- #
+
+
+class TestMkdocsStrictBuild:
+    """End-to-end build of the docs site with strict-mode failures.
+
+    Catches markdown content that crashes the HTML parser (e.g., regex
+    character classes inside table cells, malformed admonitions, etc.).
+    Operationally — if this test passes locally it'll pass in CI too,
+    which lets us catch the failure pre-push instead of post-push.
+    """
+
+    def test_strict_build_succeeds(self) -> None:
+        import shutil
+        import subprocess
+
+        mkdocs = shutil.which("mkdocs")
+        if mkdocs is None:
+            pytest.skip("mkdocs not on PATH (install via documentation/requirements.txt)")
+
+        result = subprocess.run(
+            [mkdocs, "build", "--strict"],
+            cwd=str(_DOC),
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        assert result.returncode == 0, (
+            f"mkdocs build --strict failed:\n"
+            f"stdout: {result.stdout}\n"
+            f"stderr: {result.stderr}"
+        )

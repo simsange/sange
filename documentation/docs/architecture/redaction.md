@@ -19,21 +19,23 @@ The redactor runs three passes in order, accumulating replacements:
 
 ### 1. Known-pattern matchers (13 regexes)
 
-| Label | Pattern (approximate) |
-|---|---|
-| `aws-access-key` | `\bAKIA[0-9A-Z]{16}\b` |
-| `aws-secret-key` | `\b(?<![A-Za-z0-9/+=])[A-Za-z0-9/+=]{40}(?![A-Za-z0-9/+=])\b` |
-| `github-pat` | `\bghp_[A-Za-z0-9]{36,}\b` |
-| `github-oauth` | `\bgho_[A-Za-z0-9]{36,}\b` |
-| `github-app` | `\b(?:ghs\|ghu)_[A-Za-z0-9]{36,}\b` |
-| `github-refresh` | `\bghr_[A-Za-z0-9]{76,}\b` |
-| `anthropic-key` | `\bsk-ant-[A-Za-z0-9_-]{20,}\b` |
-| `openai-key` | `\bsk-(?!ant-)[A-Za-z0-9_-]{20,}\b` (anthropic-aware) |
-| `slack-token` | `\bxox[abprs]-[A-Za-z0-9-]{10,}\b` |
-| `stripe-key` | `\b(?:sk\|pk\|rk)_(?:live\|test)_[A-Za-z0-9]{24,}\b` |
-| `google-api-key` | `\bAIza[0-9A-Za-z_-]{35}\b` |
-| `jwt` | `\beyJ[A-Za-z0-9_=-]+\.eyJ[A-Za-z0-9_=-]+\.[A-Za-z0-9_=.+/-]+\b` |
-| `private-key-pem` | `-----BEGIN ... PRIVATE KEY ... -----END ... PRIVATE KEY-----` |
+```
+Label             Pattern (approximate)
+----------------  ---------------------------------------------------------
+aws-access-key    \bAKIA[0-9A-Z]{16}\b
+aws-secret-key    \b(?<![A-Za-z0-9/+=])[A-Za-z0-9/+=]{40}(?![A-Za-z0-9/+=])\b
+github-pat        \bghp_[A-Za-z0-9]{36,}\b
+github-oauth      \bgho_[A-Za-z0-9]{36,}\b
+github-app        \b(?:ghs|ghu)_[A-Za-z0-9]{36,}\b
+github-refresh    \bghr_[A-Za-z0-9]{76,}\b
+anthropic-key     \bsk-ant-[A-Za-z0-9_-]{20,}\b
+openai-key        \bsk-(?!ant-)[A-Za-z0-9_-]{20,}\b      (anthropic-aware)
+slack-token       \bxox[abprs]-[A-Za-z0-9-]{10,}\b
+stripe-key        \b(?:sk|pk|rk)_(?:live|test)_[A-Za-z0-9]{24,}\b
+google-api-key    \bAIza[0-9A-Za-z_-]{35}\b
+jwt               \beyJ[A-Za-z0-9_=-]+\.eyJ[A-Za-z0-9_=-]+\.[A-Za-z0-9_=.+/-]+\b
+private-key-pem   -----BEGIN ... PRIVATE KEY ... -----END ... PRIVATE KEY-----
+```
 
 ### 2. High-entropy heuristic
 
