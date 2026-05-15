@@ -11,10 +11,13 @@
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](pyproject.toml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/simsange/sange/badge)](https://securityscorecards.dev/viewer/?uri=github.com/simsange/sange)
 
-> **Status: pre-alpha.** The architecture is locked
-> (`.design/sange-architecture.md`, v4.4). The code is being built — Phase 0a
-> (generators-scaffold-everything per ADR-029) is in progress. Track progress
-> at `.design/plans/checklist.md`. First tagged release: `v0.1.0` (MVP).
+> **Status: v0.1.0 tagged (2026-05-14)**, Phase 1 CLI surface complete on
+> `main`. The architecture is locked (`.design/sange-architecture.md`,
+> v4.4). `pip install sange` lights up once the PyPI trusted-publisher
+> configuration completes — see `docs/release.md::Step 0` and the
+> v0.1.0 known-issues in `CHANGELOG.md`. Multi-arch Docker image
+> available at `ghcr.io/simsange/sange:v0.1.0`. Track ongoing
+> progress at `.design/plans/checklist.md`.
 
 ## What Sange is
 
@@ -67,39 +70,48 @@ All documentation lives under `docs/`. The canonical reference is the
 architecture deliverable in `.design/sange-architecture.md`; reader-oriented
 manuals are split per-tool, per-topic.
 
+**Live now:**
+
 | Topic | Path |
 |---|---|
-| Installation | [`docs/installation.md`](docs/installation.md) |
-| Quickstart | [`docs/quickstart.md`](docs/quickstart.md) |
-| Architecture (narrative) | [`docs/architecture.md`](docs/architecture.md) |
-| ADR index | [`docs/adr/`](docs/adr/) |
-| Audit findings (v1, v2) | [`docs/audit/`](docs/audit/) |
-| Commit lifecycle walkthrough | [`docs/tools/workflow/commit-lifecycle.md`](docs/tools/workflow/commit-lifecycle.md) |
-| Release bundling | [`docs/tools/release/bundle.md`](docs/tools/release/bundle.md) |
-| History purge | [`docs/tools/security/purge.md`](docs/tools/security/purge.md) |
-| Remote access | [`docs/tools/ui/remote-access.md`](docs/tools/ui/remote-access.md) |
-| Premade ops kit | [`docs/tools/ui/vps-setup.md`](docs/tools/ui/vps-setup.md) |
-| Per-VCS reference | [`docs/tools/vcs/`](docs/tools/vcs/) |
-| Per-language profiles | [`docs/tools/lang/`](docs/tools/lang/) |
-| Git command catalog (Appendix D) | [`docs/reference/git-command-catalog.md`](docs/reference/git-command-catalog.md) |
-| SVN command catalog (Appendix E) | [`docs/reference/svn-command-catalog.md`](docs/reference/svn-command-catalog.md) |
-| Cross-VCS concept map (Appendix F) | [`docs/reference/cross-vcs-concept-map.md`](docs/reference/cross-vcs-concept-map.md) |
-| Commit template library (Appendix G) | [`docs/reference/commit-template-library.md`](docs/reference/commit-template-library.md) |
-| Profile registry | [`docs/reference/profile-registry.md`](docs/reference/profile-registry.md) |
+| Release procedure | [`docs/release.md`](docs/release.md) |
+| Changelog | [`CHANGELOG.md`](CHANGELOG.md) |
+| ADR index (33 decisions) | [`docs/adr/`](docs/adr/) and [`.design/plans/decisions-log.md`](.design/plans/decisions-log.md) |
 | CLI reference | [`docs/reference/cli-reference.md`](docs/reference/cli-reference.md) |
-| JSON-RPC schema | [`docs/reference/json-rpc-schema.md`](docs/reference/json-rpc-schema.md) |
+| Git command catalog (Appendix D) | [`docs/reference/appendix-d-git-catalog.md`](docs/reference/appendix-d-git-catalog.md) |
+| SVN command catalog (Appendix E) | [`docs/reference/appendix-e-svn-catalog.md`](docs/reference/appendix-e-svn-catalog.md) |
+| Cross-VCS concept map (Appendix F) | [`docs/reference/appendix-f-cross-vcs.md`](docs/reference/appendix-f-cross-vcs.md) |
+| Commit template library (Appendix G) | [`docs/reference/appendix-g-commit-templates.md`](docs/reference/appendix-g-commit-templates.md) |
+| Profile registry | [`docs/reference/profile-registry.md`](docs/reference/profile-registry.md) |
 | Config schema | [`docs/reference/config-schema.md`](docs/reference/config-schema.md) |
 | Exit codes | [`docs/reference/exit-codes.md`](docs/reference/exit-codes.md) |
-| Threat model (STRIDE) | [`docs/security/threat-model.md`](docs/security/threat-model.md) |
-| Prompt-injection defense | [`docs/security/prompt-injection.md`](docs/security/prompt-injection.md) |
-| SLSA + SBOM | [`docs/security/slsa-and-sbom.md`](docs/security/slsa-and-sbom.md) |
-| Roadmap (v0.1 → v3.0+) | [`docs/governance/roadmap.md`](docs/governance/roadmap.md) |
-| ADR process | [`docs/governance/adr-process.md`](docs/governance/adr-process.md) |
-| Operations runbook | [`docs/operations/`](docs/operations/) |
+| Operations Kit manifest | [`docs/reference/kit-manifest.md`](docs/reference/kit-manifest.md) |
+| Threat model (STRIDE) | [`docs/security/stride.md`](docs/security/stride.md) |
+| Architecture deliverable (canonical) | [`.design/sange-architecture.md`](.design/sange-architecture.md) |
+| Master checklist | [`.design/plans/checklist.md`](.design/plans/checklist.md) |
 
-Many of the paths above are populated by Phase 0a generators
-(`tools/generators/`); they appear as the relevant `T-G-NNN` tasks land in
-`.design/plans/checklist.md`.
+**Planned** (each lands as the relevant `T-G-NNN` task in
+[`.design/plans/checklist.md`](.design/plans/checklist.md) flips
+`completed`):
+
+| Topic | Target | Gates on |
+|---|---|---|
+| Installation | `docs/installation.md` | v0.1.0 PyPI publish |
+| Quickstart | `docs/quickstart.md` | post-v0.1 polish |
+| Architecture (reader-oriented) | `docs/architecture.md` | post-v0.1 polish |
+| Commit lifecycle walkthrough | `docs/tools/workflow/commit-lifecycle.md` | per-tool docs sprint |
+| Release bundling | `docs/tools/release/bundle.md` | v0.5+ release engine |
+| History purge | `docs/tools/security/purge.md` | v1.0 purge subsystem |
+| Remote access | `docs/tools/ui/remote-access.md` | v1.0 Web UI |
+| Premade ops kit | `docs/tools/ui/vps-setup.md` | v1.0 kit surface |
+| Per-VCS reference | `docs/tools/vcs/` | per-tool docs sprint |
+| Per-language profiles | `docs/tools/lang/` | per-tool docs sprint |
+| JSON-RPC schema | `docs/reference/json-rpc-schema.md` | T-162 (v1.0) |
+| Prompt-injection defense | `docs/security/prompt-injection.md` | per-topic docs sprint |
+| SLSA + SBOM | `docs/security/slsa-and-sbom.md` | per-topic docs sprint |
+| Roadmap | `docs/governance/roadmap.md` | governance docs sprint |
+| ADR process | `docs/governance/adr-process.md` | governance docs sprint |
+| Operations runbook | `docs/operations/` | v0.5+ operator-facing |
 
 ## Audience
 
