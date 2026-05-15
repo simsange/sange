@@ -20,7 +20,7 @@ follows the same conventions:
 
 For the **complete auto-generated reference** (every flag, every
 default, every sub-command), see
-[`docs/reference/cli-reference.md`](https://github.com/sangedev/sange/blob/main/docs/reference/cli-reference.md)
+[`docs/reference/cli-reference.md`](https://github.com/simsange/sange/blob/main/docs/reference/cli-reference.md)
 in the main repo. It's regenerated from the live typer app on every
 CLI change, so it stays in sync.
 
@@ -37,7 +37,7 @@ Sange uses a consistent exit-code scheme per `docs/reference/exit-codes.md`:
 | 65 | VCS not detected / git not installed |
 | 70 | AI provider error |
 
-[Full exit-code reference →](https://github.com/sangedev/sange/blob/main/docs/reference/exit-codes.md)
+[Full exit-code reference →](https://github.com/simsange/sange/blob/main/docs/reference/exit-codes.md)
 
 ## JSON output mode
 

@@ -9,7 +9,7 @@ body:
     attributes:
       value: |
         Thanks for proposing a feature. **Larger proposals are
-        better discussed in [Discussions](https://github.com/orgs/sangedev/discussions)
+        better discussed in [Discussions](https://github.com/orgs/simsange/discussions)
         first** — that's where alignment happens. Use this issue
         template once the discussion has reached "yes, build it".
 
@@ -66,7 +66,7 @@ body:
       options:
         - label: I've searched existing issues + discussions and this isn't a duplicate.
           required: true
-        - label: I've read the [Code of Conduct](https://github.com/sangedev/.github/blob/main/CODE_OF_CONDUCT.md).
+        - label: I've read the [Code of Conduct](https://github.com/simsange/.github/blob/main/CODE_OF_CONDUCT.md).
           required: true
         - label: I'm open to discussion + iteration on the proposal shape.
           required: true

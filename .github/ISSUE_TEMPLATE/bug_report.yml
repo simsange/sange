@@ -10,7 +10,7 @@ body:
       value: |
         Thanks for reporting a bug. The more reproducible the report,
         the faster we can fix it. **Security vulnerabilities go to
-        [SECURITY.md](https://github.com/sangedev/.github/blob/main/SECURITY.md)
+        [SECURITY.md](https://github.com/simsange/.github/blob/main/SECURITY.md)
         instead — please do not open a public issue for them.**
 
   - type: input
@@ -84,7 +84,7 @@ body:
       options:
         - label: I've searched existing issues and this is not a duplicate.
           required: true
-        - label: I've read the [Code of Conduct](https://github.com/sangedev/.github/blob/main/CODE_OF_CONDUCT.md).
+        - label: I've read the [Code of Conduct](https://github.com/simsange/.github/blob/main/CODE_OF_CONDUCT.md).
           required: true
         - label: This is NOT a security vulnerability. (Those go to opensource@simtabi.com.)
           required: true

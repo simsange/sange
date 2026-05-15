@@ -4,13 +4,13 @@ blank_issues_enabled: false
 # appear on the "New issue" picker page above the templated options.
 contact_links:
   - name: Security vulnerability disclosure
-    url: https://github.com/sangedev/.github/blob/main/SECURITY.md
+    url: https://github.com/simsange/.github/blob/main/SECURITY.md
     about: |
       Found a security issue? Do NOT open a public issue. Email
       opensource@simtabi.com per the SECURITY.md disclosure process.
 
   - name: General question / discussion
-    url: https://github.com/orgs/sangedev/discussions
+    url: https://github.com/orgs/simsange/discussions
     about: |
       Open-ended questions, "is this the right approach?", "how do
       others handle X?" — GitHub Discussions is the better venue.

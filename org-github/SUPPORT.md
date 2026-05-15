@@ -7,8 +7,8 @@ right surface gets you a faster + better answer.
 
 | Question | Where to go |
 |---|---|
-| "How do I use X?" | [GitHub Discussions](https://github.com/orgs/sangedev/discussions) (per-repo or org-wide) |
-| "I think this is a bug." | The product's own [Issues](https://github.com/sangedev/sange/issues) page |
+| "How do I use X?" | [GitHub Discussions](https://github.com/orgs/simsange/discussions) (per-repo or org-wide) |
+| "I think this is a bug." | The product's own [Issues](https://github.com/simsange/sange/issues) page |
 | "I'd like to propose Y." | Discussions first, then a feature-request issue if the discussion lands on "yes, build it" |
 | "I found a security vulnerability." | **NOT a public issue.** See [SECURITY.md](./SECURITY.md). Email [opensource@simtabi.com](mailto:opensource@simtabi.com). |
 | "I want to commission custom work / consulting." | [imani@simtabi.com](mailto:imani@simtabi.com) — Imani Manyara, maintainer |

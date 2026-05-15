@@ -125,12 +125,12 @@ is a foot-gun.
 ## Extending the pattern set
 
 The known-pattern set lives in
-[`src/sange/core/enhancer/redaction.py`](https://github.com/sangedev/sange/blob/main/src/sange/core/enhancer/redaction.py).
+[`src/sange/core/enhancer/redaction.py`](https://github.com/simsange/sange/blob/main/src/sange/core/enhancer/redaction.py).
 Pull requests adding new patterns should:
 
 1. Cite a public reference for the pattern (vendor docs, gitleaks/
    trufflehog rule, etc.).
 2. Include a unit test in
-   [`tests/unit/test_enhancer_redaction.py`](https://github.com/sangedev/sange/blob/main/tests/unit/test_enhancer_redaction.py).
+   [`tests/unit/test_enhancer_redaction.py`](https://github.com/simsange/sange/blob/main/tests/unit/test_enhancer_redaction.py).
 3. Test for false-positive shape too (the pattern shouldn't match
    common non-secrets that look similar).

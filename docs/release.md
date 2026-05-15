@@ -22,7 +22,7 @@ pipeline, which:
 2. Publishes to PyPI via OIDC trusted-publisher (no API token).
 3. Builds a multi-arch Docker image (`linux/amd64` + `linux/arm64`)
    with sigstore provenance + SBOM attached, pushes to
-   `ghcr.io/sangedev/sange:<tag>` and `:latest`.
+   `ghcr.io/simsange/sange:<tag>` and `:latest`.
 4. Creates a GitHub Release with sdist + wheel attached and notes
    extracted from `docs/CHANGELOG.md`.
 
@@ -46,7 +46,7 @@ Setup steps:
    - Log in to <https://pypi.org/manage/account/publishing/>.
    - Click "Add a new pending publisher".
    - PyPI project name: `sange`.
-   - Owner: `sangedev`.
+   - Owner: `simsange`.
    - Repository name: `sange`.
    - Workflow filename: `release.yml`.
    - Environment name: `pypi`.
@@ -72,7 +72,7 @@ with `packages: write` permission (already in the workflow's
 
 After the first release pushes an image:
 
-1. Go to <https://github.com/orgs/sangedev/packages>.
+1. Go to <https://github.com/orgs/simsange/packages>.
 2. Find `sange` in the package list.
 3. Click → Settings → "Manage Actions access" — add this repo
    with `Write` role if it's not already there.
@@ -168,7 +168,7 @@ git push origin v0.1.0
 ```
 
 Tag push triggers `release.yml`. Monitor the run at
-<https://github.com/sangedev/sange/actions>.
+<https://github.com/simsange/sange/actions>.
 
 ### Step 6 — Verify
 
@@ -179,11 +179,11 @@ After the workflow completes:
 pip index versions sange    # should show v0.1.0
 
 # GHCR
-docker manifest inspect ghcr.io/sangedev/sange:v0.1.0
+docker manifest inspect ghcr.io/simsange/sange:v0.1.0
 # expect: amd64 + arm64 manifests
 
 # GitHub Release
-# Visit https://github.com/sangedev/sange/releases/v0.1.0
+# Visit https://github.com/simsange/sange/releases/v0.1.0
 # expect: sdist + wheel attached, notes from CHANGELOG.md
 ```
 

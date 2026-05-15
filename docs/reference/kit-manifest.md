@@ -1,9 +1,9 @@
 ---
 generated_by: tools/generators/kit_manifest.py
 generator_version: 1.0.0
-generated_at: 2026-05-14T23:41:33Z
+generated_at: 2026-05-15T13:16:12Z
 input_sha256: 044b6d111a13c3efb32d17f0216cd7c94cc77222c18699eec35aa92a8f66bdf2
-output_sha256: ac6db12e4dd24ff08256b2b8225bdd67f8957855a3859687e428984c41c30e4b
+output_sha256: 528fecb7a55ea94d37b9413563d4369fff0e3b2c68d9acde874f730efd60608b
 manual_edits_allowed: false
 ---
 # Sange premade-kit manifest reference
@@ -31,7 +31,7 @@ Operators can verify the on-disk kit matches the published manifest with two com
 ```bash
 # Verify the manifest's cosign signature (CI signs every release):
 cosign verify-blob \
-  --certificate-identity-regexp 'https://github.com/sangedev/sange/.*' \
+  --certificate-identity-regexp 'https://github.com/simsange/sange/.*' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   --signature templates/MANIFEST.toml.sig \
   templates/MANIFEST.toml

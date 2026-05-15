@@ -45,7 +45,7 @@ The headline capabilities at v1.0:
 
 Built for seven personas (non-developer founder/CEO, CTO, cyber-security reviewer, junior engineer, senior staff engineer, DevOps/SRE, open-source maintainer). The happy path is one verb. The power surface opens when asked.
 
-License Apache 2.0, © Simtabi LLC. Source at `github.com/sangedev/sange`. Marketing at `sange.sh` (when acquired) redirecting to the canonical `opensource.simtabi.com/products/sange`.
+License Apache 2.0, © Simtabi LLC. Source at `github.com/simsange/sange`. Marketing at `sange.sh` (when acquired) redirecting to the canonical `opensource.simtabi.com/products/sange`.
 
 ---
 
@@ -101,7 +101,7 @@ The name *Sange* is **stylized branding** for the **sengi** — the Swahili word
 
 **Naming property:**
 
-- **GitHub repo:** `github.com/sangedev/sange` (the v1 repo's existing origin)
+- **GitHub repo:** `github.com/simsange/sange` (the v1 repo's existing origin)
 - **Marketing domain:** `sange.sh` (to be acquired; `.sh` ccTLD is open registration; pre-acquisition `whois sange.sh`)
 - **Canonical product URL:** `https://opensource.simtabi.com/products/sange`
 - **Canonical docs URL:** `https://opensource.simtabi.com/documentation/sange`
@@ -1214,7 +1214,7 @@ See `.design/sange-architecture-prompt.md` §9.5 for what Sange engineers *on to
 
 ## 37. Installer & Distribution
 
-See `.design/sange-architecture-prompt.md` §7.1 for the surface + §6.12 kit for the scaffolds. One-liner installer per OS — `curl -sSL https://sange.sh/install.sh | sh` for Unix, `iwr https://sange.sh/install.ps1 | iex` for Windows PowerShell. Security: checksums + sigstore signatures verified before execution; no auto-elevation; refuses on untrusted-shell heuristics. Distribution channels: PyPI (Python package), Homebrew tap (`sangedev/sange`), Docker image (`ghcr.io/sangedev/sange:<version>`), GitHub Releases binaries (built via PyInstaller per §20 kit), Linux distro packages (deb/rpm via the bundle pipeline). The Python core ships independently of the Laravel web UI — CLI users never need PHP installed.
+See `.design/sange-architecture-prompt.md` §7.1 for the surface + §6.12 kit for the scaffolds. One-liner installer per OS — `curl -sSL https://sange.sh/install.sh | sh` for Unix, `iwr https://sange.sh/install.ps1 | iex` for Windows PowerShell. Security: checksums + sigstore signatures verified before execution; no auto-elevation; refuses on untrusted-shell heuristics. Distribution channels: PyPI (Python package), Homebrew tap (`simsange/sange`), Docker image (`ghcr.io/simsange/sange:<version>`), GitHub Releases binaries (built via PyInstaller per §20 kit), Linux distro packages (deb/rpm via the bundle pipeline). The Python core ships independently of the Laravel web UI — CLI users never need PHP installed.
 
 ## 38. Container & Daemon Lifecycle
 

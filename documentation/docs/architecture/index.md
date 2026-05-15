@@ -54,9 +54,9 @@ adapter for Git) is a single registration call.
 For the full design workbook (every ADR, every red-team pass, every
 generator pipeline), see:
 
-- [`.design/sange-architecture-prompt.md`](https://github.com/sangedev/sange/blob/main/.design/sange-architecture-prompt.md)
+- [`.design/sange-architecture-prompt.md`](https://github.com/simsange/sange/blob/main/.design/sange-architecture-prompt.md)
   — the canonical specification (~45,000 words).
-- [`docs/adr/`](https://github.com/sangedev/sange/tree/main/docs/adr)
+- [`docs/adr/`](https://github.com/simsange/sange/tree/main/docs/adr)
   — accepted ADRs (33 today).
-- [`docs/security/stride.md`](https://github.com/sangedev/sange/blob/main/docs/security/stride.md)
+- [`docs/security/stride.md`](https://github.com/simsange/sange/blob/main/docs/security/stride.md)
   — the STRIDE threat model (26 classified threats).

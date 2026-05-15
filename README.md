@@ -6,10 +6,10 @@
 > providing a secure dashboard (local or self-hosted) for fine-grained
 > review, approval, scheduling, and orchestration.
 
-[![CI](https://github.com/sangedev/sange/actions/workflows/ci.yml/badge.svg)](https://github.com/sangedev/sange/actions/workflows/ci.yml)
+[![CI](https://github.com/simsange/sange/actions/workflows/ci.yml/badge.svg)](https://github.com/simsange/sange/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](pyproject.toml)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/sangedev/sange/badge)](https://securityscorecards.dev/viewer/?uri=github.com/sangedev/sange)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/simsange/sange/badge)](https://securityscorecards.dev/viewer/?uri=github.com/simsange/sange)
 
 > **Status: pre-alpha.** The architecture is locked
 > (`.design/sange-architecture.md`, v4.4). The code is being built — Phase 0a
@@ -42,7 +42,7 @@
 > The installer ships at the v0.1 release. Until then, install from source:
 
 ```bash
-git clone https://github.com/sangedev/sange.git
+git clone https://github.com/simsange/sange.git
 cd sange
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev,tui]"
@@ -124,7 +124,7 @@ Copyright © 2026 Simtabi LLC.
 
 ## Reporting and contact
 
-- **Bugs / feature requests:** <https://github.com/sangedev/sange/issues>
+- **Bugs / feature requests:** <https://github.com/simsange/sange/issues>
 - **Security:** `opensource@simtabi.com` — see [`SECURITY.md`](SECURITY.md)
 - **General contact (OSS):** `opensource@simtabi.com`
 - **Maintainer:** Imani Manyara — `imani@simtabi.com`

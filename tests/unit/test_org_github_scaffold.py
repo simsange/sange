@@ -1,8 +1,8 @@
-"""Tests for the `org-github/` scaffold — seed of `sangedev/.github`.
+"""Tests for the `org-github/` scaffold — seed of `simsange/.github`.
 
 Static-analysis tests asserting structural invariants. The scaffold
 provides org-wide community-health-file defaults for every repo in
-the `sangedev` GitHub org.
+the `simsange` GitHub org.
 """
 
 from __future__ import annotations
@@ -83,9 +83,9 @@ class TestProfileReadme:
     def test_lists_known_repos(self) -> None:
         text = (_ORG / "profile" / "README.md").read_text(encoding="utf-8")
         # Each repo in the table must be linked.
-        assert "github.com/sangedev/sange" in text
-        assert "github.com/sangedev/documentation" in text
-        assert "github.com/sangedev/.github" in text
+        assert "github.com/simsange/sange" in text
+        assert "github.com/simsange/documentation" in text
+        assert "github.com/simsange/.github" in text
 
     def test_includes_quick_start_command(self) -> None:
         text = (_ORG / "profile" / "README.md").read_text(encoding="utf-8")
@@ -277,7 +277,7 @@ class TestPRTemplate:
 class TestRootReadme:
     def test_explains_migration(self) -> None:
         text = (_ORG / "README.md").read_text(encoding="utf-8")
-        assert "sangedev/.github" in text
+        assert "simsange/.github" in text
         assert "Migration" in text or "migration" in text
 
     def test_lists_files_in_tree(self) -> None:

@@ -1,6 +1,6 @@
-# sangedev — the Sange ecosystem
+# simsange — the Sange ecosystem
 
-The home of [Sange](https://github.com/sangedev/sange) and its
+The home of [Sange](https://github.com/simsange/sange) and its
 companion projects: a local-first developer-experience layer between
 humans and their version-control systems.
 
@@ -8,9 +8,9 @@ humans and their version-control systems.
 
 | Repo | Purpose |
 |---|---|
-| [`sange`](https://github.com/sangedev/sange) | The main project — polyglot VCS automation toolkit (Git working today; SVN / Mercurial / Perforce coming). |
-| [`documentation`](https://github.com/sangedev/documentation) | The public docs site, deployed to <https://opensource.simtabi.com/documentation/sange>. |
-| [`.github`](https://github.com/sangedev/.github) | This repo — org-wide community-health files (this README, default issue templates, default PR template, fallback CODE_OF_CONDUCT / SECURITY policies). |
+| [`sange`](https://github.com/simsange/sange) | The main project — polyglot VCS automation toolkit (Git working today; SVN / Mercurial / Perforce coming). |
+| [`documentation`](https://github.com/simsange/documentation) | The public docs site, deployed to <https://opensource.simtabi.com/documentation/sange>. |
+| [`.github`](https://github.com/simsange/.github) | This repo — org-wide community-health files (this README, default issue templates, default PR template, fallback CODE_OF_CONDUCT / SECURITY policies). |
 
 More repos will join the org as the ecosystem grows.
 
@@ -52,11 +52,11 @@ for the walkthrough.
 - **Maintainer:** [Imani Manyara](mailto:imani@simtabi.com)
 - **Owner:** [Simtabi LLC](https://simtabi.com)
 - **Community contact:** [opensource@simtabi.com](mailto:opensource@simtabi.com)
-- **Security disclosures:** see [SECURITY.md](https://github.com/sangedev/.github/blob/main/SECURITY.md)
-- **Code of Conduct:** [Contributor Covenant 2.1](https://github.com/sangedev/.github/blob/main/CODE_OF_CONDUCT.md)
+- **Security disclosures:** see [SECURITY.md](https://github.com/simsange/.github/blob/main/SECURITY.md)
+- **Code of Conduct:** [Contributor Covenant 2.1](https://github.com/simsange/.github/blob/main/CODE_OF_CONDUCT.md)
 
 ## Contributing
 
-We welcome PRs. See [CONTRIBUTING.md](https://github.com/sangedev/.github/blob/main/CONTRIBUTING.md)
+We welcome PRs. See [CONTRIBUTING.md](https://github.com/simsange/.github/blob/main/CONTRIBUTING.md)
 for the org-wide contributor guide; per-product specifics live in
 each repo's own `CONTRIBUTING.md`.

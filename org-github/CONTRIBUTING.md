@@ -1,15 +1,15 @@
-# Contributing to sangedev
+# Contributing to simsange
 
 Thanks for considering a contribution to the Sange ecosystem. This
 guide covers what applies **across every repo in the
-[`sangedev`](https://github.com/sangedev) GitHub org**. Per-product
+[`simsange`](https://github.com/simsange) GitHub org**. Per-product
 specifics (test commands, code-style nuances) live in each repo's
 own `CONTRIBUTING.md`.
 
 ## Code of Conduct
 
-Every interaction in the sangedev org is governed by the
-[Contributor Covenant 2.1](https://github.com/sangedev/.github/blob/main/CODE_OF_CONDUCT.md).
+Every interaction in the simsange org is governed by the
+[Contributor Covenant 2.1](https://github.com/simsange/.github/blob/main/CODE_OF_CONDUCT.md).
 Enforcement contact: [opensource@simtabi.com](mailto:opensource@simtabi.com).
 
 ## Before opening a PR
@@ -41,14 +41,14 @@ add it automatically.
 - Work on a feature branch off `main`. Branch names are short +
   descriptive (`feat/passkey-auth`, `fix/race-in-token-refresh`).
 - Commit messages follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/).
-- Per-product repos may use [Sange itself](https://github.com/sangedev/sange)
+- Per-product repos may use [Sange itself](https://github.com/simsange/sange)
   to generate commit messages — `git diff --staged | sange commit`
   is the canonical path. (Sange's own commits go through this flow
   as a dogfood.)
 
 ## Per-repo CI gates
 
-Every sangedev repo runs the same gates on every PR:
+Every simsange repo runs the same gates on every PR:
 
 - Tests (`pytest`, `vendor/bin/pest`, `npm test`, `go test`, etc.
   depending on the stack).
@@ -73,7 +73,7 @@ check.
 ## Reporting security issues
 
 **Do NOT open a public issue** for security vulnerabilities. See
-[SECURITY.md](https://github.com/sangedev/.github/blob/main/SECURITY.md)
+[SECURITY.md](https://github.com/simsange/.github/blob/main/SECURITY.md)
 for the disclosure process. Short version: email
 [opensource@simtabi.com](mailto:opensource@simtabi.com) with details;
 we coordinate a fix + responsible disclosure timeline.

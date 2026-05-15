@@ -6,8 +6,8 @@ site_description: >-
 site_author: Simtabi LLC
 site_url: https://opensource.simtabi.com/documentation/sange
 
-repo_name: sangedev/sange
-repo_url: https://github.com/sangedev/sange
+repo_name: simsange/sange
+repo_url: https://github.com/simsange/sange
 edit_uri: edit/main/documentation/docs/
 
 copyright: Copyright © Simtabi LLC. Apache License 2.0.
@@ -83,15 +83,15 @@ nav:
       - Audit chain: architecture/audit-chain.md
       - Redaction (T-030): architecture/redaction.md
   - Reference:
-      - Full CLI reference (auto-generated): https://github.com/sangedev/sange/blob/main/docs/reference/cli-reference.md
-      - Exit codes: https://github.com/sangedev/sange/blob/main/docs/reference/exit-codes.md
-      - Threat model (STRIDE): https://github.com/sangedev/sange/blob/main/docs/security/stride.md
-      - Architecture decisions (ADRs): https://github.com/sangedev/sange/tree/main/docs/adr
-  - Changelog: https://github.com/sangedev/sange/blob/main/docs/CHANGELOG.md
+      - Full CLI reference (auto-generated): https://github.com/simsange/sange/blob/main/docs/reference/cli-reference.md
+      - Exit codes: https://github.com/simsange/sange/blob/main/docs/reference/exit-codes.md
+      - Threat model (STRIDE): https://github.com/simsange/sange/blob/main/docs/security/stride.md
+      - Architecture decisions (ADRs): https://github.com/simsange/sange/tree/main/docs/adr
+  - Changelog: https://github.com/simsange/sange/blob/main/docs/CHANGELOG.md
 
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/sangedev
-      name: sangedev on GitHub
+      link: https://github.com/simsange
+      name: simsange on GitHub
   generator: false

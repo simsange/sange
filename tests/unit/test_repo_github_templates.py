@@ -2,7 +2,7 @@
 
 Per `~/.claude/CLAUDE.md` "Required files in every project" — every
 repo gets its own copy of ISSUE_TEMPLATE/* + PULL_REQUEST_TEMPLATE.md
-(in addition to the org-level defaults under sangedev/.github).
+(in addition to the org-level defaults under simsange/.github).
 
 These tests assert presence + byte-equality with the org-github seed
 (the source of truth) so the two copies don't drift.

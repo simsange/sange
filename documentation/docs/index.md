@@ -36,14 +36,14 @@ out of your way:
 === "Docker"
 
     ```bash
-    docker pull ghcr.io/sangedev/sange:latest
-    docker run --rm -v "$PWD":/repo ghcr.io/sangedev/sange --version
+    docker pull ghcr.io/simsange/sange:latest
+    docker run --rm -v "$PWD":/repo ghcr.io/simsange/sange --version
     ```
 
 === "From source"
 
     ```bash
-    git clone https://github.com/sangedev/sange.git
+    git clone https://github.com/simsange/sange.git
     cd sange
     pip install -e ".[dev]"
     ```
@@ -68,8 +68,8 @@ before transmission.
   end-to-end.
 - [CLI commands](cli/index.md) — every subcommand explained.
 - [Architecture](architecture/index.md) — how the pieces fit together.
-- [GitHub repo →](https://github.com/sangedev/sange)
-- [Full CLI reference →](https://github.com/sangedev/sange/blob/main/docs/reference/cli-reference.md)
+- [GitHub repo →](https://github.com/simsange/sange)
+- [Full CLI reference →](https://github.com/simsange/sange/blob/main/docs/reference/cli-reference.md)
   (auto-generated from the typer app)
 
 ## License + maintainer

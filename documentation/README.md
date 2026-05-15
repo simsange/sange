@@ -1,13 +1,13 @@
-# documentation/ — seed of `sangedev/documentation`
+# documentation/ — seed of `simsange/documentation`
 
-This directory is the **seed of the future `github.com/sangedev/documentation`
+This directory is the **seed of the future `github.com/simsange/documentation`
 repo** — the public docs site for the Sange ecosystem.
 
 ## Why a separate repo?
 
 Two reasons (per the Sange ecosystem plan):
 
-1. **Cross-product docs.** The `sangedev` org will host multiple
+1. **Cross-product docs.** The `simsange` org will host multiple
    Sange-family projects (the main `sange` CLI/daemon, future
    `sange-server`, `sange-web`, and the §6.12 Premade Operations Kit
    sub-products). One docs site indexes all of them; a per-product
@@ -21,7 +21,7 @@ Two reasons (per the Sange ecosystem plan):
 ## What lives here today
 
 This is the **seed content** — the minimum to run `mkdocs serve`
-locally and see a working site. When `sangedev/documentation` is
+locally and see a working site. When `simsange/documentation` is
 created, the contents of this directory move there as the initial
 commit of that repo.
 
@@ -51,13 +51,13 @@ mkdocs serve
 # Open http://127.0.0.1:8000
 ```
 
-## Migration plan to `sangedev/documentation`
+## Migration plan to `simsange/documentation`
 
 When the user creates the new repo, the move is straightforward:
 
 ```bash
-# 1. Create the empty sangedev/documentation repo on GitHub
-#    (manual step — visit https://github.com/organizations/sangedev/repositories/new)
+# 1. Create the empty simsange/documentation repo on GitHub
+#    (manual step — visit https://github.com/organizations/simsange/repositories/new)
 
 # 2. Extract the seed into a fresh git history
 cd /tmp
@@ -65,24 +65,24 @@ git init documentation-bootstrap
 cp -r /Users/imanimanyara/Artisan/projects/opensource/sange/documentation/. documentation-bootstrap/
 cd documentation-bootstrap
 git add .
-git commit -m "Initial release — seeded from sangedev/sange documentation/"
-git remote add origin https://github.com/sangedev/documentation.git
+git commit -m "Initial release — seeded from simsange/sange documentation/"
+git remote add origin https://github.com/simsange/documentation.git
 git push -u origin main
 
 # 3. (Optional) Delete the seed from the main sange repo:
 cd /Users/imanimanyara/Artisan/projects/opensource/sange
 git rm -r documentation/
-git commit -m "Move docs site to sangedev/documentation"
+git commit -m "Move docs site to simsange/documentation"
 ```
 
 `opensource.simtabi.com/documentation/sange` continues to point at
-the published site (via a CNAME on the sangedev/documentation Pages
+the published site (via a CNAME on the simsange/documentation Pages
 deployment).
 
 ## What lives at `opensource.simtabi.com/documentation/sange`?
 
 The org-level OSS portal (Simtabi LLC's existing infrastructure)
-serves the rendered MkDocs output from `sangedev/documentation`. A
+serves the rendered MkDocs output from `simsange/documentation`. A
 GitHub Pages → custom domain config maps the rendered site to the
 canonical URL. Users find docs at the canonical URL; the source
 of truth is the docs repo.

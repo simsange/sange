@@ -67,7 +67,7 @@ TelemetryCollector.from_audit() → AiCallEvent
 
 ## Off-by-default external send
 
-Per [§12.1](https://github.com/sangedev/sange/blob/main/.design/sange-architecture-prompt.md)
+Per [§12.1](https://github.com/simsange/sange/blob/main/.design/sange-architecture-prompt.md)
 and ADR-008, **nothing leaves your machine in v0.1**. The NDJSON
 feed is local-only. v2+ may add opt-in aggregated/anonymized send
 to a Sange-operated endpoint for product improvement; that lands as

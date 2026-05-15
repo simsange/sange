@@ -167,4 +167,4 @@ your machine.
 - [Browse the CLI commands](cli/index.md)
 - [How the audit chain works](architecture/audit-chain.md)
 - [What the redaction layer scrubs](architecture/redaction.md)
-- [GitHub source →](https://github.com/sangedev/sange)
+- [GitHub source →](https://github.com/simsange/sange)

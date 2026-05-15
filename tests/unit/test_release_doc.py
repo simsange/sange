@@ -69,9 +69,9 @@ class TestGhcrSetup:
     def test_mentions_ghcr(self, text: str) -> None:
         assert "GHCR" in text or "ghcr.io" in text
 
-    def test_uses_sangedev_org(self, text: str) -> None:
+    def test_uses_simsange_org(self, text: str) -> None:
         # Per the URL migration discipline.
-        assert "sangedev/sange" in text
+        assert "simsange/sange" in text
         assert "simtabi/sange" not in text
 
 

@@ -61,10 +61,10 @@ class TestMkdocsConfig:
     def test_site_name(self, mkdocs_yaml: dict) -> None:
         assert mkdocs_yaml["site_name"] == "Sange"
 
-    def test_repo_url_points_at_sangedev(self, mkdocs_yaml: dict) -> None:
+    def test_repo_url_points_at_simsange(self, mkdocs_yaml: dict) -> None:
         # Per the URL migration from S-003-T-42, repo URL must point
-        # at the sangedev org, not simtabi.
-        assert "sangedev/sange" in mkdocs_yaml["repo_url"]
+        # at the simsange org, not simtabi.
+        assert "simsange/sange" in mkdocs_yaml["repo_url"]
         assert "simtabi/sange" not in mkdocs_yaml["repo_url"]
 
     def test_canonical_site_url(self, mkdocs_yaml: dict) -> None:
@@ -142,9 +142,9 @@ class TestContent:
 
         assert (_DOCS / page).is_file(), f"missing {page}"
 
-    def test_index_mentions_sangedev_repo(self) -> None:
+    def test_index_mentions_simsange_repo(self) -> None:
         index = (_DOCS / "index.md").read_text(encoding="utf-8")
-        assert "github.com/sangedev/sange" in index
+        assert "github.com/simsange/sange" in index
 
     def test_no_simtabi_sange_url_in_content(self) -> None:
         """Belt-and-suspenders: confirm the URL migration covered the
@@ -193,7 +193,7 @@ class TestNavReferences:
 class TestReadme:
     def test_readme_explains_migration(self) -> None:
         text = _README.read_text(encoding="utf-8")
-        assert "sangedev/documentation" in text
+        assert "simsange/documentation" in text
         assert "Migration" in text or "migration" in text
 
     def test_readme_has_local_preview(self) -> None:

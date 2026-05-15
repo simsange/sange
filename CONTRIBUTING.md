@@ -23,7 +23,7 @@ generators emit it (T-G-006).
 ## Setup
 
 ```bash
-git clone https://github.com/sangedev/sange.git
+git clone https://github.com/simsange/sange.git
 cd sange
 
 # Per-repo identity (do NOT set this globally — see ~/.claude/CLAUDE.md):
@@ -92,7 +92,7 @@ under those terms.
 ## Asking for help
 
 - **Bugs / feature requests:** GitHub Issues at
-  <https://github.com/sangedev/sange/issues>.
+  <https://github.com/simsange/sange/issues>.
 - **Security:** `opensource@simtabi.com`.
 - **General questions:** GitHub Discussions (enabled on the repo).
 - **Architectural debates:** open a PR with a draft ADR rather than a thread.

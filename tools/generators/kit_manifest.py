@@ -302,7 +302,7 @@ def _render_reference_body(files: list[KitFile]) -> str:
         markdown.code_block(
             "# Verify the manifest's cosign signature (CI signs every release):\n"
             "cosign verify-blob \\\n"
-            "  --certificate-identity-regexp 'https://github.com/sangedev/sange/.*' \\\n"
+            "  --certificate-identity-regexp 'https://github.com/simsange/sange/.*' \\\n"
             "  --certificate-oidc-issuer https://token.actions.githubusercontent.com \\\n"
             "  --signature templates/MANIFEST.toml.sig \\\n"
             "  templates/MANIFEST.toml\n"
