@@ -1,9 +1,9 @@
 ---
 generated_by: tools/generators/docs_index.py
 generator_version: 1.0.0
-generated_at: 2026-05-15T16:25:52Z
-input_sha256: 42e813dfd7937a2590b1aecaf4376be4e07a6963fe7c6db29bba4aeb3656bc25
-output_sha256: d4ce5df5489ba5d91cbd3e7c50de588ebb404163d5697c521e425733d7d9fdb8
+generated_at: 2026-05-15T16:30:17Z
+input_sha256: 3541ac5399a05cd09a249dc96d781e0d29943321b939a51efae2026220fad7cb
+output_sha256: 507fff36830e73afd19f92971b8d472e02e6847e9d504c84735e9cd48dd99441
 manual_edits_allowed: false
 ---
 # Sange documentation
@@ -19,8 +19,8 @@ manual_edits_allowed: false
 | `security/` | Security | 3 |
 | `adr/` | Architecture Decision Records | 2 |
 | `governance/` | Governance + roadmap | 2 |
-| _top-level_ | Top-level | 3 |
-| **Total** |  | 20 |
+| _top-level_ | Top-level | 4 |
+| **Total** |  | 21 |
 
 
 ## `tools/` — Per-tool walkthroughs
@@ -58,6 +58,7 @@ manual_edits_allowed: false
 ## Top-level docs
 
 - [Changelog](CHANGELOG.md) — [`CHANGELOG.md`](./CHANGELOG.md)
+- [Architecture (reader's guide)](architecture.md) — [`architecture.md`](./architecture.md)
 - [Quickstart](quickstart.md) — [`quickstart.md`](./quickstart.md)
 - [Releasing Sange](release.md) — [`release.md`](./release.md)
 

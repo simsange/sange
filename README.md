@@ -75,6 +75,7 @@ manuals are split per-tool, per-topic.
 | Topic | Path |
 |---|---|
 | Quickstart | [`docs/quickstart.md`](docs/quickstart.md) |
+| Architecture (reader's guide) | [`docs/architecture.md`](docs/architecture.md) |
 | Commit lifecycle walkthrough | [`docs/tools/workflow/commit-lifecycle.md`](docs/tools/workflow/commit-lifecycle.md) |
 | Roadmap (v0.1 → v4.0+) | [`docs/governance/roadmap.md`](docs/governance/roadmap.md) |
 | ADR process | [`docs/governance/adr-process.md`](docs/governance/adr-process.md) |
@@ -103,7 +104,6 @@ manuals are split per-tool, per-topic.
 | Topic | Target | Gates on |
 |---|---|---|
 | Installation | `docs/installation.md` | v0.1.0 PyPI publish |
-| Architecture (reader-oriented) | `docs/architecture.md` | post-v0.1 polish |
 | Release bundling | `docs/tools/release/bundle.md` | v0.5+ release engine |
 | History purge | `docs/tools/security/purge.md` | v1.0 purge subsystem |
 | Remote access | `docs/tools/ui/remote-access.md` | v1.0 Web UI |
