@@ -4,6 +4,7 @@ Per §6.8.4: granular lifecycle commands for the §6.8.2 state machine.
 v0.1 ships:
 
   * `sange commits list`     — show pending + recent commits in the queue.
+  * `sange commits new`      — write a manual DRAFT commit (no AI).
   * `sange commits approve <id>` — DRAFT → APPROVED transition (T-72+).
   * `sange commits push <id>`    — APPROVED → COMMITTED → PUSHED (T-73+).
 
@@ -132,6 +133,167 @@ def list_command(
         + (f" with status={status!r}" if status else "")
         + (" (including archived)" if include_archived else "")
     )
+
+
+# --------------------------------------------------------------------------- #
+# `sange commits new`
+# --------------------------------------------------------------------------- #
+
+
+_CONVENTIONAL_TYPES = (
+    "feat", "fix", "docs", "style", "refactor",
+    "perf", "test", "build", "ci", "chore", "revert",
+)
+
+
+@commits_app.command(
+    "new",
+    help="Write a manual DRAFT commit to the queue (no AI involved).",
+)
+def new_command(
+    type_: str = typer.Argument(
+        ...,
+        metavar="TYPE",
+        help="Conventional Commits type. One of: "
+             + ", ".join(_CONVENTIONAL_TYPES) + ".",
+    ),
+    subject: str = typer.Argument(
+        ...,
+        help="Commit subject line (single-line, ≤120 chars, non-empty).",
+    ),
+    scope: str = typer.Option(
+        "",
+        "--scope",
+        help="Optional scope (lowercase letters/digits/hyphens).",
+    ),
+    body: str = typer.Option(
+        "",
+        "--body",
+        help="Commit body. Pass `-` to read from stdin.",
+    ),
+    breaking_change: bool = typer.Option(
+        False,
+        "--breaking-change",
+        help="Mark this commit as introducing a BREAKING CHANGE.",
+    ),
+    co_author: list[str] = typer.Option(
+        [],
+        "--co-author",
+        help="Co-author (repeatable). Format: `Name <email>`.",
+    ),
+    reference: list[str] = typer.Option(
+        [],
+        "--reference",
+        help="Issue / ticket reference (repeatable). Format: `#123` or `JIRA-42`.",
+    ),
+    repo_root: Path = typer.Option(
+        Path("."),
+        "--repo",
+        help="Repo root (the parent of .sange/commits/). Default: cwd.",
+    ),
+    branch: str = typer.Option(
+        "",
+        "--branch",
+        help="Branch override. Default: auto-detect via GitDriver "
+             "(falls back to empty string if not in a git repo).",
+    ),
+) -> None:
+    """Build a DRAFT `CommitJSON` from manually-supplied fields."""
+
+    import datetime as _dt
+    import sys
+
+    import click
+
+    from sange.core.lifecycle import (
+        CommitJSON,
+        CommitMessage,
+        CommitsDirectory,
+    )
+
+    ctx = click.get_current_context()
+    json_mode = bool(ctx.obj and ctx.obj.get("json"))
+
+    if type_ not in _CONVENTIONAL_TYPES:
+        typer.echo(
+            f"error: unknown type {type_!r}; expected one of: "
+            + ", ".join(_CONVENTIONAL_TYPES),
+            err=True,
+        )
+        raise typer.Exit(code=2)
+
+    if body == "-":
+        body = sys.stdin.read()
+
+    detected_branch = branch or _detect_branch(repo_root)
+
+    try:
+        message = CommitMessage(
+            type=type_,  # type: ignore[arg-type]
+            scope=scope,
+            subject=subject,
+            body=body,
+            breaking_change=breaking_change,
+            co_authors=list(co_author),
+            references=list(reference),
+        )
+    except ValueError as exc:
+        # Pydantic surfaces validation failures as ValueError subclasses;
+        # `.errors()` gives the structured detail.
+        typer.echo(f"error: invalid commit message: {exc}", err=True)
+        raise typer.Exit(code=2) from exc
+
+    cd = CommitsDirectory(repo_root)
+    counter = cd.allocate_counter()
+    now = _dt.datetime.now(tz=_dt.UTC)
+
+    commit = CommitJSON(
+        counter=counter,
+        created_at=now,
+        updated_at=now,
+        message=message,
+        branch=detected_branch,
+        repo_path=str(repo_root.resolve()),
+    )
+    path = cd.save(commit)
+
+    if json_mode:
+        payload = {
+            "counter": commit.counter,
+            "id": commit.id,
+            "status": commit.status.value,
+            "path": str(path),
+            "type": commit.message.type,
+            "scope": commit.message.scope,
+            "subject": commit.message.subject,
+            "branch": commit.branch,
+            "breaking_change": commit.message.breaking_change,
+        }
+        typer.echo(json.dumps(payload, indent=2))
+        return
+
+    rendered = f"{commit.message.type}"
+    if commit.message.scope:
+        rendered += f"({commit.message.scope})"
+    if commit.message.breaking_change:
+        rendered += "!"
+    rendered += f": {commit.message.subject}"
+    typer.echo(f"drafted #{commit.counter:04d}: {rendered}")
+    typer.echo(f"saved to {path}")
+
+
+def _detect_branch(repo_root: Path) -> str:
+    """Best-effort current-branch lookup; empty string on any failure."""
+
+    try:
+        from sange.adapters.vcs.git import GitDriver
+
+        driver = GitDriver()
+        repo = driver.detect(repo_root)
+        branch = driver.current_branch(repo)
+        return branch.name if branch else ""
+    except Exception:
+        return ""
 
 
 # --------------------------------------------------------------------------- #
@@ -529,5 +691,6 @@ __all__ = [
     "approve_command",
     "commits_app",
     "list_command",
+    "new_command",
     "push_command",
 ]

@@ -270,6 +270,150 @@ class TestListArchive:
 
 
 # --------------------------------------------------------------------------- #
+# `sange commits new` — manual draft creation (T-042)
+# --------------------------------------------------------------------------- #
+
+
+class TestCommitsNew:
+    def test_minimal_invocation(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        result = runner.invoke(
+            app,
+            ["commits", "new", "docs", "tweak readme", "--repo", str(tmp_path)],
+        )
+        assert result.exit_code == 0
+        assert "drafted #0001" in result.output
+        assert "docs: tweak readme" in result.output
+
+        rows = CommitsDirectory(tmp_path).list_all()
+        assert len(rows) == 1
+        assert rows[0].status is CommitStatus.DRAFT
+        assert rows[0].message.type == "docs"
+        assert rows[0].message.subject == "tweak readme"
+        assert rows[0].message.scope == ""
+        assert rows[0].message.breaking_change is False
+        assert rows[0].counter == 1
+
+    def test_all_options(self, runner: CliRunner, tmp_path: Path) -> None:
+        result = runner.invoke(
+            app,
+            [
+                "commits", "new", "feat", "add SSO",
+                "--repo", str(tmp_path),
+                "--scope", "auth",
+                "--body", "Body line.",
+                "--breaking-change",
+                "--co-author", "Bob <bob@example.com>",
+                "--co-author", "Cathy <cathy@example.com>",
+                "--reference", "#42",
+                "--reference", "JIRA-7",
+                "--branch", "release/v2",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "feat(auth)!: add SSO" in result.output
+
+        rows = CommitsDirectory(tmp_path).list_all()
+        c = rows[0]
+        assert c.message.type == "feat"
+        assert c.message.scope == "auth"
+        assert c.message.subject == "add SSO"
+        assert c.message.body == "Body line."
+        assert c.message.breaking_change is True
+        assert c.message.co_authors == [
+            "Bob <bob@example.com>",
+            "Cathy <cathy@example.com>",
+        ]
+        assert c.message.references == ["#42", "JIRA-7"]
+        assert c.branch == "release/v2"
+
+    def test_stdin_body(self, runner: CliRunner, tmp_path: Path) -> None:
+        result = runner.invoke(
+            app,
+            [
+                "commits", "new", "chore", "from stdin",
+                "--repo", str(tmp_path),
+                "--body", "-",
+            ],
+            input="Line one.\nLine two.\n",
+        )
+        assert result.exit_code == 0
+        rows = CommitsDirectory(tmp_path).list_all()
+        assert rows[0].message.body == "Line one.\nLine two.\n"
+
+    def test_json_output(self, runner: CliRunner, tmp_path: Path) -> None:
+        result = runner.invoke(
+            app,
+            [
+                "--json",
+                "commits", "new", "fix", "patch a bug",
+                "--repo", str(tmp_path),
+                "--scope", "core",
+            ],
+        )
+        assert result.exit_code == 0
+        payload = json.loads(result.output)
+        assert payload["counter"] == 1
+        assert payload["status"] == "draft"
+        assert payload["type"] == "fix"
+        assert payload["scope"] == "core"
+        assert payload["subject"] == "patch a bug"
+        assert payload["breaking_change"] is False
+        assert payload["path"].endswith(".json")
+        assert "id" in payload and len(payload["id"]) == 32
+
+    def test_invalid_type_exits_2(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        result = runner.invoke(
+            app,
+            [
+                "commits", "new", "wibble", "should fail",
+                "--repo", str(tmp_path),
+            ],
+        )
+        assert result.exit_code == 2
+        assert "unknown type" in result.output
+
+    def test_invalid_scope_exits_2(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        # Scope must be slug-like (lowercase / digits / hyphens) per
+        # CommitMessage._SCOPE_RE. Underscore violates the regex.
+        result = runner.invoke(
+            app,
+            [
+                "commits", "new", "feat", "bad scope",
+                "--repo", str(tmp_path),
+                "--scope", "BAD_SCOPE",
+            ],
+        )
+        assert result.exit_code == 2
+        assert "invalid commit message" in result.output
+
+    def test_counter_monotonic(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        # Two back-to-back invocations should produce counters 1 + 2.
+        first = runner.invoke(
+            app,
+            ["commits", "new", "feat", "first", "--repo", str(tmp_path)],
+        )
+        second = runner.invoke(
+            app,
+            ["commits", "new", "fix", "second", "--repo", str(tmp_path)],
+        )
+        assert first.exit_code == 0
+        assert second.exit_code == 0
+        assert "drafted #0001" in first.output
+        assert "drafted #0002" in second.output
+
+        rows = CommitsDirectory(tmp_path).list_all()
+        assert {r.counter for r in rows} == {1, 2}
+
+
+# --------------------------------------------------------------------------- #
 # `sange commits approve <counter|id>`
 # --------------------------------------------------------------------------- #
 
