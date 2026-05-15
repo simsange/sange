@@ -1,11 +1,14 @@
 # SVN adapter
 
-> **Status: read-only scaffold landed (v0.1.0.post1+).** T-100a shipped
-> the `SvnDriver` scaffold + `detect()` + `status()` against a real
-> `svn` binary; T-100b is the remaining read methods (log / diff /
-> branches / etc.); T-100c is write ops. Tracking in
-> [`../../../.design/plans/checklist.md`](../../../.design/plans/checklist.md).
-> The doc below covers both what's live today and what's planned.
+> **Status: SVN adapter complete (T-100 closed).** All `VCSDriver`
+> methods — read + write — ship and are tested against a real `svn`
+> binary. T-100a (scaffold + detect + status) → T-100b (log / diff /
+> branches / current_branch / remotes / tags / show_commit) → T-100c
+> (add / remove / revert_working_copy / commit / branch_create /
+> branch_delete / switch / fetch / pull / push / tag_create /
+> tag_delete) all landed across three commits. 84 SVN tests under
+> `tests/unit/test_svn_{driver,parsers}.py`. The doc below summarizes
+> the surface + the SVN-specific behavioral notes.
 
 For the full SVN command catalog with every Sange wrapper + AI
 augmentation + safety class + confirmation gate, see
@@ -22,9 +25,9 @@ a live `svn help`.
 | Cross-VCS concept map | **Generated today** | [`reference/appendix-f-cross-vcs.md`](../../reference/appendix-f-cross-vcs.md) — how every Git concept maps onto SVN (and Hg, P4, etc.). |
 | Adapter Protocol | **Implemented today** | `src/sange/adapters/vcs/_protocol.py::VCSDriver`. The SVN concrete driver implements this same Protocol. |
 | Adapter scaffold (`SvnDriver`) | **Live (T-100a)** | `src/sange/adapters/vcs/svn/` — subprocess wrapper + XML parsers + `SvnDriver.detect()` + `SvnDriver.status()`. |
-| Read methods (`log` / `diff` / `branches` / `current_branch` / `remotes` / `tags` / `show_commit`) | **Live (T-100b)** | All seven implemented. `branches()` lists `^/trunk` + every dir under `^/branches/`; `current_branch()` derives from the WC's relative-URL; `tags()` lists `^/tags/` dirs. Total: 58 tests across `tests/unit/test_svn_{driver,parsers}.py`. |
-| Write methods (add / commit / branch_create / etc.) | v0.5 (T-100c) | Raise `NotImplementedError("T-100c")` today. |
-| Wrappers (`sange commits`...) | v0.5+ | Once T-100c lands, the same `sange commits` verbs (`new` / `ai` / `submit` / `approve` / `reject` / `commit` / `push`) work against SVN working copies. |
+| Read methods (`log` / `diff` / `branches` / `current_branch` / `remotes` / `tags` / `show_commit`) | **Live (T-100b)** | All seven implemented. `branches()` lists `^/trunk` + every dir under `^/branches/`; `current_branch()` queries `svn info` afresh (the frozen-`Repo` metadata can't be refreshed by `switch()`); `tags()` lists `^/tags/` dirs. |
+| Write methods (`add` / `remove` / `revert_working_copy` / `commit` / `branch_create` / `branch_delete` / `switch` / `fetch` / `pull` / `push` / `tag_create` / `tag_delete`) | **Live (T-100c)** | All twelve implemented. Total: 84 SVN tests across `tests/unit/test_svn_{driver,parsers}.py`. |
+| Wrappers (`sange commits`…) | **Live (v0.5)** | The same `sange commits` verbs (`new` / `ai` / `submit` / `approve` / `reject` / `commit` / `push`) work against SVN working copies. `commits push` is a documented no-op for SVN — `commits commit` already publishes (SVN commits are immediately remote). |
 | Purge executor | v2.0 | `svnadmin dump → svndumpfilter exclude → swap`. T-246. |
 
 ## What it will look like when it ships

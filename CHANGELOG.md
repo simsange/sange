@@ -12,8 +12,61 @@ dogfoods its own lifecycle. Until then, this file is maintained by hand.
 
 ## [Unreleased]
 
+### Changed
+
+- **Version bumped to `0.1.1.dev0`.** Per `docs/release.md::After
+  the release`, the dev suffix returns after every published cut.
+  v0.1.0.post1 shipped on 2026-05-16; `_version.py` had been left
+  at the release version since. Local builds now produce
+  `sange-0.1.1.dev0` wheels until the next tag.
+
 ### Added
 
+- **T-100c — SVN adapter write methods (T-100 closed).** Twelve
+  write methods complete the SVN `VCSDriver` contract:
+  - `add` / `remove` / `revert_working_copy` — `svn add --parents`,
+    `svn rm [--force]`, `svn revert -R`. Each rejects absolute paths
+    per the Protocol's relative-path invariant.
+  - `commit(repo, *, message, author_name, author_email, allow_empty,
+    sign)` — runs `svn commit -m`. Returns a `CommitRef` with the
+    new revision parsed from `svn commit`'s "Committed revision N."
+    line. `author_email` rejected as partial-set (SVN has no
+    separable email in its auth model); `allow_empty=True` rejected
+    (SVN refuses no-op commits); `sign=True` rejected (no per-commit
+    GPG signing in SVN).
+  - `branch_create(repo, name, *, base="")` / `branch_delete(repo,
+    name)` — server-side `svn copy` and `svn rm` against
+    `^/branches/<name>`. base defaults to `trunk`. `branch_delete`
+    refuses to delete trunk; the `force` flag is accepted for
+    Protocol parity but has no SVN-side effect (SVN doesn't track
+    merged-vs-unmerged).
+  - `switch(repo, branch)` — `svn switch` to the resolved
+    `^/branches/<name>` or `^/trunk` URL. Caret-prefixed URLs
+    pass through verbatim so callers can target `^/tags/<name>`
+    explicitly.
+  - `fetch(repo)` — documented no-op. SVN has no fetch-without-apply
+    primitive separate from `svn update`.
+  - `pull(repo)` — `svn update`. Updates the WC to the latest
+    revision.
+  - `push(repo, *, force, force_with_lease)` — documented no-op
+    returning `PushResult(was_no_op=True)`. SVN commits are
+    immediately remote; `force` + `force_with_lease` are rejected
+    (their semantics — rewriting remote history — don't exist in
+    SVN's commit model).
+  - `tag_create(repo, name, *, target_sha, message, sign)` /
+    `tag_delete(repo, name)` — `svn copy` and `svn rm` against
+    `^/tags/<name>`. `sign=True` rejected.
+  - Internal: `_extract_committed_revision()` helper parses the
+    "Committed revision N." line; `_branch_url()` resolves branch
+    arguments to caret URLs.
+  Two real bugs caught mid-implementation: (a) `svn info` on the WC
+  root reports the *directory's* last-changed revision (not the
+  commit's new revision) — `commit()` now parses `svn commit`'s
+  stdout instead; (b) `current_branch()` was reading the cached
+  `repo.metadata['relative_url']` which `switch()` couldn't refresh
+  (frozen `Repo`) — `current_branch()` now always queries `svn info`.
+  +26 tests in `tests/unit/test_svn_driver.py::TestSvnDriverWriteOps`
+  (+5 in `TestExtractCommittedRevision`). Suite 1226 → 1252 passing.
 - **T-100b — SVN adapter read methods.** Seven `VCSDriver` reads
   now ship for SVN, all gated on a real `svn` binary:
   - `log(repo, *, revision_range, max_count)` — runs

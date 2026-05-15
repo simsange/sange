@@ -132,14 +132,8 @@ class TestSvnDriverIntegration:
         assert st.is_clean
         assert st.is_pristine
 
-    def test_write_methods_still_not_yet_implemented(self, svn_wc: Path) -> None:
-        d = SvnDriver()
-        repo = d.detect(svn_wc)
-        for verb in ("add", "remove", "revert_working_copy", "commit",
-                     "branch_create", "branch_delete", "switch",
-                     "fetch", "pull", "push", "tag_create", "tag_delete"):
-            with pytest.raises(NotImplementedError, match="T-100c"):
-                getattr(d, verb)(repo)
+    # Write methods now ship — see TestSvnDriverWriteOps below.
+    pass
 
 
 # --------------------------------------------------------------------------- #
@@ -336,3 +330,224 @@ class TestSvnDriverReadOps:
         from sange.adapters.vcs._protocol import DriverError
         with pytest.raises(DriverError):
             d.show_commit(repo, "9999")
+
+
+# --------------------------------------------------------------------------- #
+# T-100c — write methods (add / remove / revert / commit / branch_* / switch /
+#          fetch / pull / push / tag_*)
+# --------------------------------------------------------------------------- #
+
+
+@pytest.mark.skipif(_SVN is None or _SVNADMIN is None, reason="svn / svnadmin not on PATH")
+class TestSvnDriverWriteOps:
+    def test_add_and_commit_returns_new_revision(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        (trunk_wc / "added.txt").write_text("hello\n")
+        d.add(repo, [Path("added.txt")])
+        ref = d.commit(repo, message="Add a new file")
+        # commit returns the NEW revision, not the WC's last-changed rev.
+        assert int(ref.sha) >= 3   # trunk repo starts at r2; r3+ is the commit
+        assert ref.subject == "Add a new file"
+
+    def test_add_rejects_absolute_path(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        from sange.adapters.vcs._protocol import DriverError
+        with pytest.raises(DriverError, match="must be relative"):
+            d.add(repo, [Path("/etc/passwd")])
+
+    def test_add_empty_list_is_noop(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        d.add(repo, [])   # must not raise
+
+    def test_remove_with_force_for_dirty_file(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        # a.txt was dirtied by the trunk_wc fixture; remove with force.
+        d.remove(repo, [Path("a.txt")], force=True)
+        d.commit(repo, message="Remove a.txt")
+        assert not (trunk_wc / "a.txt").exists()
+
+    def test_revert_discards_local_changes(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        # trunk_wc fixture leaves a.txt with `v1\nmodified\n` locally.
+        assert "modified" in (trunk_wc / "a.txt").read_text()
+        d.revert_working_copy(repo, [Path("a.txt")])
+        # After revert, the file is back to its repo-tracked content.
+        assert "modified" not in (trunk_wc / "a.txt").read_text()
+
+    def test_commit_empty_message_raises(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        from sange.adapters.vcs._protocol import DriverError
+        with pytest.raises(DriverError, match="non-empty"):
+            d.commit(repo, message="")
+
+    def test_commit_allow_empty_raises(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        from sange.adapters.vcs._protocol import DriverError
+        with pytest.raises(DriverError, match="--allow-empty"):
+            d.commit(repo, message="x", allow_empty=True)
+
+    def test_commit_sign_raises(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        from sange.adapters.vcs._protocol import DriverError
+        with pytest.raises(DriverError, match="GPG signing"):
+            d.commit(repo, message="x", sign=True)
+
+    def test_commit_partial_author_raises(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        from sange.adapters.vcs._protocol import DriverError
+        with pytest.raises(DriverError, match="both be set or both omitted"):
+            d.commit(repo, message="x", author_name="Solo")
+
+    def test_branch_create_and_list(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        bi = d.branch_create(repo, "new-feature")
+        assert bi.name == "new-feature"
+        names = {b.name for b in d.branches(repo)}
+        assert "new-feature" in names
+
+    def test_branch_create_invalid_name(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        from sange.adapters.vcs._protocol import DriverError
+        with pytest.raises(DriverError, match="non-empty"):
+            d.branch_create(repo, "")
+        with pytest.raises(DriverError, match="cannot contain"):
+            d.branch_create(repo, "with/slash")
+
+    def test_branch_delete(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        d.branch_create(repo, "doomed")
+        assert "doomed" in {b.name for b in d.branches(repo)}
+        d.branch_delete(repo, "doomed")
+        assert "doomed" not in {b.name for b in d.branches(repo)}
+
+    def test_branch_delete_refuses_trunk(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        from sange.adapters.vcs._protocol import DriverError
+        with pytest.raises(DriverError, match="trunk"):
+            d.branch_delete(repo, "trunk")
+
+    def test_switch_to_branch_then_back(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        # feature-x already exists in the fixture.
+        b1 = d.switch(repo, "feature-x")
+        assert b1.name == "feature-x"
+        # current_branch must reflect the new URL (not the stale detect-cache).
+        assert d.current_branch(repo) is not None
+        cb = d.current_branch(repo)
+        assert cb is not None and cb.name == "feature-x"
+        # Switch back.
+        b2 = d.switch(repo, "trunk")
+        assert b2.name == "trunk"
+
+    def test_push_is_noop_for_svn(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        result = d.push(repo)
+        assert result.was_no_op is True
+        assert result.forced is False
+        assert result.remote == "origin"
+
+    def test_push_force_raises(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        from sange.adapters.vcs._protocol import DriverError
+        with pytest.raises(DriverError, match="history-rewrite"):
+            d.push(repo, force=True)
+        with pytest.raises(DriverError, match="history-rewrite"):
+            d.push(repo, force_with_lease=True)
+
+    def test_fetch_is_noop(self, trunk_wc: Path) -> None:
+        # No assertion on side effects — just that it doesn't raise.
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        d.fetch(repo)
+        d.fetch(repo, remote="origin")
+
+    def test_pull_runs_svn_update(self, trunk_wc: Path) -> None:
+        # The WC is already at HEAD; pull is a documented no-op-equivalent.
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        d.pull(repo)   # must not raise
+        d.pull(repo, remote="origin")
+
+    def test_tag_create_with_message(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        ti = d.tag_create(repo, "v1.0", message="Initial tag")
+        assert ti.name == "v1.0"
+        assert ti.is_annotated is False  # SVN tags are dir-copies
+        assert ti.is_signed is False
+        assert ti.message == "Initial tag"
+
+    def test_tag_create_default_message(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        d.tag_create(repo, "v1.1")  # message omitted
+        names = {t.name for t in d.tags(repo)}
+        assert "v1.1" in names
+
+    def test_tag_create_sign_raises(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        from sange.adapters.vcs._protocol import DriverError
+        with pytest.raises(DriverError, match="GPG signing"):
+            d.tag_create(repo, "v-signed", sign=True)
+
+    def test_tag_create_invalid_name(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        from sange.adapters.vcs._protocol import DriverError
+        with pytest.raises(DriverError, match="non-empty"):
+            d.tag_create(repo, "")
+        with pytest.raises(DriverError, match="cannot contain"):
+            d.tag_create(repo, "with/slash")
+
+    def test_tag_delete(self, trunk_wc: Path) -> None:
+        d = SvnDriver()
+        repo = d.detect(trunk_wc)
+        d.tag_create(repo, "ephemeral")
+        assert "ephemeral" in {t.name for t in d.tags(repo)}
+        d.tag_delete(repo, "ephemeral")
+        assert "ephemeral" not in {t.name for t in d.tags(repo)}
+
+
+# --------------------------------------------------------------------------- #
+# `_extract_committed_revision` — pure parser of `svn commit` stdout
+# --------------------------------------------------------------------------- #
+
+
+class TestExtractCommittedRevision:
+    def test_basic(self) -> None:
+        from sange.adapters.vcs.svn.driver import _extract_committed_revision
+        out = "Adding         b.txt\nTransmitting file data .done\nCommitting transaction...\nCommitted revision 3.\n"
+        assert _extract_committed_revision(out) == 3
+
+    def test_large_revision(self) -> None:
+        from sange.adapters.vcs.svn.driver import _extract_committed_revision
+        assert _extract_committed_revision("Committed revision 1234567.") == 1234567
+
+    def test_missing_marker_returns_none(self) -> None:
+        from sange.adapters.vcs.svn.driver import _extract_committed_revision
+        assert _extract_committed_revision("nothing useful here") is None
+        assert _extract_committed_revision("") is None
+
+    def test_multiple_lines_picks_first(self) -> None:
+        # Defensive: if there are somehow two "Committed revision" lines,
+        # use the first match.
+        from sange.adapters.vcs.svn.driver import _extract_committed_revision
+        out = "Committed revision 5.\nCommitted revision 7.\n"
+        assert _extract_committed_revision(out) == 5

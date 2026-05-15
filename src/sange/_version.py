@@ -10,4 +10,4 @@
 # S-003-T-79); v0.1.0.post1 is the real first published release per PEP 440
 # post-release semantics, fix-forwarding the .dev0 mistake.
 
-__version__ = "0.1.0.post1"
+__version__ = "0.1.1.dev0"
