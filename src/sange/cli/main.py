@@ -82,6 +82,7 @@ from sange.cli.doctor import doctor_command  # noqa: E402
 from sange.cli.gitignore import gitignore_app  # noqa: E402
 from sange.cli.hooks import hooks_app  # noqa: E402
 from sange.cli.init import init_command  # noqa: E402
+from sange.cli.purge import purge_app  # noqa: E402
 
 app.add_typer(ai_app, name="ai", help="AI provider preview + introspection.")
 app.add_typer(
@@ -96,6 +97,10 @@ app.add_typer(
 app.add_typer(
     hooks_app, name="hooks",
     help="Manage pre-commit / pre-push / etc. hooks (T-102).",
+)
+app.add_typer(
+    purge_app, name="purge",
+    help="VCS history purge (read-only v0.5; destructive v1.0+) (T-111).",
 )
 app.command("doctor", help="Environment health checks.")(doctor_command)
 app.command("commit", help="Generate a commit message from a diff.")(commit_command)

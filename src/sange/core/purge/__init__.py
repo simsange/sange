@@ -58,6 +58,13 @@ from sange.core.purge.plan import (
     ToolMeta,
     new_plan_id,
 )
+from sange.core.purge.scanners import (
+    ScannerError,
+    ScannerResult,
+    run_gitleaks,
+    run_scanners,
+    run_trufflehog,
+)
 from sange.core.purge.state import (
     TERMINAL_STATES,
     IllegalTransition,
@@ -85,6 +92,8 @@ __all__ = [
     "PurgePlanStore",
     "PurgeState",
     "RepoMeta",
+    "ScannerError",
+    "ScannerResult",
     "ToolMeta",
     "analyze_mirror",
     "assert_transition",
@@ -93,6 +102,9 @@ __all__ = [
     "create_mirror",
     "legal_next",
     "new_plan_id",
+    "run_gitleaks",
+    "run_scanners",
+    "run_trufflehog",
     "verify_backup",
     "verify_mirror",
 ]

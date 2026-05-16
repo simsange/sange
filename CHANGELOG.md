@@ -22,6 +22,99 @@ dogfoods its own lifecycle. Until then, this file is maintained by hand.
 
 ### Added
 
+- **T-111f — `sange purge` CLI sub-app (8 verbs).** Sixth slice of
+  §6.11 — the operator-facing surface for the v0.5 read-only purge
+  story. Every v0.5 library capability is now reachable from the
+  command line. New module `src/sange/cli/purge.py`:
+  - `sange purge plan --path X --glob Y [--vcs git] [--remote URL]
+    [--slug s] [--repo PATH] [--dry-run] [--batch]` — creates a
+    `PurgePlan`, saves to `.sange/purge/<plan-id>/plan.json`,
+    appends one `EventKind.PURGE_PLAN` event with `verb=plan` +
+    `target_vcs` + `filter_count`. Prints the plan_id.
+  - `sange purge list [--repo PATH]` — enumerates every saved plan
+    with id + state, sorted lex (== chrono within a year).
+  - `sange purge show PLAN_ID [--repo PATH]` — pretty-prints the
+    plan JSON; raw under `--json`.
+  - `sange purge mirror PLAN_ID [--source-url URL] [--repo PATH]` —
+    runs `create_mirror`, updates `plan.mirror_path`, saves, audits.
+  - `sange purge analyze PLAN_ID [--repo PATH]` — runs
+    `analyze_mirror`, merges result into `plan.counts`. Refuses if
+    `plan.mirror_path` is empty (operator must run `mirror` first).
+  - `sange purge backup PLAN_ID [--repo PATH]` — tarball + sha256
+    sidecar via `create_backup`, updates `plan.backup_path`.
+  - `sange purge scan PLAN_ID [--repo PATH]` — `run_scanners`
+    (gitleaks + trufflehog), updates `plan.scanner_results`.
+    Gracefully reports "not installed" if a tool is absent rather
+    than failing.
+  - `sange purge abort PLAN_ID [--reason TEXT] [--repo PATH]` —
+    transitions to `aborted` with the reason recorded.
+  Every verb honors `--json`. Every state-changing verb pairs the
+  library call with a `PURGE_PLAN`-kind audit event carrying the
+  `verb` name + operation-specific extras — the library's own
+  audit entries (clone, fsck, analyze subprocesses, etc.) thread
+  onto the chain as leaf ops between two PURGE_PLAN bookends.
+  Actor identity is `<getuser>@<hostname>` (best-effort, falls
+  back to `unknown@unknown`). Wired into `main.py` via
+  `app.add_typer(purge_app, name="purge", ...)`. cli-reference
+  regenerated to include all 8 verbs. +20 tests in
+  `test_cli_purge.py` covering: plan creates + JSON mode + no-filter
+  rejected + unsupported VCS rejected + paths+globs combined + audit
+  event recorded / list empty + lists + JSON mode / show prints +
+  missing rejected + JSON / mirror → analyze flow end-to-end with
+  source repo + analyze-without-mirror rejected / backup creates
+  tarball + without-mirror rejected / scan with empty PATH gracefully
+  reports + without-mirror rejected / abort transitions + reason
+  recorded + double-abort rejected.
+- **T-111e — Scanner library (gitleaks + trufflehog, §6.11.4 gate 8).**
+  Fifth slice of §6.11 — pre-rewrite scanner pass against the
+  mirror. The "regression detection" half (post-rewrite count
+  must be ≤ pre-rewrite) lands in v1.0+ T-203 alongside
+  destructive ops; this slice ships the baseline scan only. New
+  module `src/sange/core/purge/scanners.py`:
+  - `run_gitleaks(plan, mirror_path, *, audit_chain, actor,
+    tool_path=None, timeout=300)` → `ScannerResult`. Invocation:
+    `gitleaks git <mirror> --no-banner --report-format=json
+    --report-path=-`. Parses the JSON-array output via
+    `json.loads` and returns `len(array)` as findings_count.
+    gitleaks exits 1 when it finds secrets — that's a valid
+    "ran cleanly + found stuff" outcome, not a failure.
+  - `run_trufflehog(plan, mirror_path, *, audit_chain, actor,
+    tool_path=None, timeout=300)` → `ScannerResult`. Invocation:
+    `trufflehog git file://<mirror> --json --no-update`. Parses
+    NDJSON stdout — one finding per line, skipping malformed
+    lines + empty `{}` heartbeats.
+  - `run_scanners(...)` runs both sequentially and returns
+    `(gitleaks_result, trufflehog_result)`. Sequential, not
+    concurrent: doubling disk I/O against the same pack file
+    isn't a win.
+  - `tool_path: Path | None = None` parameter for testability —
+    tests inject fake shell scripts at known paths so they don't
+    depend on host gitleaks/trufflehog installation. Production
+    callers default to `None` → `shutil.which()`.
+  - When a tool is absent, the result has `available=False` /
+    `returncode=-1` / `findings_count=0` / `event_id=""` and NO
+    audit chain event is appended (the v0.5 scope treats these
+    as soft preconditions, not hard fails).
+  - `ScannerResult` frozen dataclass: `name` + `available` +
+    `returncode` + `findings_count` + `event_id` +
+    `transcript_path`. `.succeeded` property is strict
+    (`available and returncode == 0`).
+  - `ScannerError` raised on missing mirror.
+  Output parsing reads from the streaming-helper transcript's
+  `[stdout] ` prefix — same pattern as `mirror._capture_refs`
+  and `analyzer._stdout_lines`. +12 tests in
+  `test_purge_scanners.py` using fake shell scripts that produce
+  controlled stdout (gitleaks-style JSON array / trufflehog-style
+  NDJSON with heartbeats + malformed lines / various exit codes /
+  not-on-PATH path) — fully hermetic, no host scanner dependency.
+  One mid-impl bug caught: the initial fake-tool generator used
+  `textwrap.dedent` over a heredoc whose embedded payload
+  contained an unindented line; `dedent` then couldn't strip the
+  common leading whitespace, leaving the shebang `#!/bin/sh`
+  with 8 leading spaces — kernel rejected with errno 8 "Exec
+  format error". Fixed by writing the script body without
+  indentation (`"#!/bin/sh\nprintf '%s' '%s'\nexit %d\n"`).
+  Suite 1621 → 1633 → 1653 passing (+12 from T-111e + 20 from T-111f).
 - **T-111d — Backup tarball + sha256 sidecar (§6.11.4 gate 3).**
   Fourth slice of §6.11. Closes the "backup mirror" item from the
   §6.11.1 v0.5 scope row. New module

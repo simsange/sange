@@ -1,9 +1,9 @@
 ---
 generated_by: tools/generators/cli_reference.py
 generator_version: 1.0.0
-generated_at: 2026-05-16T08:47:10Z
-input_sha256: c77ddb2c9e1c5431e87697edbfbbaaafafa38d975f428a7e7d416acda118e2f3
-output_sha256: 268018083aec20574e4608b171f02cb716b137bdf4d224cea258d161102ecc32
+generated_at: 2026-05-16T12:27:52Z
+input_sha256: 7abcc73d7d5572e2f9e3b116257860c992415b798089f3534f088cb874d6285f
+output_sha256: 171d63c12e5814dd01b7a1932439ad3c484decfb794174c35d20190ca8d48240
 manual_edits_allowed: false
 ---
 # Sange CLI reference
@@ -55,6 +55,15 @@ Every entry below is auto-introspected from the live click command tree, so flag
 | `sange hooks status` | Per-event summary: hook count + shim install state. |
 | `sange hooks uninstall` | Remove Sange-managed .git/hooks/<event> shims (foreign hooks untouched). |
 | `sange init` | Bootstrap .sange/ skeleton in the target repo. |
+| `sange purge` | VCS history purge (read-only v0.5; destructive v1.0+) (T-111). |
+| `sange purge abort` | Transition the plan to `aborted`. |
+| `sange purge analyze` | Compute what would be purged (read-only). |
+| `sange purge backup` | Tarball the mirror + sha256 (§6.11.4 gate 3). |
+| `sange purge list` | Enumerate every saved purge plan. |
+| `sange purge mirror` | Create the mirror clone (§6.11.4 gate 2). |
+| `sange purge plan` | Create a new purge plan + save it. |
+| `sange purge scan` | Run gitleaks + trufflehog (§6.11.4 gate 8). |
+| `sange purge show` | Print a plan's full JSON. |
 
 
 ## Commands
@@ -85,6 +94,7 @@ Polyglot VCS automation toolkit (Git/SVN/Hg/P4).
 | `sange gitignore` | Manage the active gitignore profile (T-101). |
 | `sange hooks` | Manage pre-commit / pre-push / etc. hooks (T-102). |
 | `sange init` | Bootstrap .sange/ skeleton in the target repo. |
+| `sange purge` | VCS history purge (read-only v0.5; destructive v1.0+) (T-111). |
 
 
 ### `sange ai`
@@ -672,6 +682,172 @@ Bootstrap .sange/ skeleton in the target repo.
 | `--gitignore`, `--no-gitignore` | flag | true | Append /Makefile + /.sange/ entries to .gitignore. |
 | `--makefile`, `--no-makefile` | flag | true | Install the top-level Makefile + .sange/makefiles/ tree. |
 | `--repo` | value | `.` | Target repo root. Default: the current directory. |
+
+
+### `sange purge`
+
+
+VCS history purge (read-only v0.5; destructive v1.0+) (T-111).
+
+**Sub-commands:**
+
+| Sub-command | Description |
+| :--- | :--- |
+| `sange purge abort` | Transition the plan to `aborted`. |
+| `sange purge analyze` | Compute what would be purged (read-only). |
+| `sange purge backup` | Tarball the mirror + sha256 (§6.11.4 gate 3). |
+| `sange purge list` | Enumerate every saved purge plan. |
+| `sange purge mirror` | Create the mirror clone (§6.11.4 gate 2). |
+| `sange purge plan` | Create a new purge plan + save it. |
+| `sange purge scan` | Run gitleaks + trufflehog (§6.11.4 gate 8). |
+| `sange purge show` | Print a plan's full JSON. |
+
+
+### `sange purge abort`
+
+
+Transition the plan to `aborted`.
+
+**Arguments:**
+
+| Name | Status |
+| :--- | :--- |
+| `plan_id` | required |
+
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--reason` | value |  | Explanation recorded on the plan + audit chain. |
+| `--repo` | value | `.` |  |
+
+
+### `sange purge analyze`
+
+
+Compute what would be purged (read-only).
+
+**Arguments:**
+
+| Name | Status |
+| :--- | :--- |
+| `plan_id` | required |
+
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--repo` | value | `.` |  |
+
+
+### `sange purge backup`
+
+
+Tarball the mirror + sha256 (§6.11.4 gate 3).
+
+**Arguments:**
+
+| Name | Status |
+| :--- | :--- |
+| `plan_id` | required |
+
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--repo` | value | `.` |  |
+
+
+### `sange purge list`
+
+
+Enumerate every saved purge plan.
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--repo` | value | `.` |  |
+
+
+### `sange purge mirror`
+
+
+Create the mirror clone (§6.11.4 gate 2).
+
+**Arguments:**
+
+| Name | Status |
+| :--- | :--- |
+| `plan_id` | required |
+
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--repo` | value | `.` |  |
+| `--source-url` | value |  | Override the plan's remote URL. |
+
+
+### `sange purge plan`
+
+
+Create a new purge plan + save it.
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--batch` | flag | false |  |
+| `--dry-run` | flag | false |  |
+| `--glob` | value |  | Glob pattern. Repeat for multiple. |
+| `--path` | value |  | Exact path to purge. Repeat for multiple. |
+| `--remote` | value |  | Remote URL for the target repo. |
+| `--repo` | value | `.` | Repo root (parent of `.sange/`). Default: cwd. |
+| `--slug` | value |  | Short repo identifier (e.g. `owner/name`). |
+| `--vcs` | value | `git` | Target VCS: git / svn / hg / p4. |
+
+
+### `sange purge scan`
+
+
+Run gitleaks + trufflehog (§6.11.4 gate 8).
+
+**Arguments:**
+
+| Name | Status |
+| :--- | :--- |
+| `plan_id` | required |
+
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--repo` | value | `.` |  |
+
+
+### `sange purge show`
+
+
+Print a plan's full JSON.
+
+**Arguments:**
+
+| Name | Status |
+| :--- | :--- |
+| `plan_id` | required |
+
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--repo` | value | `.` |  |
 
 
 ## Exit codes
