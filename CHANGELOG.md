@@ -22,6 +22,86 @@ dogfoods its own lifecycle. Until then, this file is maintained by hand.
 
 ### Added
 
+- **T-104 — Secret resolver library (`sange.core.secrets`).**
+  Implements the §6.10 runtime-side secret-mount mechanism chain.
+  The §6.10 spec enumerates five mechanisms in preference order;
+  this v0.5 slice ships four (SSH agent, BuildKit/file, OS
+  keyring, env-var dev fallback). The remaining external-manager
+  paths (Vault, AWS Secrets Manager, 1Password, age/GPG) land in
+  v1.0+ when those integrations exist. New subsystem at
+  `src/sange/core/secrets/`:
+  - `Secret` frozen dataclass — METADATA only (name + provider
+    + lookup_key + description + required). NEVER holds the
+    value. `__repr__` redacts `lookup_key` because it sometimes
+    carries secret-adjacent context (a Vault path, a keychain
+    service identifier). Newlines in name/lookup_key rejected
+    (structured-log injection vector). Empty name rejected.
+  - `redact(value)` returns the constant `<redacted>` regardless
+    of input. Used as a grep-able call-site marker for every
+    place a value might otherwise reach a log / error / repr.
+  - `Resolver` runtime-checkable Protocol with `.name: str`
+    property + `resolve(secret) -> str | None`. Returning None
+    means "I can't resolve this; try the next resolver"; raising
+    `ResolutionError` means config-time failure (missing
+    lookup_key etc.) the caller can fix.
+  - `EnvVarResolver` — `provider=="env"` only. Reads
+    `os.environ[secret.lookup_key]` (overridable via constructor
+    `env=` for tests). Empty env-var values treated as None
+    (operators export blank vars by accident; a blank "secret"
+    is never the right answer).
+  - `FileResolver` — `provider=="file"` only. Reads from a
+    mounted path (Docker/BuildKit convention is
+    `/run/secrets/<name>`). Refuses to read world- or
+    group-writable files (deployment bug, not a secret).
+    `strict_ownership=True` (default) refuses files owned by a
+    uid other than the running process — defends against a
+    sibling-container hijack (§6.10 Red-Team #1). Trailing
+    whitespace stripped (BuildKit-mounted files end in `\n`).
+  - `SshAgentResolver` — `provider=="ssh-agent"` only. Does NOT
+    return key material (that's the SSH client's job); returns
+    the socket PATH from `SSH_AUTH_SOCK` after `stat`-checking
+    it's actually a socket. Callers forward `SSH_AUTH_SOCK` to
+    child processes (git, ssh, scp).
+  - `KeyringResolver` — `provider=="keyring"` only. Wraps
+    `keyring.get_password(service, secret.lookup_key)`.
+    Service defaults to `"sange"`. Returns None if keyring
+    import fails (running in a container without a backend
+    daemon) or the backend reports the credential missing —
+    chain falls through cleanly.
+  - `ChainResolver(*resolvers, strict=False)` walks the chain
+    in order. Returns the first non-None result OR raises
+    `ResolutionError` if `strict=True` OR `secret.required=True`.
+    `resolve_detailed(secret)` returns a `ResolutionResult`
+    (frozen dataclass with `secret_name` + `value` +
+    `resolved_via` + `found`) for audit logging — the audit
+    chain records WHICH resolver fired without recording the
+    value. `ResolutionResult.__repr__` redacts the value.
+  - `ResolutionError` raised on config failures + strict-mode
+    misses.
+  Production callers compose the chain in §6.10 preference order:
+  `ChainResolver(SshAgentResolver(), FileResolver(),
+  KeyringResolver(), EnvVarResolver())`. +41 tests in
+  `test_secrets.py` covering: Secret model (construct / repr
+  redacts / empty rejected / newline rejected x2 / frozen);
+  redact (string / bytes / None); EnvVarResolver (present /
+  missing returns None / empty treated as None / wrong-provider /
+  missing lookup raises / Protocol satisfied); FileResolver
+  (reads / strips newline / missing returns None /
+  world-writable refused / group-writable refused / wrong-provider
+  / missing lookup raises); SshAgentResolver (real Unix socket
+  bind / no env var / non-socket path / nonexistent / wrong
+  provider — POSIX-only); KeyringResolver (wrong-provider /
+  missing lookup / service in name / fake-module credential
+  resolved / fake-module credential missing); ChainResolver
+  (first wins / falls through / all miss / strict raises /
+  required raises / empty chain rejected / resolve_detailed
+  records resolver name / not-found shape / result repr does
+  NOT contain value — the most important security invariant).
+  Suite 1706 → 1747 passing. ruff 0, mypy 0 (81 → 84 source
+  files). v1.0+ remainder: Vault / AWS Secrets Manager /
+  1Password / age / GPG resolvers + the `sange secrets`
+  management CLI surface + `mlock` memory-protection for
+  resolved values.
 - **T-109 — Typed-phrase confirmation gate (`sange.utils.gate`).**
   Implements §7.0.5 — the destructive-op confirmation gate
   reused by every high-blast operation (`sange purge execute` in
