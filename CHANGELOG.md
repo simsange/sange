@@ -22,6 +22,73 @@ dogfoods its own lifecycle. Until then, this file is maintained by hand.
 
 ### Added
 
+- **T-111a — Purge subsystem foundation (PurgePlan + state machine
+  + store).** First slice of §6.11 (the headline v0.5 capability).
+  Ships data model + state machine + persistence only; no
+  destructive paths yet (per §6.11.1 v0.5 = detection / analyze /
+  dry-run / backup mirror / audit). New subsystem at
+  `src/sange/core/purge/`:
+  - `PurgeState` — 10 lifecycle states per §6.11.2
+    (planned / preflight_passed / analyzed / previewed / confirmed
+    / executing / verified / completed / aborted / rolled_back).
+  - `_TRANSITIONS` adjacency map — forward-only graph with one
+    re-entry edge (`rolled_back → planned` for retries).
+    `TERMINAL_STATES` = `{completed, aborted}`. Pure module —
+    no I/O, no audit chain, no plan persistence.
+  - `IllegalTransition` exception lists the legal alternatives
+    in its message so error rendering is precise (§7.0.8 exit 66).
+  - `can_transition()` / `assert_transition()` / `legal_next()`
+    helpers.
+  - `PurgePlan` Pydantic v2 model with `extra="forbid"`. Fields:
+    `schema_version` + `plan_id` (canonical
+    `purge-<UTC-ISO>-<8-hex>` format) + `created_at` /
+    `updated_at` (ISO 8601 UTC second-precision) + `created_by` +
+    `state` + `target_vcs` (Literal git/svn/hg/p4) + `target_repo`
+    (RepoMeta: path/remote/slug) + `filters` (paths + globs +
+    `replace_text_hashes` — at least one non-empty, enforced by
+    `model_validator`) + `counts` + `scanner_results` +
+    `preflight_checks` (list of PreflightCheck:
+    name+status∈{green,red,yellow,skipped}+detail) +
+    `tool` (ToolMeta: name+version, populated when execute
+    begins) + `backup_path` + `mirror_path` + `dry_run` + `batch`
+    + `aborted_reason` + `rolled_back_reason`.
+  - `plan.transition(new_state, *, reason="")` validates via
+    `assert_transition` then updates `state` + `updated_at`,
+    recording the reason on aborted/rolled_back transitions
+    (in-band post-mortem so the audit log is the cross-reference,
+    not the only source).
+  - `new_plan_id()` generates `purge-<%Y-%m-%dT%H-%M-%SZ>-<8-hex>`
+    via `secrets.token_hex(4)` — 32-bit nonce comfortably handles
+    the "two purges started in the same second" case.
+  - `PurgePlanStore` reads/writes
+    `<repo>/.sange/purge/<plan-id>/plan.json` atomically
+    (`tempfile.mkstemp` + `fsync` + `os.replace`). `save()` /
+    `load()` / `exists()` / `list_plans()` / `plan_dir()` /
+    `plan_path()`. `list_plans()` returns canonical-id-sorted
+    list (== chronological for same-year plans). Invalid plan-id
+    rejected by `plan_dir()` to keep arbitrary paths out of
+    `<repo>/.sange/purge/`.
+  - `PurgePlanNotFound` raised by `load()` on missing plan.
+  Audit-chain integration (`EventKind.PURGE_PLAN`) is
+  intentionally NOT here — the CLI layer (later slice) pairs each
+  `plan.transition(...)` with `chain.append(...)` so the two
+  concerns stay independent and the model is unit-testable
+  without a chain dependency. +68 tests across
+  `test_purge_state.py` (22 — enum / 14 parametrized legal
+  transitions / 9 parametrized illegal / terminal states /
+  legal_next / IllegalTransition message format) +
+  `test_purge_plan.py` (46 — new_plan_id format & clock-override /
+  PurgeFilters empty-rejection & every-combo / construction
+  invariants / canonical id regex / updated_at >= created_at /
+  extra-fields forbidden / unsupported VCS rejected / full happy-path
+  transition chain / aborted+rolled_back reason recording /
+  rolled_back→planned re-entry / updated_at advances / JSON
+  round-trip / intermediate-state preservation / store save+load
+  / atomic-no-tmp-residue / overwrite / list-sorted / skip
+  non-plan dirs / skip plan-dir-without-plan.json / invalid id
+  rejected). Suite 1510 → 1578 passing. ruff 0, mypy 0
+  (70 → 73 source files). Foundation for T-111b (mirror clone),
+  T-111c (analyzer), T-111d (preflight gates), T-111e (CLI surface).
 - **T-110 — Subprocess streaming helper (`sange.core.streaming.run_streamed`).**
   Closes the §7.0.6 foundation. Every external command (`git`,
   `git-filter-repo`, `svnadmin`, `hg`, `p4`, `gitleaks`,
