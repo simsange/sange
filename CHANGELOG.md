@@ -22,6 +22,53 @@ dogfoods its own lifecycle. Until then, this file is maintained by hand.
 
 ### Added
 
+- **T-107a — `TerminalProfile` detection + glyph helpers (§7.0.2).**
+  First slice of T-107. Pure capability detection — no `rich` /
+  `textual` / `questionary` integration yet (those layer on top
+  when concrete visual primitives need a profile to switch
+  glyphs against). New module `src/sange/utils/terminal.py`:
+  - `TerminalProfile` frozen dataclass: `is_tty` + `is_ci` +
+    `encoding` + `has_utf8` + `is_windows` +
+    `is_modern_windows_terminal` + `shell` + `color_mode`
+    (Literal `truecolor`/`256`/`16`/`none`) + `use_emoji` +
+    `use_unicode_box_chars` + `width`.
+  - `detect_profile(*, env=None, stream=None)` implements §7.0.2
+    rules in priority order: `NO_COLOR` always wins (explicit
+    opt-out) → `FORCE_COLOR` (explicit opt-in over TTY
+    heuristics) → `CI=true` (disables emoji, keeps Unicode
+    structure) → Windows-no-WT_SESSION + non-UTF-8 (full ASCII
+    fallback) → COLORTERM=truecolor → TERM contains 256 →
+    TTY → non-TTY. Tests inject `env=` dict + `stream=` mock
+    so every rule combination exercises without touching the
+    real env.
+  - `Glyphs` frozen dataclass: `success` / `failure` / `warning`
+    / `in_progress` / `bullet` / `tree_branch` / `tree_last` /
+    `tree_vert` / `section_rule`.
+  - `glyphs_for(profile)` returns one of three shipped maps:
+    `_GLYPHS_EMOJI` (`✅` `❌` `⚠️` `•` `├──`) for modern
+    terminals, `_GLYPHS_UNICODE` (`✓` `✗` `△` `•` `├──`) for
+    NO_COLOR + UTF-8, `_GLYPHS_ASCII` (`[OK]` `[FAIL]` `[WARN]`
+    `*` `+--`) for legacy Windows + non-UTF-8.
+  - `truncate_to_width(text, width, *, suffix="…")` uses
+    `wcwidth.wcswidth` so CJK / emoji / zero-width-joiner
+    sequences truncate correctly. Display width != string
+    length — never use `len(s)` for column math.
+  - `_detect_shell()` tries `shellingham` first, falls back to
+    `SHELL` / `COMSPEC` env-var inspection if shellingham
+    import fails or its detection raises. The §7.0.1 library
+    pin mandates shellingham; the fallback honors the
+    architecture-prompt allowance for graceful degradation.
+  +27 tests in `test_terminal_profile.py` covering: every env
+  rule (NO_COLOR wins over FORCE_COLOR / CI disables emoji /
+  TERM=dumb / COLORTERM=truecolor / 256-color / TTY default
+  16-color / piped output none); encoding (UTF-8 → emoji /
+  cp1252 → no emoji / StringIO with no encoding falls back);
+  Windows (legacy ASCII / modern with WT_SESSION); glyphs
+  (emoji / NO_COLOR Unicode / legacy Windows ASCII / frozen);
+  truncate (short / ellipsis / zero/negative width / wide
+  chars / custom suffix / exact fit); profile frozen; width
+  is positive int. Suite 1653 → 1680 passing. ruff 0, mypy 0
+  (78 → 80 source files).
 - **T-111f — `sange purge` CLI sub-app (8 verbs).** Sixth slice of
   §6.11 — the operator-facing surface for the v0.5 read-only purge
   story. Every v0.5 library capability is now reachable from the
