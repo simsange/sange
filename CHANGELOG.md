@@ -22,6 +22,43 @@ dogfoods its own lifecycle. Until then, this file is maintained by hand.
 
 ### Added
 
+- **T-102 slice 2 — `sange hooks` CLI sub-app + `.git/hooks/` shim
+  writer.** Closes the foundation of T-102. Adds:
+  - `sange.core.hooks.shim` module: `install_git_shims(repo,
+    *, events, force)` writes `.git/hooks/<event>` scripts that
+    delegate to `sange hooks run <event>`. The shim format
+    `#!/usr/bin/env bash` + `SANGE-HOOK-SHIM v1 — managed by …`
+    marker comment + `exec sange hooks run <event> "$@"` ensures
+    the engine's stdin/stdout/stderr/exit-code passes through
+    cleanly. tmp+fsync+rename + chmod-755 is the write pattern.
+  - `install_git_shims` is idempotent — re-running it overwrites
+    existing Sange-managed shims (marker version bumps stay
+    honest) but never touches non-shim hook files unless
+    `force=True`.
+  - `uninstall_git_shims(repo, *, events)` removes only shims that
+    carry the marker; foreign hooks are left untouched.
+  - `sange hooks run EVENT [--repo --timeout --no-abort]` — invokes
+    `HookEngine.run_event`, formats a table (status/pri/name/ms/
+    exit), exits 1 iff any FAILED hook is reported.
+  - `sange hooks list [--event EVENT] [--repo]` — discovers across
+    every known event or one specified.
+  - `sange hooks install [--event ...] [--force] [--repo]` —
+    writes shims; surfaces counts of installed/updated/
+    skipped-foreign/skipped-no-hooks.
+  - `sange hooks uninstall [--event ...] [--repo]` — removes
+    Sange shims.
+  - `sange hooks status [--repo]` — per-event summary: hook count
+    + shim install state (sange / foreign / absent).
+  All verbs honor `--json`. End-to-end smoke: bash hooks at
+  priorities 05/10/20/30 + one non-executable → `discover()`
+  returns 4 (non-exec correctly skipped) → `install` writes one
+  shim per event with hooks (18 events known, 2 installed,
+  16 skipped-no-hooks) → `run pre-commit` returns table + exit
+  code → `uninstall` removes only Sange shims.
+  +24 tests across `test_hooks_shim.py` (10) + `test_cli_hooks.py`
+  (14). Suite 1383 → 1407 passing. cli-reference regenerated.
+  The named-gate library (gitleaks / trufflehog / make-test /
+  make-lint shipping as preconfigured hooks) lands in T-103.
 - **T-102 — Pre-commit hooks framework (slice 1).** First slice
   of the hooks engine (§7.4). New subsystem at
   `src/sange/core/hooks/`:

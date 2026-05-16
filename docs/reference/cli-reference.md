@@ -1,9 +1,9 @@
 ---
 generated_by: tools/generators/cli_reference.py
 generator_version: 1.0.0
-generated_at: 2026-05-16T06:54:49Z
-input_sha256: dcd17ed2e050c996b963c3d95ec25dce709d7bd70bc979bb064738c271443af0
-output_sha256: 7bc7da8f2a139c481bf38b4b74909056bf52aa8b344b97ec236bbc411c22b049
+generated_at: 2026-05-16T07:30:31Z
+input_sha256: 1f475914168bb3d19a01d601b6b520bfd536318ef7b9636e3c6123476679798c
+output_sha256: 40f2ee6e1af8e689c6da574ccd77f75c104d0c2f2177074bd74386bb9e7b4ab7
 manual_edits_allowed: false
 ---
 # Sange CLI reference
@@ -40,6 +40,12 @@ Every entry below is auto-introspected from the live click command tree, so flag
 | `sange gitignore list` | List discoverable gitignore profiles. |
 | `sange gitignore recover` | Roll forward any crashed-in-progress swap journals. |
 | `sange gitignore swap` | Atomic swap to a new gitignore composition. |
+| `sange hooks` | Manage pre-commit / pre-push / etc. hooks (T-102). |
+| `sange hooks install` | Write .git/hooks/<event> shims that delegate to `sange hooks run`. |
+| `sange hooks list` | Show discovered hooks (every event, or a specific one). |
+| `sange hooks run` | Run every hook for EVENT in priority order. |
+| `sange hooks status` | Per-event summary: hook count + shim install state. |
+| `sange hooks uninstall` | Remove Sange-managed .git/hooks/<event> shims (foreign hooks untouched). |
 | `sange init` | Bootstrap .sange/ skeleton in the target repo. |
 
 
@@ -68,6 +74,7 @@ Polyglot VCS automation toolkit (Git/SVN/Hg/P4).
 | `sange commits` | Manage the commit lifecycle queue. |
 | `sange doctor` | Environment health checks. |
 | `sange gitignore` | Manage the active gitignore profile (T-101). |
+| `sange hooks` | Manage pre-commit / pre-push / etc. hooks (T-102). |
 | `sange init` | Bootstrap .sange/ skeleton in the target repo. |
 
 
@@ -421,6 +428,95 @@ Atomic swap to a new gitignore composition.
 | :--- | :--- | :--- | :--- |
 | `--repo` | value | `.` | Repo root (the parent of .sange/). Default: cwd. |
 | `--stage` | value | `dev` | Stage to compose for. One of: dev / prod / (any custom stage your profile declares). |
+
+
+### `sange hooks`
+
+
+Manage pre-commit / pre-push / etc. hooks (T-102).
+
+**Sub-commands:**
+
+| Sub-command | Description |
+| :--- | :--- |
+| `sange hooks install` | Write .git/hooks/<event> shims that delegate to `sange hooks run`. |
+| `sange hooks list` | Show discovered hooks (every event, or a specific one). |
+| `sange hooks run` | Run every hook for EVENT in priority order. |
+| `sange hooks status` | Per-event summary: hook count + shim install state. |
+| `sange hooks uninstall` | Remove Sange-managed .git/hooks/<event> shims (foreign hooks untouched). |
+
+
+### `sange hooks install`
+
+
+Write .git/hooks/<event> shims that delegate to `sange hooks run`.
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--event` | value |  | Restrict to these events (repeatable). Default: every known event. |
+| `--force` | flag | false | Overwrite pre-existing non-Sange hook files. Use carefully. |
+| `--repo` | value | `.` | Repo root (must be a git working tree). Default: cwd. |
+
+
+### `sange hooks list`
+
+
+Show discovered hooks (every event, or a specific one).
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--event` | value |  | Filter to one event. Empty = list every known event. |
+| `--repo` | value | `.` | Repo root. Default: cwd. |
+
+
+### `sange hooks run`
+
+
+Run every hook for EVENT in priority order.
+
+**Arguments:**
+
+| Name | Status |
+| :--- | :--- |
+| `event` | required |
+
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--no-abort` | flag | false | Continue after FAILED hooks (collect every result). |
+| `--repo` | value | `.` | Repo root (parent of .sange/). Default: cwd. |
+| `--timeout` | value | `60.0` | Per-hook subprocess timeout in seconds. |
+
+
+### `sange hooks status`
+
+
+Per-event summary: hook count + shim install state.
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--repo` | value | `.` | Repo root. Default: cwd. |
+
+
+### `sange hooks uninstall`
+
+
+Remove Sange-managed .git/hooks/<event> shims (foreign hooks untouched).
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--event` | value |  | Restrict to these events (repeatable). Default: every known event. |
+| `--repo` | value | `.` | Repo root. Default: cwd. |
 
 
 ### `sange init`

@@ -17,16 +17,30 @@ from sange.core.hooks.result import (
     HookStatus,
     status_from_exit_code,
 )
+from sange.core.hooks.shim import (
+    GIT_HOOK_EVENTS,
+    SHIM_MARKER,
+    ShimError,
+    ShimInstallResult,
+    install_git_shims,
+    uninstall_git_shims,
+)
 
 __all__ = [
     "EXIT_PASSED",
     "EXIT_SKIPPED",
     "EXIT_WARN",
+    "GIT_HOOK_EVENTS",
+    "SHIM_MARKER",
     "HookDescriptor",
     "HookEngine",
     "HookError",
     "HookReport",
     "HookResult",
     "HookStatus",
+    "ShimError",
+    "ShimInstallResult",
+    "install_git_shims",
     "status_from_exit_code",
+    "uninstall_git_shims",
 ]
