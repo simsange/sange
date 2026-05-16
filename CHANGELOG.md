@@ -22,6 +22,30 @@ dogfoods its own lifecycle. Until then, this file is maintained by hand.
 
 ### Added
 
+- **T-102 — Pre-commit hooks framework (slice 1).** First slice
+  of the hooks engine (§7.4). New subsystem at
+  `src/sange/core/hooks/`:
+  - `HookResult` / `HookStatus` / `HookReport` — typed outcomes
+    with exit-code conventions: `0` → PASSED, `128` → WARN,
+    `64` → SKIPPED, anything else → FAILED.
+  - `HookDescriptor` — one discovered hook with name + event +
+    priority + path. Priority is 0-99 (validated).
+  - `HookEngine` — discovers hooks at
+    `<repo>/.sange/hooks/<event>/<priority>-<name>` (one-level,
+    POSIX executable bit required) and runs them in priority
+    order. Per-hook subprocess timeout (default 60s); per-event
+    `abort_on_failed` (default True — first FAILED stops the
+    rest, WARN/SKIPPED do not).
+  - Environment discipline: `PATH` + `HOME` + caller-supplied
+    `env_extra` + per-run `env` override, plus a
+    `SANGE_HOOKS_REPO_ROOT` injected so hooks can locate the
+    repo without hardcoding paths.
+  - Captures stdout + stderr per hook (truncated to 64 KiB) +
+    wall-clock duration.
+  +23 tests in `tests/unit/test_hooks_engine.py`. Suite 1360 →
+  1383 passing. The named-gate library (gitleaks / trufflehog /
+  `make test` / `make lint` shipping as preconfigured hooks)
+  lands in T-103 as a layer on top of this engine.
 - **T-101d — Variant matrix (ADR-032).** Multi-dimensional
   stage × flavor model replaces the binary `dev | prod` axis as
   the v0.5 default.
