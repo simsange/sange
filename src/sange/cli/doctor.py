@@ -212,21 +212,75 @@ def _check_makefile_tracked(repo_root: Path | None = None) -> CheckResult:
     )
 
 
-def doctor_command() -> None:
-    """Run all v0.1 health checks; print results; exit non-zero on failure."""
+def _container_check_to_result(check: object) -> CheckResult:
+    """Adapt a `core.doctor.ContainerCheck` to the CLI's `CheckResult`.
+
+    The core layer + CLI layer use distinct result types so the core
+    pure-function check API stays free of typer / click imports.
+    This adapter copies the fields across; findings land in `details`.
+    """
+
+    return CheckResult(
+        name=getattr(check, "name", "unknown"),
+        ok=bool(getattr(check, "ok", False)),
+        message=str(getattr(check, "message", "")),
+        details={"findings": list(getattr(check, "findings", []) or [])},
+    )
+
+
+def doctor_command(
+    container: bool = typer.Option(
+        False,
+        "--container",
+        help=(
+            "Audit the running container for leaked secrets (§6.10.3): "
+            "non-root user, no secret-shaped env vars, secret-mount "
+            "perms ≤ 0400, SSH key perms ≤ 0600."
+        ),
+    ),
+) -> None:
+    """Run health checks; print results; exit non-zero on failure.
+
+    Default mode runs the v0.1 host-level checks (python, git, config,
+    AI providers, makefile-tracked). `--container` mode adds the
+    §6.10.3 audits + requires Sange to actually be inside a container
+    (so misruns on the host produce a precise error, not noise).
+    """
 
     import click
+
+    from sange.core.doctor import (
+        check_in_container,
+        check_leaky_env_vars,
+        check_non_root,
+        check_secret_mount_perms,
+        check_ssh_key_perms,
+    )
 
     ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
-    checks = [
+    checks: list[CheckResult] = [
         _check_python(),
         _check_git(),
         _check_config(),
         _check_ai_providers(),
         _check_makefile_tracked(),
     ]
+
+    if container:
+        in_container = check_in_container()
+        checks.append(_container_check_to_result(in_container))
+        if in_container.ok:
+            for fn in (
+                check_non_root,
+                check_leaky_env_vars,
+                check_secret_mount_perms,
+                check_ssh_key_perms,
+            ):
+                checks.append(_container_check_to_result(fn()))
+        # If the in-container probe failed, skip the rest — they'd
+        # produce confusing host-environment findings.
 
     all_ok = all(c.ok for c in checks)
 

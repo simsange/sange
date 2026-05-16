@@ -1,9 +1,9 @@
 ---
 generated_by: tools/generators/cli_reference.py
 generator_version: 1.0.0
-generated_at: 2026-05-16T12:27:52Z
-input_sha256: 7abcc73d7d5572e2f9e3b116257860c992415b798089f3534f088cb874d6285f
-output_sha256: 171d63c12e5814dd01b7a1932439ad3c484decfb794174c35d20190ca8d48240
+generated_at: 2026-05-16T23:09:10Z
+input_sha256: 8befc98e2d246e0ad6449f751724ac58cb5a87d81b4b4ab9323eed76cbb39bba
+output_sha256: b7a4c87d70bd8d9cc7eb9567081d2a761fe47f575e21df51178426356a8238e0
 manual_edits_allowed: false
 ---
 # Sange CLI reference
@@ -437,6 +437,13 @@ Submit a DRAFT for review (DRAFT → PENDING_REVIEW).
 
 
 Environment health checks.
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--container` | flag | false | Audit the running container for leaked secrets (§6.10.3): non-root user, no secret-shaped env vars, secret-mount perms ≤ 0400, SSH key perms ≤ 0600. |
+
 
 ### `sange gitignore`
 

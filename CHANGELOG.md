@@ -22,6 +22,63 @@ dogfoods its own lifecycle. Until then, this file is maintained by hand.
 
 ### Added
 
+- **T-105 — `sange doctor --container` (§6.10.3 audits).**
+  Audits the running container for leaked secrets. v0.5 v0.5
+  scope: detection-only — flags issues, doesn't auto-remediate.
+  New module `src/sange/core/doctor/container.py` with pure
+  check functions (no typer/click deps), plus a `--container`
+  flag on `sange doctor`:
+  - `check_in_container(env, marker_paths)` — verifies we're
+    inside a container via any of: `/.dockerenv` (Docker),
+    `/run/.containerenv` (Podman), `KUBERNETES_SERVICE_HOST`
+    env (in-cluster pod), `container=` env (systemd-nspawn /
+    LXC). Fires FIRST; if it fails, the rest of the container
+    checks are skipped to avoid noisy host-environment
+    findings.
+  - `check_non_root(uid_fn)` — §6.10.3 mandates non-root.
+    Default uses `os.geteuid()`; skipped on platforms without
+    it (Windows).
+  - `check_leaky_env_vars(env)` — flags env vars whose names
+    match a secret-shaped pattern (`*_TOKEN$`, `*_KEY$`,
+    `*_SECRET$`, `*_PASSWORD$`, plus provider-specific
+    `GITHUB_TOKEN` / `AWS_SECRET_ACCESS_KEY` / `NPM_TOKEN` /
+    etc.) AND have non-empty values. Findings include the
+    var NAME + value LENGTH only — **NEVER the value itself**.
+    Allowlist skips obviously-safe names like `SSH_KEY_PATH`
+    (a path, not a key). Case-insensitive.
+  - `check_secret_mount_perms(mount_dir, max_mode)` — scans
+    a secret-mount dir (default `/run/secrets/`) for files
+    whose mode exceeds the §6.10.3 0400 max. Findings carry
+    path + mode + max_allowed; never file content.
+  - `check_ssh_key_perms(home, max_mode)` — scans
+    `~/.ssh/id_<algo>` for keys whose mode exceeds 0600
+    (SSH client itself refuses to use overpermissive keys).
+    `.pub` files explicitly excluded (they CAN be
+    world-readable). `known_hosts` and other non-id files
+    also excluded.
+  - `ContainerCheck` frozen dataclass: `name` + `ok` +
+    `message` + `findings` (list of dicts). Findings are
+    typed per check so JSON consumers can rely on the shape.
+  - CLI adapter `_container_check_to_result` converts core
+    `ContainerCheck` → CLI `CheckResult` so the core stays
+    free of typer/click imports.
+  - `--container` flag added to `sange doctor`. Honors `--json`.
+    cli-reference regenerated.
+  +26 tests in `test_doctor_container.py` covering: in-container
+  detection (Docker marker / Kubernetes / systemd-container /
+  no-signals-fails); non-root (root fails / non-root passes /
+  default uses geteuid); leaky env vars (no-secret / token /
+  password / empty-value-not-flagged / **value never in findings**
+  exercised with `"this-secret-value-must-not-leak"` and asserted
+  absent / allowlist / case-insensitive); secret mount perms
+  (missing dir skipped / 0400 passes / 0644 fails / multiple
+  bad files); SSH key perms (no ssh dir / 0600 passes / 0644
+  fails / .pub not flagged / non-id files ignored); CLI
+  integration (default mode excludes container checks /
+  `--container` runs in-container check / JSON mode).
+  Suite 1747 → 1773 passing. ruff 0, mypy 0 (84 → 86 source
+  files). **The v0.5 surface for the §6.10 container story
+  is now complete**: T-104 (resolver chain) + T-105 (auditor).
 - **T-104 — Secret resolver library (`sange.core.secrets`).**
   Implements the §6.10 runtime-side secret-mount mechanism chain.
   The §6.10 spec enumerates five mechanisms in preference order;
