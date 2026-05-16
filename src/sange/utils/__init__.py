@@ -13,6 +13,14 @@ Future modules: `progress.py` (§7.0.4), `gate.py` (§7.0.5 typed-phrase).
 
 from __future__ import annotations
 
+from sange.utils.gate import (
+    GateError,
+    GateOutcome,
+    GateResult,
+    GateVia,
+    render_phrase,
+    typed_phrase_confirm,
+)
 from sange.utils.terminal import (
     Glyphs,
     TerminalProfile,
@@ -22,9 +30,15 @@ from sange.utils.terminal import (
 )
 
 __all__ = [
+    "GateError",
+    "GateOutcome",
+    "GateResult",
+    "GateVia",
     "Glyphs",
     "TerminalProfile",
     "detect_profile",
     "glyphs_for",
+    "render_phrase",
     "truncate_to_width",
+    "typed_phrase_confirm",
 ]

@@ -22,6 +22,64 @@ dogfoods its own lifecycle. Until then, this file is maintained by hand.
 
 ### Added
 
+- **T-109 — Typed-phrase confirmation gate (`sange.utils.gate`).**
+  Implements §7.0.5 — the destructive-op confirmation gate
+  reused by every high-blast operation (`sange purge execute` in
+  v1.0+, `sange publish` to prod, `sange release` tag+push,
+  `sange recover` history rewrite). New module
+  `src/sange/utils/gate.py`:
+  - `typed_phrase_confirm(action, *, nonce=True, timeout_s=60,
+    batch=False, max_attempts=3, input_fn, output_fn, clock_fn,
+    nonce_fn, date_fn)` → `GateResult`. Prompts the operator for
+    the canonical phrase, verifies a literal match, enforces a
+    deadline across attempts.
+  - `render_phrase(action, *, nonce=True, clock=None,
+    nonce_fn=None)` produces `<ACTION>_<YYYY-MM-DD>_<8-hex>`
+    when `nonce=True`, `<ACTION>_<YYYY-MM-DD>` otherwise. Action
+    is upper-cased; only alphanumerics + underscore allowed.
+  - `GateResult` frozen dataclass: `passed` + `outcome`
+    (`"passed"` / `"failed"` / `"timed_out"` / `"skipped"`) +
+    `attempts` + `elapsed_s` + `via` (`"tty"` / `"batch"`) +
+    `phrase`. `.as_audit_payload()` returns the
+    `{gate_passed, gate_outcome, attempts, elapsed_s, via,
+    phrase}` dict per §7.0.5's required audit fields.
+  - `GateError` raised on invalid args: `timeout_s` ≤ 0 or
+    above 600s cap, `max_attempts` ≤ 0, action with illegal
+    chars or empty.
+  - Deadline enforcement: `elapsed = clock_fn() - start_ns` is
+    checked BEFORE each input call. If past deadline, returns
+    `outcome="timed_out"` without burning the attempt. The
+    helper does NOT interrupt a blocked `input()` call — the
+    operator who walks away is expected to ctrl-c; this is
+    explicit in the docstring.
+  - Mismatch handling: the operator's typed input is NEVER
+    echoed back into the output stream — operators might be
+    mid-typing of a secret they confused with the phrase. The
+    output only says `✗ phrase mismatch (N attempt(s) left)`.
+  - `batch=True` bypasses the prompt entirely, returns
+    `passed=True / via=batch / outcome=skipped / attempts=0`.
+    CALLERS MUST verify operation-specific precondition flags
+    before passing `batch=True` (per §6.11.4 "--batch requires
+    four explicit flags" for purge; other ops have their own).
+  - Audit-chain integration is the CALLER's responsibility —
+    the gate returns the payload shape, the caller threads
+    into `chain.append(EventKind.PURGE_EXECUTE, payload=...)`.
+    Same separation-of-concerns pattern as T-111a's plan model.
+  +26 tests in `test_typed_phrase_gate.py`: render_phrase × 8
+  (canonical / no-nonce / action uppercased / action with
+  underscore / empty rejected / whitespace rejected / illegal
+  chars / 8-hex nonce); happy-path × 2 (first try / second
+  try); failures × 2 (max attempts exhausted / EOFError fast
+  fail); timeout × 2 (before any attempt / between attempts);
+  batch × 2 (skip prompt / still renders phrase for audit);
+  validation × 4 (negative/zero/above-max timeout / zero
+  max_attempts); audit payload × 3 (passed shape / failed
+  shape / batch shape); prompt-output × 2 (phrase appears in
+  prompt / mismatch does NOT echo typed input); frozen × 1.
+  Suite 1680 → 1706 passing. ruff 0, mypy 0 (80 → 81 source
+  files). **Unblocks v1.0+ T-203** (`sange purge execute` —
+  the typed-phrase gate fires before the destructive transition;
+  pairs with §6.11.2 `previewed → confirmed` state edge).
 - **T-107a — `TerminalProfile` detection + glyph helpers (§7.0.2).**
   First slice of T-107. Pure capability detection — no `rich` /
   `textual` / `questionary` integration yet (those layer on top
