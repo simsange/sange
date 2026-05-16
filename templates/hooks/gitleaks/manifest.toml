@@ -1,0 +1,21 @@
+# Gitleaks gate — secret scanner for committed credentials.
+#
+# Sange-shipped named gate (T-103). Install with:
+#   sange hooks add gitleaks
+#
+# Removes with:
+#   sange hooks remove gitleaks
+
+[gate]
+name = "gitleaks"
+display_name = "Gitleaks (secret scanner)"
+version = "1.0.0"
+description = "Scans the staged diff for committed secrets via gitleaks."
+required_tool = "gitleaks"
+install_hint = "brew install gitleaks  # or visit https://gitleaks.io/"
+
+[events.pre-commit]
+# Run early (priority 05) so a leak short-circuits the rest of the
+# pre-commit chain before slower checks (tests, lint, etc.) burn CI.
+priority = 5
+source = "pre-commit.sh"

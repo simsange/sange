@@ -390,10 +390,222 @@ def status_command(
         )
 
 
+# --------------------------------------------------------------------------- #
+# `sange hooks gates`
+# --------------------------------------------------------------------------- #
+
+
+@hooks_app.command(
+    "gates",
+    help="List available named gates (gitleaks / trufflehog / make-test / etc.).",
+)
+def gates_command(
+    repo_root: Path = typer.Option(
+        Path("."),
+        "--repo",
+        help="Repo root for per-repo overrides. Default: cwd.",
+    ),
+) -> None:
+    """Print every discoverable gate (per-repo > per-user > shipped)."""
+
+    import click
+
+    from sange.core.hooks import GateRegistry, default_gate_roots
+
+    ctx = click.get_current_context()
+    json_mode = bool(ctx.obj and ctx.obj.get("json"))
+
+    registry = GateRegistry(default_gate_roots(repo_root))
+    gates = registry.all_gates()
+
+    if json_mode:
+        typer.echo(json.dumps([
+            {
+                "name": g.name,
+                "display_name": g.display_name,
+                "version": g.version,
+                "description": g.description,
+                "required_tool": g.required_tool,
+                "events": [
+                    {"event": e.event, "priority": e.priority, "source": e.source}
+                    for e in g.events
+                ],
+                "source_dir": str(g.source_dir),
+            }
+            for g in gates
+        ], indent=2))
+        return
+    if not gates:
+        typer.echo("(no gates available)")
+        return
+    typer.echo(f"{'NAME':<14} {'TOOL':<14} {'EVENTS':<28} DESCRIPTION")
+    typer.echo(f"{'-' * 14} {'-' * 14} {'-' * 28} {'-' * 30}")
+    for g in gates:
+        events_str = ", ".join(
+            f"{e.event}({e.priority:02d})" for e in g.events
+        )
+        typer.echo(
+            f"{g.name:<14} {g.required_tool:<14} {events_str:<28} {g.description}"
+        )
+    typer.echo(f"\n{len(gates)} gate(s)")
+
+
+# --------------------------------------------------------------------------- #
+# `sange hooks add`
+# --------------------------------------------------------------------------- #
+
+
+@hooks_app.command(
+    "add",
+    help="Install a named gate's scripts into .sange/hooks/.",
+)
+def add_command(
+    gate: str = typer.Argument(
+        ...,
+        metavar="GATE",
+        help="Gate name (e.g. `gitleaks`, `trufflehog`, `make-test`).",
+    ),
+    events: list[str] = typer.Option(
+        [],
+        "--event",
+        help="Restrict to specific events (repeatable). Default: every event "
+             "the gate declares.",
+    ),
+    repo_root: Path = typer.Option(
+        Path("."),
+        "--repo",
+        help="Repo root. Default: cwd.",
+    ),
+) -> None:
+    """Copy the gate's hook scripts into the repo's .sange/hooks/ tree."""
+
+    import click
+
+    from sange.core.hooks import (
+        GateError,
+        GateRegistry,
+        add_gate,
+        default_gate_roots,
+    )
+
+    ctx = click.get_current_context()
+    json_mode = bool(ctx.obj and ctx.obj.get("json"))
+
+    registry = GateRegistry(default_gate_roots(repo_root))
+    try:
+        g = registry.get(gate)
+        results = add_gate(
+            repo_root.resolve(),
+            g,
+            events=tuple(events) if events else None,
+        )
+    except GateError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(code=2) from exc
+
+    if json_mode:
+        typer.echo(json.dumps([
+            {
+                "event": r.event,
+                "target_path": str(r.target_path),
+                "status": r.status,
+            }
+            for r in results
+        ], indent=2))
+        return
+    for r in results:
+        marker = {
+            "added": "[+]",
+            "updated": "[~]",
+            "skipped-event-not-requested": "[ ]",
+        }.get(r.status, "[?]")
+        if r.status == "skipped-event-not-requested":
+            continue
+        typer.echo(f"  {marker} {r.event:<22} {r.target_path.name}")
+    if g.required_tool:
+        typer.echo("")
+        typer.echo(
+            f"note: this gate calls `{g.required_tool}` at hook time. "
+            f"Install hint: {g.install_hint or 'see gate manifest'}"
+        )
+
+
+# --------------------------------------------------------------------------- #
+# `sange hooks remove`
+# --------------------------------------------------------------------------- #
+
+
+@hooks_app.command(
+    "remove",
+    help="Remove a named gate's scripts from .sange/hooks/.",
+)
+def remove_command(
+    gate: str = typer.Argument(
+        ...,
+        metavar="GATE",
+        help="Gate name (e.g. `gitleaks`).",
+    ),
+    events: list[str] = typer.Option(
+        [],
+        "--event",
+        help="Restrict to specific events. Default: every event the gate declares.",
+    ),
+    repo_root: Path = typer.Option(
+        Path("."),
+        "--repo",
+        help="Repo root. Default: cwd.",
+    ),
+) -> None:
+    """Remove the gate's hook scripts from the repo's .sange/hooks/ tree."""
+
+    import click
+
+    from sange.core.hooks import (
+        GateError,
+        GateRegistry,
+        default_gate_roots,
+        remove_gate,
+    )
+
+    ctx = click.get_current_context()
+    json_mode = bool(ctx.obj and ctx.obj.get("json"))
+
+    registry = GateRegistry(default_gate_roots(repo_root))
+    try:
+        g = registry.get(gate)
+        results = remove_gate(
+            repo_root.resolve(),
+            g,
+            events=tuple(events) if events else None,
+        )
+    except GateError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(code=2) from exc
+
+    if json_mode:
+        typer.echo(json.dumps([
+            {
+                "event": r.event,
+                "target_path": str(r.target_path),
+                "status": r.status,
+            }
+            for r in results
+        ], indent=2))
+        return
+    for r in results:
+        if r.status in ("skipped-event-not-requested", "skipped-absent"):
+            continue
+        marker = {"removed": "[-]"}.get(r.status, "[?]")
+        typer.echo(f"  {marker} {r.event:<22} {r.target_path.name}")
+
+
 __all__ = [
+    "add_command",
+    "gates_command",
     "hooks_app",
     "install_command",
     "list_command",
+    "remove_command",
     "run_command",
     "status_command",
     "uninstall_command",

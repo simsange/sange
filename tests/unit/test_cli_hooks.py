@@ -171,3 +171,81 @@ class TestHooksStatusCommand:
         )
         assert result.exit_code == 0
         assert "no hooks or shims" in result.output
+
+
+# --------------------------------------------------------------------------- #
+# T-103 — `sange hooks gates / add / remove`
+# --------------------------------------------------------------------------- #
+
+
+class TestHooksGatesCommand:
+    def test_lists_shipped(self, runner: CliRunner, tmp_path: Path) -> None:
+        result = runner.invoke(
+            app, ["hooks", "gates", "--repo", str(tmp_path)],
+        )
+        assert result.exit_code == 0
+        # Every shipped gate appears.
+        for name in ("gitleaks", "trufflehog", "make-test", "make-lint"):
+            assert name in result.output
+
+    def test_json_output(self, runner: CliRunner, tmp_path: Path) -> None:
+        result = runner.invoke(
+            app, ["--json", "hooks", "gates", "--repo", str(tmp_path)],
+        )
+        assert result.exit_code == 0
+        payload = _json.loads(result.output)
+        names = [g["name"] for g in payload]
+        assert "gitleaks" in names
+
+
+class TestHooksAddCommand:
+    def test_add_unknown_gate_exits_2(
+        self, runner: CliRunner, tmp_path: Path,
+    ) -> None:
+        result = runner.invoke(
+            app, ["hooks", "add", "no-such-gate", "--repo", str(tmp_path)],
+        )
+        assert result.exit_code == 2
+        assert "not found" in result.output
+
+    def test_add_gitleaks(self, runner: CliRunner, tmp_path: Path) -> None:
+        result = runner.invoke(
+            app, ["hooks", "add", "gitleaks", "--repo", str(tmp_path)],
+        )
+        assert result.exit_code == 0, result.output
+        target = tmp_path / ".sange" / "hooks" / "pre-commit" / "05-gitleaks.sh"
+        assert target.is_file()
+        # The install-hint note prints below the action.
+        assert "Install hint" in result.output
+
+    def test_add_event_filter(self, runner: CliRunner, tmp_path: Path) -> None:
+        # gitleaks only has pre-commit, so this filter is a no-op for it.
+        result = runner.invoke(
+            app,
+            ["hooks", "add", "gitleaks",
+             "--event", "pre-commit", "--repo", str(tmp_path)],
+        )
+        assert result.exit_code == 0
+        assert (tmp_path / ".sange" / "hooks" / "pre-commit" / "05-gitleaks.sh").is_file()
+
+
+class TestHooksRemoveCommand:
+    def test_remove_after_add(self, runner: CliRunner, tmp_path: Path) -> None:
+        runner.invoke(
+            app, ["hooks", "add", "gitleaks", "--repo", str(tmp_path)],
+        )
+        result = runner.invoke(
+            app, ["hooks", "remove", "gitleaks", "--repo", str(tmp_path)],
+        )
+        assert result.exit_code == 0
+        # Human-readable output uses the `[-]` marker, not the word "removed".
+        assert "[-]" in result.output
+        assert not (tmp_path / ".sange" / "hooks" / "pre-commit" / "05-gitleaks.sh").exists()
+
+    def test_remove_unknown_gate_exits_2(
+        self, runner: CliRunner, tmp_path: Path,
+    ) -> None:
+        result = runner.invoke(
+            app, ["hooks", "remove", "no-such", "--repo", str(tmp_path)],
+        )
+        assert result.exit_code == 2

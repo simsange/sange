@@ -1,0 +1,20 @@
+# Make-test gate — runs `make test` as a pre-push gate.
+#
+# Sange-shipped named gate (T-103). Install with:
+#   sange hooks add make-test
+#
+# The pre-push event is the right place (not pre-commit) because
+# test runs are expensive; we run them at push time to catch
+# regressions before the remote sees them.
+
+[gate]
+name = "make-test"
+display_name = "make test (pre-push)"
+version = "1.0.0"
+description = "Runs `make test` as a pre-push gate."
+required_tool = "make"
+install_hint = "Install GNU make for your platform; most systems already have it."
+
+[events.pre-push]
+priority = 50
+source = "pre-push.sh"

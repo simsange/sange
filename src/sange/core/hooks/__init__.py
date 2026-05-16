@@ -8,6 +8,17 @@ shipping as preconfigured hooks) lands in T-103 as a layer on top.
 from __future__ import annotations
 
 from sange.core.hooks.engine import HookDescriptor, HookEngine, HookError
+from sange.core.hooks.gates import (
+    Gate,
+    GateActionResult,
+    GateError,
+    GateEvent,
+    GateRegistry,
+    add_gate,
+    default_gate_roots,
+    load_gate,
+    remove_gate,
+)
 from sange.core.hooks.result import (
     EXIT_PASSED,
     EXIT_SKIPPED,
@@ -32,6 +43,11 @@ __all__ = [
     "EXIT_WARN",
     "GIT_HOOK_EVENTS",
     "SHIM_MARKER",
+    "Gate",
+    "GateActionResult",
+    "GateError",
+    "GateEvent",
+    "GateRegistry",
     "HookDescriptor",
     "HookEngine",
     "HookError",
@@ -40,7 +56,11 @@ __all__ = [
     "HookStatus",
     "ShimError",
     "ShimInstallResult",
+    "add_gate",
+    "default_gate_roots",
     "install_git_shims",
+    "load_gate",
+    "remove_gate",
     "status_from_exit_code",
     "uninstall_git_shims",
 ]

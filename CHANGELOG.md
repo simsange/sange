@@ -22,6 +22,37 @@ dogfoods its own lifecycle. Until then, this file is maintained by hand.
 
 ### Added
 
+- **T-103 — Named-gate library (secret scanning + lint/test gates).**
+  Layers four preconfigured hook bundles on top of the T-102 engine.
+  - `Gate` / `GateEvent` / `GateRegistry` (`src/sange/core/hooks/gates.py`)
+    — typed model loaded from `templates/hooks/<name>/manifest.toml`.
+    Three-tier discovery (per-repo > per-user > shipped).
+  - `add_gate(repo, gate, events=None)` copies the gate's script(s)
+    into `<repo>/.sange/hooks/<event>/<priority>-<name>.<ext>` with
+    +x. Idempotent — re-running marks the target `updated`.
+  - `remove_gate(repo, gate, events=None)` removes only files this
+    gate would have installed; foreign hooks left strictly alone.
+  - **Four shipped gates** under `templates/hooks/`:
+    - `gitleaks` (pre-commit, priority 05) — staged-diff secret
+      scanner via `gitleaks protect --staged --redact`.
+    - `trufflehog` (pre-commit, priority 10) — second-opinion
+      verified-secret scanner.
+    - `make-lint` (pre-commit, priority 20) — runs `make lint`
+      after secret scanners.
+    - `make-test` (pre-push, priority 50) — runs `make test` at
+      push time (slow gates belong on pre-push, not pre-commit).
+    Each gate script gracefully exits 64 (Sange SKIPPED) when its
+    required tool isn't installed, with an install hint in stderr.
+  - **Three new CLI verbs** on `sange hooks`:
+    - `sange hooks gates [--repo]` — list every discoverable gate.
+    - `sange hooks add GATE [--event ...] [--repo]` — install a
+      gate; prints an install hint if the gate calls an external
+      tool.
+    - `sange hooks remove GATE [--event ...] [--repo]` — remove a
+      gate's installed scripts.
+  +27 tests in `test_hooks_gates.py` (20) + `test_cli_hooks.py`
+  (extension, 7). Suite 1407 → 1434 passing. cli-reference
+  regenerated.
 - **T-102 slice 2 — `sange hooks` CLI sub-app + `.git/hooks/` shim
   writer.** Closes the foundation of T-102. Adds:
   - `sange.core.hooks.shim` module: `install_git_shims(repo,

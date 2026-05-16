@@ -1,9 +1,9 @@
 ---
 generated_by: tools/generators/cli_reference.py
 generator_version: 1.0.0
-generated_at: 2026-05-16T07:30:31Z
-input_sha256: 1f475914168bb3d19a01d601b6b520bfd536318ef7b9636e3c6123476679798c
-output_sha256: 40f2ee6e1af8e689c6da574ccd77f75c104d0c2f2177074bd74386bb9e7b4ab7
+generated_at: 2026-05-16T07:59:15Z
+input_sha256: 2923560f13448bf1dea5e7a9bc890c9887f39f68195de7aefdba99cae8818f51
+output_sha256: 2a9a79e3f83b9800d28945e40b116c5e69bb0ba9eac6f5e78480134b02eaf3c4
 manual_edits_allowed: false
 ---
 # Sange CLI reference
@@ -41,8 +41,11 @@ Every entry below is auto-introspected from the live click command tree, so flag
 | `sange gitignore recover` | Roll forward any crashed-in-progress swap journals. |
 | `sange gitignore swap` | Atomic swap to a new gitignore composition. |
 | `sange hooks` | Manage pre-commit / pre-push / etc. hooks (T-102). |
+| `sange hooks add` | Install a named gate's scripts into .sange/hooks/. |
+| `sange hooks gates` | List available named gates (gitleaks / trufflehog / make-test / etc.). |
 | `sange hooks install` | Write .git/hooks/<event> shims that delegate to `sange hooks run`. |
 | `sange hooks list` | Show discovered hooks (every event, or a specific one). |
+| `sange hooks remove` | Remove a named gate's scripts from .sange/hooks/. |
 | `sange hooks run` | Run every hook for EVENT in priority order. |
 | `sange hooks status` | Per-event summary: hook count + shim install state. |
 | `sange hooks uninstall` | Remove Sange-managed .git/hooks/<event> shims (foreign hooks untouched). |
@@ -439,11 +442,46 @@ Manage pre-commit / pre-push / etc. hooks (T-102).
 
 | Sub-command | Description |
 | :--- | :--- |
+| `sange hooks add` | Install a named gate's scripts into .sange/hooks/. |
+| `sange hooks gates` | List available named gates (gitleaks / trufflehog / make-test / etc.). |
 | `sange hooks install` | Write .git/hooks/<event> shims that delegate to `sange hooks run`. |
 | `sange hooks list` | Show discovered hooks (every event, or a specific one). |
+| `sange hooks remove` | Remove a named gate's scripts from .sange/hooks/. |
 | `sange hooks run` | Run every hook for EVENT in priority order. |
 | `sange hooks status` | Per-event summary: hook count + shim install state. |
 | `sange hooks uninstall` | Remove Sange-managed .git/hooks/<event> shims (foreign hooks untouched). |
+
+
+### `sange hooks add`
+
+
+Install a named gate's scripts into .sange/hooks/.
+
+**Arguments:**
+
+| Name | Status |
+| :--- | :--- |
+| `gate` | required |
+
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--event` | value |  | Restrict to specific events (repeatable). Default: every event the gate declares. |
+| `--repo` | value | `.` | Repo root. Default: cwd. |
+
+
+### `sange hooks gates`
+
+
+List available named gates (gitleaks / trufflehog / make-test / etc.).
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--repo` | value | `.` | Repo root for per-repo overrides. Default: cwd. |
 
 
 ### `sange hooks install`
@@ -470,6 +508,26 @@ Show discovered hooks (every event, or a specific one).
 | Flag | Kind | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `--event` | value |  | Filter to one event. Empty = list every known event. |
+| `--repo` | value | `.` | Repo root. Default: cwd. |
+
+
+### `sange hooks remove`
+
+
+Remove a named gate's scripts from .sange/hooks/.
+
+**Arguments:**
+
+| Name | Status |
+| :--- | :--- |
+| `gate` | required |
+
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--event` | value |  | Restrict to specific events. Default: every event the gate declares. |
 | `--repo` | value | `.` | Repo root. Default: cwd. |
 
 

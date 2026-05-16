@@ -1,0 +1,21 @@
+# Make-lint gate — runs `make lint` as a pre-commit gate.
+#
+# Sange-shipped named gate (T-103). Install with:
+#   sange hooks add make-lint
+#
+# Pre-commit (vs pre-push) because lints are fast and should
+# block a bad commit from landing locally, not just push.
+
+[gate]
+name = "make-lint"
+display_name = "make lint (pre-commit)"
+version = "1.0.0"
+description = "Runs `make lint` as a pre-commit gate."
+required_tool = "make"
+install_hint = "Install GNU make for your platform."
+
+[events.pre-commit]
+# Run AFTER the secret scanners (gitleaks=5, trufflehog=10) but
+# BEFORE the test gate.
+priority = 20
+source = "pre-commit.sh"

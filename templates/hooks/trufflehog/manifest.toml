@@ -1,0 +1,21 @@
+# Trufflehog gate — second-opinion secret scanner.
+#
+# Complements gitleaks (T-103). Install with:
+#   sange hooks add trufflehog
+#
+# Many secret types are caught by both gitleaks and trufflehog;
+# running both reduces single-engine false-negative risk at the
+# cost of a small per-commit latency.
+
+[gate]
+name = "trufflehog"
+display_name = "Trufflehog (secret scanner)"
+version = "1.0.0"
+description = "Second-opinion secret scanner; runs alongside gitleaks."
+required_tool = "trufflehog"
+install_hint = "brew install trufflehog  # or https://github.com/trufflesecurity/trufflehog"
+
+[events.pre-commit]
+# Run after gitleaks (priority 05) but before slower checks.
+priority = 10
+source = "pre-commit.sh"
