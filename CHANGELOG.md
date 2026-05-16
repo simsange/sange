@@ -22,6 +22,46 @@ dogfoods its own lifecycle. Until then, this file is maintained by hand.
 
 ### Added
 
+- **T-101a/b/c — Gitignore-swap engine (§6.5).** New subsystem
+  under `src/sange/core/gitignore/`:
+  - `Profile` + `load_profile()` — Pydantic-style dataclass loaded
+    from `templates/gitignore-profiles/<category>/<name>.toml`.
+    Schema: `[profile]` (name + category + display_name +
+    version + maintainer + upstream_source + notes), `[detect]`
+    (required_any + boost_any), `[patterns]` (always + dev_only +
+    prod_only), `[extends]` (profiles[]).
+  - `ProfileRegistry` — three-tier discovery (per-repo > per-user >
+    shipped). Bad TOML is recorded in `load_detail.skipped` rather
+    than fatal. Extends-chain resolution with cycle detection +
+    diamond dedup.
+  - `compose(profiles, stage, registry)` — produces the final
+    `.gitignore` text. Dedupes globally (first occurrence wins),
+    emits a per-profile section header, and a provenance comment
+    block. Deterministic given a fixed clock.
+  - `GitignoreSwap` — atomic swap with **SIGKILL-safe recovery**.
+    Four-phase journal-then-write pattern:
+      Phase 1. PREPARE  — tmp+fsync+rename a recovery journal at
+                          `.sange/.recovery/swap-<utc>.json`
+                          (records old + new content + sha256 +
+                          phase).
+      Phase 2. WRITE    — tmp+fsync+rename the new `.gitignore`;
+                          advance journal phase.
+      Phase 3. ACTIVATE — tmp+fsync+rename `.sange/.active-profile`;
+                          advance journal phase.
+      Phase 4. COMMIT   — delete the journal.
+    `recover()` walks `.sange/.recovery/` at session start and
+    rolls forward any in-progress journals from their recorded
+    phase to completion. A `kill -9` at any byte boundary leaves
+    the next session in a state that `recover()` can finish
+    cleanly.
+  - All 36 shipped profiles under `templates/gitignore-profiles/`
+    load + validate; extends chains all resolve.
+  +49 tests across `tests/unit/test_gitignore_{profile,registry,
+  compose,swap}.py`. Suite 1252 → 1301 passing.
+  T-101 is the second v0.5-beta deliverable after T-100 (SVN
+  adapter). CLI surface (`sange gitignore swap` / `list` /
+  `current`) is the next slice; the engine is API-stable today
+  for plugin consumers.
 - **T-100c — SVN adapter write methods (T-100 closed).** Twelve
   write methods complete the SVN `VCSDriver` contract:
   - `add` / `remove` / `revert_working_copy` — `svn add --parents`,
