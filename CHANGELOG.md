@@ -22,6 +22,59 @@ dogfoods its own lifecycle. Until then, this file is maintained by hand.
 
 ### Added
 
+- **T-111c — Mirror analyzer (`sange.core.purge.analyze_mirror`).**
+  Third slice of §6.11 — the read-only `--analyze` capability that
+  answers "what would happen if we purged these filters?" without
+  touching the working repo. Operates against the mirror produced
+  by T-111b. New module `src/sange/core/purge/analyzer.py`:
+  - `analyze_mirror(plan, mirror_path, *, audit_chain, actor,
+    timeout=300.0)` → `AnalysisResult`. Three-step pipeline:
+    1. `git rev-list --all --objects` enumerates every reachable
+       (sha, path) pair across all refs.
+    2. `git cat-file --batch-all-objects
+       --batch-check='%(objecttype) %(objectsize) %(objectname)'`
+       enumerates every object with its type + size in a single
+       subprocess (no stdin feeding needed — `--batch-all-objects`
+       does the enumeration). Intersected with the candidate
+       shas from step 1 + filtered to blob-typed objects.
+    3. `git log --all --pretty=format:%H -- <matched_paths>`
+       collects every commit that ever touched a matched path,
+       deduped to a count.
+  - Filter matching: `plan.filters.paths` (exact set
+    intersection) + `plan.filters.globs` (`fnmatch` per glob);
+    `replace_text_hashes` is NOT applied at the analyze layer —
+    that's a redaction filter consumed by the destructive
+    rewrite tool (v1.0).
+  - When `matched_paths` is empty, the `git log` step is skipped
+    entirely — 2 chain events instead of 3, `affected_commits =
+    0`, `log_event_id = ""`. Avoids invoking `git log` with no
+    pathspec (which would return every commit and silently lie).
+  - `AnalysisResult` frozen dataclass: `affected_commits` +
+    `matched_blob_shas` (sorted tuple) + `matched_paths` (sorted
+    tuple) + `size_delta_bytes` (negative — reduction) +
+    `revlist_event_id` + `catfile_event_id` + `log_event_id`.
+    `.deleted_objects` property returns `len(matched_blob_shas)`.
+    `.as_counts()` returns the `{affected_commits, deleted_objects,
+    size_delta_bytes}` dict ready to merge into `plan.counts`
+    per §6.11.6.
+  - `AnalysisError` raised on non-git VCS / missing mirror /
+    non-zero subprocess exit.
+  - `affected_refs` intentionally NOT in this slice — needs
+    per-ref reachability (`merge-base --is-ancestor` × refs ×
+    affected_commits) and lands in T-111d alongside the preflight
+    gates.
+  Reads parseable output from the streaming-helper transcripts
+  via the `[stdout] ` line prefix — same pattern as T-111b
+  (transcript-as-source-of-truth). +15 tests in
+  `test_purge_analyzer.py` covering: 2-version exact-path match
+  (2 blobs / 2 commits / -32 bytes) / no-match returns zeros +
+  empty event id + skips log subprocess / glob `notes/*` / glob
+  `*.pem` (fnmatch * matches /) / paths + globs union /
+  `as_counts()` shape (no `affected_refs` yet) / chain has 3
+  events when matched / chain has 2 events when no match / event
+  ids distinct / non-git VCS rejected / missing mirror raises /
+  `deleted_objects` property / `matched_blob_shas` is sorted.
+  Suite 1592 → 1607 passing. POSIX + `git`-on-PATH gated.
 - **T-111b — Mirror clone helper (`sange.core.purge.create_mirror`
   / `verify_mirror`).** Second slice of §6.11 — implements gate 2
   per §6.11.4: "Sange refuses to run against the user's working

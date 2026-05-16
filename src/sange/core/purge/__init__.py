@@ -29,6 +29,11 @@ concerns stay independent.
 
 from __future__ import annotations
 
+from sange.core.purge.analyzer import (
+    AnalysisError,
+    AnalysisResult,
+    analyze_mirror,
+)
 from sange.core.purge.mirror import (
     MirrorError,
     MirrorResult,
@@ -59,6 +64,8 @@ from sange.core.purge.state import (
 __all__ = [
     "SCHEMA_VERSION",
     "TERMINAL_STATES",
+    "AnalysisError",
+    "AnalysisResult",
     "IllegalTransition",
     "MirrorError",
     "MirrorResult",
@@ -71,6 +78,7 @@ __all__ = [
     "PurgeState",
     "RepoMeta",
     "ToolMeta",
+    "analyze_mirror",
     "assert_transition",
     "can_transition",
     "create_mirror",
