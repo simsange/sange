@@ -33,7 +33,7 @@
 # Stage 1 — builder. Installs build deps + builds wheels.
 # --------------------------------------------------------------------------- #
 
-FROM python:3.12-slim AS builder
+FROM python:3.14-slim AS builder
 
 # Build-time deps for any C extensions (cryptography for keyring, etc.).
 # Removed in the final stage so the runtime image stays minimal.
@@ -72,7 +72,7 @@ RUN pip install --no-cache-dir --upgrade pip build wheel \
 # Stage 2 — runtime. Slim, non-root.
 # --------------------------------------------------------------------------- #
 
-FROM python:3.12-slim AS runtime
+FROM python:3.14-slim AS runtime
 
 # Minimal runtime deps: git is needed for the GitDriver subprocess calls.
 # Pinned arch-agnostic apt packages: same source on amd64 + arm64.
