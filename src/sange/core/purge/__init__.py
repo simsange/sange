@@ -29,6 +29,13 @@ concerns stay independent.
 
 from __future__ import annotations
 
+from sange.core.purge.mirror import (
+    MirrorError,
+    MirrorResult,
+    MirrorVerification,
+    create_mirror,
+    verify_mirror,
+)
 from sange.core.purge.plan import (
     SCHEMA_VERSION,
     PreflightCheck,
@@ -53,6 +60,9 @@ __all__ = [
     "SCHEMA_VERSION",
     "TERMINAL_STATES",
     "IllegalTransition",
+    "MirrorError",
+    "MirrorResult",
+    "MirrorVerification",
     "PreflightCheck",
     "PurgeFilters",
     "PurgePlan",
@@ -63,6 +73,8 @@ __all__ = [
     "ToolMeta",
     "assert_transition",
     "can_transition",
+    "create_mirror",
     "legal_next",
     "new_plan_id",
+    "verify_mirror",
 ]

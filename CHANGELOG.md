@@ -22,6 +22,58 @@ dogfoods its own lifecycle. Until then, this file is maintained by hand.
 
 ### Added
 
+- **T-111b — Mirror clone helper (`sange.core.purge.create_mirror`
+  / `verify_mirror`).** Second slice of §6.11 — implements gate 2
+  per §6.11.4: "Sange refuses to run against the user's working
+  repo. Auto-creates a mirror under `.sange/purge/<ts>/work.git/`
+  from the configured remote." Uses T-110's `run_streamed` so the
+  clone subprocess's full stdout/stderr lands on the audit chain
+  with a 0600 transcript file. New module
+  `src/sange/core/purge/mirror.py`:
+  - `create_mirror(plan, repo_root, *, audit_chain, actor,
+    source_url, clone_timeout, fsck_timeout)` →
+    `MirrorResult`. Pipeline: refuse-clobber preflight →
+    resolve source URL (override > `plan.target_repo.remote` >
+    `file://<repo_root>` fallback) → `git clone --mirror
+    <source> <dest>` via `run_streamed` → `git fsck --full
+    --strict --no-progress` against the mirror → `git
+    for-each-ref --format=%(objectname) %(refname)` baseline
+    snapshot. Three audit chain events per call (clone /
+    fsck / for-each-ref), each with a `phase` payload key
+    and the plan_id. Non-zero clone or fsck exit raises
+    `MirrorError` with the transcript path in the message.
+  - `verify_mirror(plan, repo_root, *, audit_chain, actor,
+    baseline_refs, timeout)` → `MirrorVerification`. Re-snapshots
+    refs + diffs against the baseline. Result carries
+    `added_refs` + `removed_refs` + `changed_refs` (tuples of
+    `(ref, old_sha, new_sha)`) so the §6.11 Red-Team #2 race
+    ("concurrent push lands between analyzed and executing")
+    is detected at any granularity.
+  - `MirrorResult` frozen dataclass — `path` + `source_url` +
+    `clone_event_id` + `fsck_event_id` + `fsck_passed` +
+    `refs` + `ref_count`.
+  - `MirrorVerification` frozen dataclass — `passed` +
+    `added_refs` + `removed_refs` + `changed_refs` +
+    `current_event_id`.
+  - `MirrorError` exception type.
+  - Non-git VCS rejected at the entry point (`target_vcs !=
+    "git"` raises) — SVN / Hg / P4 mirrors land in v1.0+.
+  - Ref parsing reads from the audit transcript's `[stdout] `
+    prefix (not from a captured stdout return) because the
+    streaming helper owns the byte capture; this keeps the
+    helper a single source of truth for what got recorded.
+  +14 tests in `test_purge_mirror.py` covering: mirror dir
+  created with `HEAD` + bare-repo layout / refs match source
+  (3 refs: 2 branches + 1 tag) / fsck passes / audit chain has
+  3 events with correct phases + prev_hash linkage / kind is
+  GENERIC / clobber refused / non-git rejected / bad source URL
+  raises with "exited" in message / plan.target_repo.remote
+  fallback / verify-unchanged passes / verify detects removed
+  refs (synthetic baseline) / verify detects changed refs /
+  verify on missing mirror raises / verify detects injected
+  ref (real `git update-ref` against mirror). Suite 1578 →
+  1592 passing. POSIX + `git`-on-PATH gated via
+  `pytestmark = [skipif win32, skipif no git]`.
 - **T-111a — Purge subsystem foundation (PurgePlan + state machine
   + store).** First slice of §6.11 (the headline v0.5 capability).
   Ships data model + state machine + persistence only; no
