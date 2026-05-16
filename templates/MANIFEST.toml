@@ -9,9 +9,9 @@
 [meta]
 generator = "tools/generators/kit_manifest.py"
 generator_version = "1.0.0"
-generated_at = "2026-05-15T13:16:12Z"
-file_count = 43
-total_bytes = 48316
+generated_at = "2026-05-16T08:02:45Z"
+file_count = 51
+total_bytes = 55095
 signature_required = true
 signature_artifact = "templates/MANIFEST.toml.sig"
 hash_algorithm = "sha256"
@@ -28,6 +28,10 @@ total_bytes = 19361
 [meta.categories."gitignore-profiles"]
 file_count = 36
 total_bytes = 25543
+
+[meta.categories.hooks]
+file_count = 8
+total_bytes = 6779
 
 [meta.categories.makefiles]
 file_count = 5
@@ -298,6 +302,62 @@ category = "gitignore-profiles"
 size_bytes = 758
 sha256 = "dd05d608a064bd54f88fdb942c1322ce32661590105d8c4ca05d3cb94de7d9f7"
 file_type = "toml"
+
+[[file]]
+path = "hooks/gitleaks/manifest.toml"
+category = "hooks"
+size_bytes = 648
+sha256 = "1cf27442d622e668a4ecdd4207f636f662f1eabedbc2c2e292f0329b86056839"
+file_type = "toml"
+
+[[file]]
+path = "hooks/gitleaks/pre-commit.sh"
+category = "hooks"
+size_bytes = 1032
+sha256 = "87cec36cacd6cd46242964173087694a2ca92f3b623b858dd386732a873e8163"
+file_type = "sh"
+
+[[file]]
+path = "hooks/make-lint/manifest.toml"
+category = "hooks"
+size_bytes = 627
+sha256 = "cf3214a8080019c4fee8de191b9ef8a8f068e4efce12a80e033105ba22333f71"
+file_type = "toml"
+
+[[file]]
+path = "hooks/make-lint/pre-commit.sh"
+category = "hooks"
+size_bytes = 899
+sha256 = "ae09708f838a540e96fff2b46214fe8bd61bc3b51102644c820091080a944640"
+file_type = "sh"
+
+[[file]]
+path = "hooks/make-test/manifest.toml"
+category = "hooks"
+size_bytes = 609
+sha256 = "35e4d233658208534bd99695ea0fe12b745c055654e1ffe6ade5871d65ce3595"
+file_type = "toml"
+
+[[file]]
+path = "hooks/make-test/pre-push.sh"
+category = "hooks"
+size_bytes = 1034
+sha256 = "22cb7cefb9442897e08c01d0178ce21664fe7fe258e60c6dcd9d71b787e4402b"
+file_type = "sh"
+
+[[file]]
+path = "hooks/trufflehog/manifest.toml"
+category = "hooks"
+size_bytes = 706
+sha256 = "46a1a769a7d51d565581ac39d17e4ab191174911187bdfd1e5e954b9e024dfbb"
+file_type = "toml"
+
+[[file]]
+path = "hooks/trufflehog/pre-commit.sh"
+category = "hooks"
+size_bytes = 1224
+sha256 = "e2928b37c0e4cca5b1bd858be9216a10babd3c7b742e532eaec2f7dc0ad4c35f"
+file_type = "sh"
 
 [[file]]
 path = "makefiles/_core/colors.mk"
