@@ -22,6 +22,57 @@ dogfoods its own lifecycle. Until then, this file is maintained by hand.
 
 ### Added
 
+- **T-110 — Subprocess streaming helper (`sange.core.streaming.run_streamed`).**
+  Closes the §7.0.6 foundation. Every external command (`git`,
+  `git-filter-repo`, `svnadmin`, `hg`, `p4`, `gitleaks`,
+  `trufflehog`, `docker`, …) routes through this helper when its
+  stdout/stderr need live capture rather than buffered string
+  return. New subsystem at `src/sange/core/streaming/`:
+  - `run_streamed(argv, *, audit_chain, actor, event_kind, payload,
+    cwd, env, timeout, sigterm_grace, line_callback)` — sync-facing
+    wrapper around an asyncio core. Spawns via
+    `asyncio.create_subprocess_exec`, runs concurrent stdout/stderr
+    readers via `asyncio.gather`. Single combined `[stream] line`
+    write to the transcript per line so the asyncio scheduler
+    can't slice the prefix between readers.
+  - **Transcript retention**: every byte of both streams lands in
+    `<repo>/.sange/audit/transcripts/<event_id>.log` with mode
+    `0600` (via `os.open(...O_CREAT|O_EXCL, 0o600)` so umask
+    can't downgrade the bits). The small audit-chain entry
+    references the file's `transcript_hash`
+    (`sha256(stdout_bytes ++ stderr_bytes)`) — chain stays
+    compact, full transcript stays retrievable.
+  - **Signal cascade** on timeout: SIGTERM first, wait
+    `sigterm_grace` (default 5.0s), SIGKILL if the child still
+    has a pid. The cascade tuple lands in both the
+    `StreamResult` and the audit payload's `signal_cascade`
+    field — `()` if clean, `("SIGTERM",)` if grace was enough,
+    `("SIGTERM", "SIGKILL")` if escalation was needed.
+  - **Audit integration**: one `AuditEvent` per invocation,
+    `event_id` shared with the transcript filename. Payload
+    carries `argv` + `returncode` + `duration_ms` +
+    `transcript_hash` + `transcript_path` + `stdout_lines` +
+    `stderr_lines` + `timed_out` + `signal_cascade`; the
+    chain's `prev_hash` linkage threads through every
+    consecutive call.
+  - `StreamResult` frozen dataclass with `.succeeded` property
+    (`returncode == 0 and not timed_out`).
+  - `_build_proc_env` preserves PATH + HOME from the parent
+    (reuses the lesson from `_lib/manpage._run`'s PATH bug).
+    Pass `env=None` to inherit the full parent env; `env={}`
+    to keep only the PATH+HOME base.
+  +26 tests in `test_streaming.py` covering basic stdout/stderr/
+  exit-code, transcript file (path / mode 0600 / both streams /
+  per-stream marker), hash determinism (sha256 hex shape +
+  exact-match against `hashlib.sha256(b"abc\n")` +
+  stdout-then-stderr ordering), audit-chain integration
+  (one event per invocation, payload metadata, kind override,
+  prev_hash linkage), line_callback firing, timeout +
+  SIGTERM-alone + SIGKILL escalation (via `trap '' TERM`),
+  env-override + cwd + `env=None` inheritance. Suite 1484 →
+  1510 passing. POSIX-only — `@pytest.mark.skipif(win32)` at
+  module level (shell argv + 0600 + SIGTERM semantics don't
+  port).
 - **T-108 — Hash-chained audit JSONL (`sange audit`).** Closes the
   §7.0.7 audit-trail foundation that `docs/security/prompt-injection.md`
   references. New subsystem at `src/sange/core/audit/`:
