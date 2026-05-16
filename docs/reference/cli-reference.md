@@ -1,9 +1,9 @@
 ---
 generated_by: tools/generators/cli_reference.py
 generator_version: 1.0.0
-generated_at: 2026-05-16T07:59:15Z
-input_sha256: 2923560f13448bf1dea5e7a9bc890c9887f39f68195de7aefdba99cae8818f51
-output_sha256: 2a9a79e3f83b9800d28945e40b116c5e69bb0ba9eac6f5e78480134b02eaf3c4
+generated_at: 2026-05-16T08:47:10Z
+input_sha256: c77ddb2c9e1c5431e87697edbfbbaaafafa38d975f428a7e7d416acda118e2f3
+output_sha256: 268018083aec20574e4608b171f02cb716b137bdf4d224cea258d161102ecc32
 manual_edits_allowed: false
 ---
 # Sange CLI reference
@@ -22,6 +22,11 @@ Every entry below is auto-introspected from the live click command tree, so flag
 | `sange ai` | AI provider preview + introspection. |
 | `sange ai preview` | Render the prompt for a task without sending. |
 | `sange ai providers` | List registered AI providers + capabilities. |
+| `sange audit` | Inspect + verify the hash-chained audit JSONL (T-108). |
+| `sange audit append` | Append a record (mainly for plugins + manual testing). |
+| `sange audit list` | List audit records (every shard, or filtered). |
+| `sange audit tail` | Print the most recent N audit records. |
+| `sange audit verify` | Walk the chain + recompute every hash. Exit 0 clean / 1 tampered. |
 | `sange commit` | Generate a commit message from a diff. |
 | `sange commits` | Manage the commit lifecycle queue. |
 | `sange commits ai` | Generate a commit message via AI and save as DRAFT. |
@@ -73,6 +78,7 @@ Polyglot VCS automation toolkit (Git/SVN/Hg/P4).
 | Sub-command | Description |
 | :--- | :--- |
 | `sange ai` | AI provider preview + introspection. |
+| `sange audit` | Inspect + verify the hash-chained audit JSONL (T-108). |
 | `sange commit` | Generate a commit message from a diff. |
 | `sange commits` | Manage the commit lifecycle queue. |
 | `sange doctor` | Environment health checks. |
@@ -114,6 +120,81 @@ Render the prompt for a task without sending.
 
 
 List registered AI providers + capabilities.
+
+### `sange audit`
+
+
+Inspect + verify the hash-chained audit JSONL (T-108).
+
+**Sub-commands:**
+
+| Sub-command | Description |
+| :--- | :--- |
+| `sange audit append` | Append a record (mainly for plugins + manual testing). |
+| `sange audit list` | List audit records (every shard, or filtered). |
+| `sange audit tail` | Print the most recent N audit records. |
+| `sange audit verify` | Walk the chain + recompute every hash. Exit 0 clean / 1 tampered. |
+
+
+### `sange audit append`
+
+
+Append a record (mainly for plugins + manual testing).
+
+**Arguments:**
+
+| Name | Status |
+| :--- | :--- |
+| `kind` | required |
+
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--actor` | value |  | Identifier for the actor responsible. Required. |
+| `--payload` | value |  | JSON-encoded payload dict. Default: empty `{}`. |
+| `--repo` | value | `.` | Repo root. Default: cwd. |
+
+
+### `sange audit list`
+
+
+List audit records (every shard, or filtered).
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--kind` | value |  | Filter by event kind (e.g. `commit-push`). |
+| `--repo` | value | `.` | Repo root. Default: cwd. |
+| `--week` | value |  | ISO week filter `YYYY-WNN` (e.g. 2026-W20). Empty = all. |
+
+
+### `sange audit tail`
+
+
+Print the most recent N audit records.
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--n` | value | `10` | Number of records to show. Default: 10. |
+| `--repo` | value | `.` | Repo root. Default: cwd. |
+
+
+### `sange audit verify`
+
+
+Walk the chain + recompute every hash. Exit 0 clean / 1 tampered.
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--repo` | value | `.` | Repo root (parent of .sange/). Default: cwd. |
+
 
 ### `sange commit`
 

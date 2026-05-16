@@ -22,6 +22,50 @@ dogfoods its own lifecycle. Until then, this file is maintained by hand.
 
 ### Added
 
+- **T-108 — Hash-chained audit JSONL (`sange audit`).** Closes the
+  §7.0.7 audit-trail foundation that `docs/security/prompt-injection.md`
+  references. New subsystem at `src/sange/core/audit/`:
+  - `EventKind` enum covering every state-changing operation
+    (`ai-call`, `commit-draft/submit/approve/reject/reopen/commit/push`,
+    `gitignore-swap`, `hook-run`, `gate-add/remove`,
+    `purge-plan/execute`, `generic`).
+  - `AuditEvent` (frozen dataclass) — `id` + `kind` + `timestamp` +
+    `actor` + `payload` + `prev_hash` + `this_hash`. `compute_hash`
+    is deterministic (`sort_keys=True, separators=(",", ":")`) over
+    every field except `this_hash`. `make_event()` builds with
+    auto-populated `this_hash`. JSON round-trip via `to_json()` /
+    `from_json()`.
+  - `AuditChain` — per-repo writer over
+    `<repo>/.sange/audit/<YYYY>-W<NN>.jsonl` ISO-week shards.
+    Atomic append (`os.O_APPEND | os.O_CREAT` + single-syscall
+    `os.write` + `os.fsync`) — a single JSONL line is well under
+    POSIX `PIPE_BUF`, so the kernel guarantees atomicity. Chain
+    head discovered by walking shards in chronological order.
+  - `verify_chain(shard, *, starting_prev_hash)` /
+    `verify_repo(repo_root)` — chain integrity check. Returns
+    `VerificationReport` with `verified` / `records_checked` /
+    `shards_checked` / `failure_kind` ∈
+    `{malformed, hash-mismatch, chain-break}` / `failure_shard` /
+    `failure_index` / `failure_event_id` / `failure_message`.
+    Cross-shard verification threads each shard's tail hash as the
+    next shard's `starting_prev_hash`.
+  - **Four new CLI verbs** on `sange audit`:
+    - `sange audit verify [--repo]` — walks the chain end-to-end.
+      Exit 0 clean / 1 tampered / 2 usage.
+    - `sange audit list [--week YYYY-WNN] [--kind KIND] [--repo]`
+      — print + filter rows.
+    - `sange audit tail [--n N] [--repo]` — most recent N records.
+    - `sange audit append KIND --actor A [--payload JSON] [--repo]`
+      — manually append (plugin entry point + manual testing).
+    All four honor `--json`.
+  Distinct from `sange.core.enhancer.AuditRecord` (single-AI-call
+  provenance, fed into an `EventKind.AI_CALL` payload rather than
+  the chain itself). +50 tests across `test_audit_event.py` (15) +
+  `test_audit_chain.py` (9) + `test_audit_verify.py` (11) +
+  `test_cli_audit.py` (15). Suite 1434 → 1484 passing.
+  cli-reference regenerated. End-to-end smoke: empty repo verifies
+  clean (0 records), 3 appends → verify clean, mid-chain `actor`
+  mutation → verify fails with `hash-mismatch` at `failure_index=1`.
 - **T-103 — Named-gate library (secret scanning + lint/test gates).**
   Layers four preconfigured hook bundles on top of the T-102 engine.
   - `Gate` / `GateEvent` / `GateRegistry` (`src/sange/core/hooks/gates.py`)
