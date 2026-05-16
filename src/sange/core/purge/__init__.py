@@ -34,6 +34,12 @@ from sange.core.purge.analyzer import (
     AnalysisResult,
     analyze_mirror,
 )
+from sange.core.purge.backup import (
+    BackupError,
+    BackupResult,
+    create_backup,
+    verify_backup,
+)
 from sange.core.purge.mirror import (
     MirrorError,
     MirrorResult,
@@ -66,6 +72,8 @@ __all__ = [
     "TERMINAL_STATES",
     "AnalysisError",
     "AnalysisResult",
+    "BackupError",
+    "BackupResult",
     "IllegalTransition",
     "MirrorError",
     "MirrorResult",
@@ -81,8 +89,10 @@ __all__ = [
     "analyze_mirror",
     "assert_transition",
     "can_transition",
+    "create_backup",
     "create_mirror",
     "legal_next",
     "new_plan_id",
+    "verify_backup",
     "verify_mirror",
 ]

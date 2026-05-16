@@ -22,6 +22,55 @@ dogfoods its own lifecycle. Until then, this file is maintained by hand.
 
 ### Added
 
+- **T-111d — Backup tarball + sha256 sidecar (§6.11.4 gate 3).**
+  Fourth slice of §6.11. Closes the "backup mirror" item from the
+  §6.11.1 v0.5 scope row. New module
+  `src/sange/core/purge/backup.py`:
+  - `create_backup(plan, mirror_path, *, audit_chain, actor,
+    timeout=600, clock=None)` → `BackupResult`. Pipeline:
+    1. Validate mirror exists + is inside the plan dir.
+    2. Compute tarball path as
+       `<plan_dir>/backup-<YYYY-MM-DDTHH-MM-SSZ>.tar.gz`.
+       Refuse to clobber an existing tarball (the operator would
+       have to wait one second OR rm manually).
+    3. `tar -czf <tarball> -C <mirror.parent> <mirror.name>`
+       via `run_streamed` so the tar invocation lands one audit
+       chain entry with a 0600 transcript. Archive root is the
+       mirror dir's basename (git users' convention — extracts
+       to a sibling dir rather than dumping bare-repo files).
+    4. On non-zero tar exit, best-effort clean up the partial
+       tarball (the "stale half-tarball mistaken for a good
+       backup" foot-gun is real). Same cleanup if the tarball
+       is empty post-tar.
+    5. Stream-hash the tarball in 1 MiB chunks (bounded memory
+       for multi-GB mirrors) → 64-char sha256 hex.
+    6. Write `<tarball>.sha256` sidecar in `sha256sum`-compatible
+       format (`<digest>  <basename>\n`) so the operator can
+       `cd <plan_dir> && sha256sum -c <tarball>.sha256`.
+  - `verify_backup(result)` → bool. Re-hashes the tarball
+    in-place and compares to the recorded `sha256_hex`. Used by
+    the destructive-ops slice (T-203+ v1.0) to confirm the
+    backup is intact before consuming it for a rollback.
+  - `BackupResult` frozen dataclass: `tarball_path` +
+    `sidecar_path` + `sha256_hex` + `size_bytes` + `event_id`.
+  - `BackupError` raised on every failure mode (missing mirror /
+    mirror outside plan dir / tar exit / empty tarball /
+    duplicate filename).
+  Off-host backup destination (S3, age-encrypted file mount, etc.)
+  mentioned in §6.11.4 is NOT in this slice — that's a v1.0
+  concern when destructive ops need a recoverable backup.
+  v0.5 ships the local tarball + sidecar; the operator can
+  manually copy off-host. +14 tests in `test_purge_backup.py`
+  covering: tarball written / lives in plan dir / sidecar
+  contains hex + filename / sha256 matches independent
+  `hashlib.sha256` of tarball bytes / tarball is valid gzip
+  (opens with `tarfile.open` and contains the mirror dir name) /
+  audit chain has 1 event / clock override pins the timestamp /
+  missing mirror raises / mirror-outside-plan-dir rejected /
+  duplicate timestamp rejected / verify-unchanged returns True /
+  mutated tarball fails verify (append a byte) / missing tarball
+  fails verify. Suite 1607 → 1621 passing. POSIX + tar +
+  git on PATH gated.
 - **T-111c — Mirror analyzer (`sange.core.purge.analyze_mirror`).**
   Third slice of §6.11 — the read-only `--analyze` capability that
   answers "what would happen if we purged these filters?" without
