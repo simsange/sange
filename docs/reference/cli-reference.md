@@ -1,9 +1,9 @@
 ---
 generated_by: tools/generators/cli_reference.py
 generator_version: 1.0.0
-generated_at: 2026-05-15T17:36:03Z
-input_sha256: 8d72b7833dc51bf56c3e148697184ecf22fcc59ed44b59331169a95ea4bcfae7
-output_sha256: 2e07278fefcea1d48ef0e4df36fa07c4a16779386c8c3f76c9d7753acc2e1aaa
+generated_at: 2026-05-16T06:54:49Z
+input_sha256: dcd17ed2e050c996b963c3d95ec25dce709d7bd70bc979bb064738c271443af0
+output_sha256: 7bc7da8f2a139c481bf38b4b74909056bf52aa8b344b97ec236bbc411c22b049
 manual_edits_allowed: false
 ---
 # Sange CLI reference
@@ -34,6 +34,12 @@ Every entry below is auto-introspected from the live click command tree, so flag
 | `sange commits reopen` | Re-open a non-DRAFT commit back to DRAFT (the only backward transition). |
 | `sange commits submit` | Submit a DRAFT for review (DRAFT → PENDING_REVIEW). |
 | `sange doctor` | Environment health checks. |
+| `sange gitignore` | Manage the active gitignore profile (T-101). |
+| `sange gitignore current` | Show the currently active gitignore profile. |
+| `sange gitignore detect` | Auto-detect profile candidates for the repo. |
+| `sange gitignore list` | List discoverable gitignore profiles. |
+| `sange gitignore recover` | Roll forward any crashed-in-progress swap journals. |
+| `sange gitignore swap` | Atomic swap to a new gitignore composition. |
 | `sange init` | Bootstrap .sange/ skeleton in the target repo. |
 
 
@@ -61,6 +67,7 @@ Polyglot VCS automation toolkit (Git/SVN/Hg/P4).
 | `sange commit` | Generate a commit message from a diff. |
 | `sange commits` | Manage the commit lifecycle queue. |
 | `sange doctor` | Environment health checks. |
+| `sange gitignore` | Manage the active gitignore profile (T-101). |
 | `sange init` | Bootstrap .sange/ skeleton in the target repo. |
 
 
@@ -330,6 +337,92 @@ Submit a DRAFT for review (DRAFT → PENDING_REVIEW).
 
 Environment health checks.
 
+### `sange gitignore`
+
+
+Manage the active gitignore profile (T-101).
+
+**Sub-commands:**
+
+| Sub-command | Description |
+| :--- | :--- |
+| `sange gitignore current` | Show the currently active gitignore profile. |
+| `sange gitignore detect` | Auto-detect profile candidates for the repo. |
+| `sange gitignore list` | List discoverable gitignore profiles. |
+| `sange gitignore recover` | Roll forward any crashed-in-progress swap journals. |
+| `sange gitignore swap` | Atomic swap to a new gitignore composition. |
+
+
+### `sange gitignore current`
+
+
+Show the currently active gitignore profile.
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--repo` | value | `.` | Repo root. Default: cwd. |
+
+
+### `sange gitignore detect`
+
+
+Auto-detect profile candidates for the repo.
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--depth` | value | `1` | How deep to look for marker files. 0 = root only. |
+| `--repo` | value | `.` | Repo root to inspect. Default: cwd. |
+
+
+### `sange gitignore list`
+
+
+List discoverable gitignore profiles.
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--category` | value |  | Filter by category (lang / framework / infra / editor / os / _core). Empty = all. |
+| `--repo` | value | `.` | Repo root for per-repo profile overrides. Default: cwd. |
+
+
+### `sange gitignore recover`
+
+
+Roll forward any crashed-in-progress swap journals.
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--repo` | value | `.` | Repo root. Default: cwd. |
+
+
+### `sange gitignore swap`
+
+
+Atomic swap to a new gitignore composition.
+
+**Arguments:**
+
+| Name | Status |
+| :--- | :--- |
+| `profiles` | required |
+
+
+**Options:**
+
+| Flag | Kind | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--repo` | value | `.` | Repo root (the parent of .sange/). Default: cwd. |
+| `--stage` | value | `dev` | Stage to compose for. One of: dev / prod / (any custom stage your profile declares). |
+
+
 ### `sange init`
 
 
@@ -339,6 +432,7 @@ Bootstrap .sange/ skeleton in the target repo.
 
 | Flag | Kind | Default | Description |
 | :--- | :--- | :--- | :--- |
+| `--auto-detect-profile` | flag | false | After init, auto-detect a gitignore profile and swap to it. Picks the highest-confidence single candidate; aborts on ties. |
 | `--force` | flag | false | Overwrite existing files. Default: keep existing untouched. |
 | `--gitignore`, `--no-gitignore` | flag | true | Append /Makefile + /.sange/ entries to .gitignore. |
 | `--makefile`, `--no-makefile` | flag | true | Install the top-level Makefile + .sange/makefiles/ tree. |

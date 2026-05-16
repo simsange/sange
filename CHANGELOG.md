@@ -22,6 +22,43 @@ dogfoods its own lifecycle. Until then, this file is maintained by hand.
 
 ### Added
 
+- **T-101d — Variant matrix (ADR-032).** Multi-dimensional
+  stage × flavor model replaces the binary `dev | prod` axis as
+  the v0.5 default.
+  - `VariantStageAxis` — linear sequence of stage names.
+  - `VariantDimension` — named flavor axis with value list.
+  - `VariantConfig` — matrix declaration (stage axis + N
+    dimensions); `make_variant(stage, **flavors)` validates a
+    concrete tuple; `all_variants()` enumerates the full
+    Cartesian product lazily.
+  - `Variant` — `(stage, flavors)` tuple with canonical equality
+    (sorted flavors), `slug()` for filesystem-safe identifiers,
+    `has_flavor(dim, value)` for predicates.
+  - `compose_variant(profiles, variant, registry)` — variant-aware
+    composition. New TOML schema sections:
+    `[patterns.stages.<name>]` and
+    `[patterns.flavors.<dim>.<value>]`. Legacy `dev_only` /
+    `prod_only` keys still work (treated as
+    `patterns.stages.dev` / `patterns.stages.prod` aliases).
+- **T-101e — `sange gitignore` CLI sub-app.** Five verbs wrap
+  the engine surface:
+    `sange gitignore swap PROFILES… --stage STAGE --repo PATH`
+    `sange gitignore list [--category CAT] [--repo PATH]`
+    `sange gitignore current [--repo PATH]`
+    `sange gitignore detect [--repo PATH] [--depth N]`
+    `sange gitignore recover [--repo PATH]`
+  Each honors `--json` for machine-readable output. Errors
+  surface as exit 2 (validation) or exit 1 (engine failures).
+- **T-101f — Profile auto-detection.** `detect_profiles(repo,
+  registry, *, walk_depth)` ranks profiles by structural match
+  against the repo's top-level files. Required-pattern matches
+  score 2× each; boost-pattern matches add +1. Result tuple is
+  sorted by confidence desc + profile name. Skip-dirs list
+  (`.git`, `node_modules`, `.sange`, `.venv`, …) avoids noise.
+  Wired into `sange init --auto-detect-profile`: when exactly
+  one top candidate exists, auto-swaps to it at stage=dev;
+  multi-tie surfaces both candidates as a `status=tied` action;
+  no candidates surfaces as `status=no-candidates`.
 - **T-101a/b/c — Gitignore-swap engine (§6.5).** New subsystem
   under `src/sange/core/gitignore/`:
   - `Profile` + `load_profile()` — Pydantic-style dataclass loaded

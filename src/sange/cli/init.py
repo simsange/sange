@@ -61,6 +61,12 @@ def init_command(
         "--gitignore/--no-gitignore",
         help="Append /Makefile + /.sange/ entries to .gitignore.",
     ),
+    auto_detect_profile: bool = typer.Option(
+        False,
+        "--auto-detect-profile",
+        help="After init, auto-detect a gitignore profile and swap to it. "
+             "Picks the highest-confidence single candidate; aborts on ties.",
+    ),
 ) -> None:
     """Materialize `.sange/` skeleton + (optionally) the Makefile shim."""
 
@@ -96,6 +102,10 @@ def init_command(
     # Update .gitignore if requested.
     if update_gitignore:
         actions.append(_update_gitignore(repo))
+
+    # Auto-detect + swap a gitignore profile when requested.
+    if auto_detect_profile:
+        actions.append(_auto_detect_and_swap(repo))
 
     if json_mode:
         typer.echo(
@@ -206,6 +216,72 @@ def _update_gitignore(repo: Path) -> _Action:
         "path": ".gitignore",
         "status": "appended",
         "added_lines": missing,
+    }
+
+
+def _auto_detect_and_swap(repo: Path) -> _Action:
+    """Run profile auto-detection and swap to the single best candidate.
+
+    Result statuses:
+      * `"detected-and-swapped"` — exactly one top candidate; swapped
+        to it at stage=dev.
+      * `"tied"`                 — multiple candidates tied for top
+        confidence; swap skipped (caller must pick one manually).
+      * `"no-candidates"`        — detector returned nothing.
+      * `"failed"`               — detector or swap raised; the
+        message field carries the error.
+    """
+
+    try:
+        from sange.core.gitignore import (
+            GitignoreSwap,
+            ProfileRegistry,
+            default_registry_roots,
+            detect_profiles,
+        )
+
+        registry = ProfileRegistry(default_registry_roots(repo))
+        results = detect_profiles(repo, registry)
+    except Exception as exc:  # broad — surface as a non-fatal action
+        return {
+            "kind": "auto-detect-profile",
+            "status": "failed",
+            "message": str(exc),
+        }
+
+    if not results:
+        return {
+            "kind": "auto-detect-profile",
+            "status": "no-candidates",
+        }
+
+    top_confidence = results[0].confidence
+    tied = [r for r in results if r.confidence == top_confidence]
+    if len(tied) > 1:
+        return {
+            "kind": "auto-detect-profile",
+            "status": "tied",
+            "candidates": [r.profile.name for r in tied],
+        }
+
+    winner = results[0].profile
+    try:
+        swap = GitignoreSwap(repo, registry=ProfileRegistry(default_registry_roots(repo)))
+        swap_result = swap.swap([winner.name], stage="dev")
+    except Exception as exc:
+        return {
+            "kind": "auto-detect-profile",
+            "status": "failed",
+            "message": str(exc),
+            "profile": winner.name,
+        }
+
+    return {
+        "kind": "auto-detect-profile",
+        "status": "detected-and-swapped",
+        "profile": winner.name,
+        "confidence": top_confidence,
+        "bytes_written": swap_result.bytes_written,
     }
 
 

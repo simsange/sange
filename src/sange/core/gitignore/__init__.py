@@ -15,7 +15,13 @@ stage axis. The multi-dimensional variant matrix from ADR-032
 
 from __future__ import annotations
 
-from sange.core.gitignore.compose import VALID_STAGES, CompositionError, compose
+from sange.core.gitignore.compose import (
+    VALID_STAGES,
+    CompositionError,
+    compose,
+    compose_variant,
+)
+from sange.core.gitignore.detect import DetectionResult, detect_profiles
 from sange.core.gitignore.profile import Profile, ProfileError, load_profile
 from sange.core.gitignore.registry import (
     ProfileRegistry,
@@ -28,10 +34,18 @@ from sange.core.gitignore.swap import (
     SwapJournal,
     SwapResult,
 )
+from sange.core.gitignore.variant import (
+    Variant,
+    VariantConfig,
+    VariantDimension,
+    VariantError,
+    VariantStageAxis,
+)
 
 __all__ = [
     "VALID_STAGES",
     "CompositionError",
+    "DetectionResult",
     "GitignoreSwap",
     "Profile",
     "ProfileError",
@@ -40,7 +54,14 @@ __all__ = [
     "SwapError",
     "SwapJournal",
     "SwapResult",
+    "Variant",
+    "VariantConfig",
+    "VariantDimension",
+    "VariantError",
+    "VariantStageAxis",
     "compose",
+    "compose_variant",
     "default_registry_roots",
+    "detect_profiles",
     "load_profile",
 ]

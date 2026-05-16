@@ -63,6 +63,14 @@ class Profile:
     patterns_always: tuple[str, ...] = ()
     patterns_dev: tuple[str, ...] = ()
     patterns_prod: tuple[str, ...] = ()
+    # ADR-032 variant-aware patterns:
+    #   patterns_stages[stage_name] = lines for [patterns.stages.<stage>]
+    #   patterns_flavors[(dim, value)] = lines for [patterns.flavors.<dim>.<value>]
+    # The legacy `patterns_dev` / `patterns_prod` lives alongside; loaders fold
+    # those into `patterns_stages["dev"]` / `patterns_stages["prod"]` so the
+    # variant composition path doesn't need a special case.
+    patterns_stages: tuple[tuple[str, tuple[str, ...]], ...] = ()
+    patterns_flavors: tuple[tuple[tuple[str, str], tuple[str, ...]], ...] = ()
     extends: tuple[str, ...] = ()
     source_path: Path = field(default_factory=lambda: Path())
 
@@ -88,15 +96,53 @@ class Profile:
     def patterns_for_stage(self, stage: str) -> tuple[str, ...]:
         """Return the patterns this profile contributes for `stage`.
 
-        `stage` is one of `"dev"` / `"prod"`. Unknown stages fall
-        back to `patterns_always` only.
+        Pulls from `patterns_always` + the legacy
+        `patterns_dev` / `patterns_prod` shortcuts + the
+        variant-aware `patterns_stages[stage]` block.
+        Unknown stages fall back to `patterns_always` only.
         """
 
+        out: list[str] = list(self.patterns_always)
         if stage == "dev":
-            return self.patterns_always + self.patterns_dev
-        if stage == "prod":
-            return self.patterns_always + self.patterns_prod
-        return self.patterns_always
+            out.extend(self.patterns_dev)
+        elif stage == "prod":
+            out.extend(self.patterns_prod)
+        for s, lines in self.patterns_stages:
+            if s == stage:
+                out.extend(lines)
+        return tuple(out)
+
+    def patterns_for_variant(
+        self,
+        *,
+        stage: str,
+        flavors: tuple[tuple[str, str], ...] = (),
+    ) -> tuple[str, ...]:
+        """Return the patterns this profile contributes for a variant.
+
+        Composition order (matches ADR-032 source-set priority):
+          1. `patterns_always`            — always.
+          2. Legacy `patterns_dev` / `patterns_prod`
+                                          — when stage matches one
+                                            of those two values.
+          3. `patterns_stages[stage]`     — when the variant's stage
+                                            equals the keyed stage.
+          4. `patterns_flavors[(dim, value)]`
+                                          — when the variant carries
+                                            the keyed flavor.
+
+        Duplicate lines across blocks are NOT deduped here; the
+        global `compose_variant` pass owns the dedup so a line
+        appearing in profile A's `always` and profile B's flavor
+        block emits in A's position.
+        """
+
+        out: list[str] = list(self.patterns_for_stage(stage))
+        flavors_set = set(flavors)
+        for (dim, value), lines in self.patterns_flavors:
+            if (dim, value) in flavors_set:
+                out.extend(lines)
+        return tuple(out)
 
 
 def load_profile(path: Path) -> Profile:
@@ -130,6 +176,33 @@ def load_profile(path: Path) -> Profile:
     patterns = data.get("patterns", {}) or {}
     extends_section = data.get("extends", {}) or {}
 
+    # ADR-032 variant-aware sub-sections (optional; older profiles
+    # that only use the legacy dev_only/prod_only keys are unaffected).
+    patterns_stages_section = patterns.get("stages") or {}
+    if not isinstance(patterns_stages_section, dict):
+        raise ProfileError(
+            f"{path}: [patterns.stages] must be a table"
+        )
+    patterns_flavors_section = patterns.get("flavors") or {}
+    if not isinstance(patterns_flavors_section, dict):
+        raise ProfileError(
+            f"{path}: [patterns.flavors] must be a table"
+        )
+
+    stages_pairs: list[tuple[str, tuple[str, ...]]] = []
+    for stage_name, lines in patterns_stages_section.items():
+        stages_pairs.append((str(stage_name), tuple(_string_list(lines))))
+    flavors_pairs: list[tuple[tuple[str, str], tuple[str, ...]]] = []
+    for dim_name, by_value in patterns_flavors_section.items():
+        if not isinstance(by_value, dict):
+            raise ProfileError(
+                f"{path}: [patterns.flavors.{dim_name}] must be a table"
+            )
+        for value_name, lines in by_value.items():
+            flavors_pairs.append(
+                ((str(dim_name), str(value_name)), tuple(_string_list(lines)))
+            )
+
     return Profile(
         name=str(name),
         display_name=str(prof.get("display_name", name)),
@@ -143,6 +216,8 @@ def load_profile(path: Path) -> Profile:
         patterns_always=tuple(_string_list(patterns.get("always"))),
         patterns_dev=tuple(_string_list(patterns.get("dev_only"))),
         patterns_prod=tuple(_string_list(patterns.get("prod_only"))),
+        patterns_stages=tuple(stages_pairs),
+        patterns_flavors=tuple(flavors_pairs),
         extends=tuple(_string_list(extends_section.get("profiles"))),
         source_path=path.resolve(),
     )
