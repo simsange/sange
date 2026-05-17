@@ -22,6 +22,47 @@ dogfoods its own lifecycle. Until then, this file is maintained by hand.
 
 ### Added
 
+- **T-107b — `rich.console.Console` factory + status helpers
+  (`sange.utils.console`).** The first concrete consumer of
+  T-107a's `TerminalProfile`. Wraps `rich` so a single
+  `make_console(profile)` call produces a `Console` whose
+  color / encoding / width / emoji / force_terminal flags are
+  all derived from the cached profile. New module
+  `src/sange/utils/console.py`:
+  - `make_console(profile, *, stderr=False, file=None)` builds
+    a `rich.console.Console`. Color-mode maps:
+    `"none"→None / "16"→"standard" / "256"→"256" /
+    "truecolor"→"truecolor"`. CI without TTY produces
+    `force_terminal=False / force_interactive=False`
+    (avoids CR-spam in log aggregators). Width is taken from
+    the profile, not rich's own detection (deterministic CI
+    column count).
+  - `success_text(profile, msg)` / `failure_text(...)` /
+    `warning_text(...)` — `rich.text.Text` instances with the
+    profile's glyph prefixed. Lighter than a Panel for inline
+    use (progress per-task status).
+  - `success_panel(...)` / `failure_panel(...)` /
+    `warning_panel(...)` — `rich.panel.Panel` with green / red /
+    yellow border + the profile's glyph in the body. Default
+    titles: `None` / `"Error"` / `"Warning"`. The failure
+    panel matches §7.0.8's `Panel(title="Error",
+    border_style="red")` convention.
+  - Emoji glyph automatically used on UTF-8 TTYs; ASCII
+    fallback on legacy Windows. NO_COLOR profiles get Unicode
+    glyphs (✓/✗/△) but no ANSI escapes.
+  +22 tests in `test_console.py` covering: console type +
+  utf8 enables color + NO_COLOR disables color + CI force_terminal
+  off + legacy Windows no emoji + width from profile + stderr/file
+  kwargs / success/failure/warning Text contains message + uses
+  emoji on UTF-8 + uses ASCII on legacy / panel returns Panel +
+  green border / red border + default Error title / yellow
+  border / custom title / integration smoke: actually renders
+  through rich without crash, NO_COLOR omits ANSI escapes.
+  Suite 1773 → 1795 passing. ruff 0, mypy 0 (86 → 87 source
+  files). **What this unblocks**: T-107c (`rich.tree.Tree` for
+  `sange purge preview` / `sange branch list` per §7.0.3),
+  `sange.utils.progress` (§7.0.4 ETA helper), and rich-based
+  rendering across the existing CLI commands.
 - **T-105 — `sange doctor --container` (§6.10.3 audits).**
   Audits the running container for leaked secrets. v0.5 v0.5
   scope: detection-only — flags issues, doesn't auto-remediate.
