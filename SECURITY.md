@@ -12,7 +12,7 @@ release engineering policy in [`docs/release.md`](docs/release.md).
 
 ## Reporting a vulnerability
 
-**Email:** `opensource@simtabi.com`
+**Email:** `security@simtabi.com`
 
 - Encrypt with our PGP key when the vulnerability is exploitable in the wild.
   The current PGP key fingerprint will be published at
@@ -79,5 +79,5 @@ discretion over. We will not pursue researchers who:
 
 ---
 
-*Disclosure inbox: `opensource@simtabi.com`. Maintainer: Imani Manyara —
+*Disclosure inbox: `security@simtabi.com`. Maintainer: Imani Manyara —
 `imani@simtabi.com`. Project: <https://opensource.simtabi.com/products/sange>.*
