@@ -988,6 +988,28 @@ dogfoods its own lifecycle. Until then, this file is maintained by hand.
     `detect` + `status` ship today; the "v0.5+ planned" framing
     moved to the still-`NotImplementedError` methods.
 
+### Fixed
+
+- **`click` is now a declared dependency, and `typer` is capped below the release
+  that dropped it.** Ten modules under `src/sange/cli/` call
+  `click.get_current_context()` — 32 call sites — while `click` was declared
+  nowhere: it arrived transitively through `typer`. typer 0.26.0 removed click
+  from its own requirements, so `pip install -e ".[dev]"` stopped installing it
+  and CI failed in six jobs — `mypy` with ten *"Cannot find implementation or
+  library stub for module named 'click'"* errors, and five `pytest` jobs at
+  collection with `ModuleNotFoundError: No module named 'click'`. Declaring click
+  on its own would have fixed the import and left all 32 calls raising against a
+  context typer no longer populates, so the ceiling travels in the same change.
+  0.25.x is the last click-backed typer line. Lifting the cap means migrating
+  those call sites onto `typer.Context` first.
+- **New guard — `tests/unit/test_declared_dependencies.py`.** Walks the full AST
+  of every file under `src/`, function-local imports included, which is where all
+  ten `click` imports sat and why no grep of module headers found them. Asserts
+  every unconditional third-party import is in `[project.dependencies]`, and that
+  imports behind `try/except ImportError` are declared in some extra. Both the
+  number of files parsed and the number of third-party modules found carry
+  floors, so a glob that stops matching fails rather than reporting a clean tree.
+
 ## [0.1.0.post1] — 2026-05-16
 
 **The real first published release.** v0.1.0 shipped against
