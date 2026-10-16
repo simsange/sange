@@ -52,13 +52,27 @@ class TestCIWorkflow:
     def test_parses(self, ci_yaml: dict) -> None:
         assert isinstance(ci_yaml, dict)
 
-    def test_triggered_on_push_and_pr(self, ci_yaml: dict) -> None:
+    def test_triggered_on_pr_not_on_branch_push(self, ci_yaml: dict) -> None:
         # YAML's `on` key gets parsed to True by PyYAML's safe_load
         # because `on` is a YAML 1.1 boolean. Use `or` to handle both.
         on = ci_yaml.get("on") or ci_yaml.get(True)
         assert on is not None
-        assert "push" in on
         assert "pull_request" in on
+        assert "workflow_dispatch" in on
+        # CI gates the pull request. A branch push runs after the change
+        # has landed and double-runs every merge; the only push trigger
+        # allowed anywhere is release.yml's tag filter.
+        assert "push" not in on
+
+    def test_post_merge_run_is_weekly_at_most(self, ci_yaml: dict) -> None:
+        on = ci_yaml.get("on") or ci_yaml.get(True)
+        crons = [entry["cron"] for entry in on["schedule"]]
+        assert len(crons) == 1
+        minute, hour, dom, month, dow = crons[0].split()
+        # One fixed day of the week, every week.
+        assert dom == "*" and month == "*"
+        assert dow.isdigit()
+        assert minute.isdigit() and hour.isdigit()
 
     def test_has_test_job(self, ci_yaml: dict) -> None:
         assert "test" in ci_yaml["jobs"]
