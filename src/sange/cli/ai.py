@@ -27,12 +27,9 @@ ai_app = typer.Typer(
 
 
 @ai_app.command("providers", help="List registered AI providers + capabilities.")
-def providers_command() -> None:
-    import click
-
+def providers_command(ctx: typer.Context) -> None:
     from sange.adapters.ai import AIProviderNotInstalled, get_provider
 
-    ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
     rows: list[dict[str, Any]] = []
@@ -83,6 +80,7 @@ def providers_command() -> None:
 
 @ai_app.command("preview", help="Render the prompt for a task without sending.")
 def preview_command(
+    ctx: typer.Context,
     task: str = typer.Option(
         "commit-msg",
         "--task",
@@ -118,9 +116,6 @@ def preview_command(
         typer.echo(f"unknown task {task!r}; v0.1 supports: commit-msg", err=True)
         raise typer.Exit(code=2)
 
-    import click
-
-    ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
     diff_text = _read_diff(diff_path)

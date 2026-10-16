@@ -38,6 +38,7 @@ commits_app = typer.Typer(
 
 @commits_app.command("list", help="Show the commit queue.")
 def list_command(
+    ctx: typer.Context,
     repo_root: Path = typer.Option(
         Path("."),
         "--repo",
@@ -57,11 +58,8 @@ def list_command(
 ) -> None:
     """List commits in the queue."""
 
-    import click
-
     from sange.core.lifecycle import CommitsDirectory, CommitStatus
 
-    ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
     cd = CommitsDirectory(repo_root)
@@ -156,6 +154,7 @@ _CONVENTIONAL_TYPES = (
     help="Write a manual DRAFT commit to the queue (no AI involved).",
 )
 def new_command(
+    ctx: typer.Context,
     type_: str = typer.Argument(
         ...,
         metavar="TYPE",
@@ -208,15 +207,12 @@ def new_command(
     import datetime as _dt
     import sys
 
-    import click
-
     from sange.core.lifecycle import (
         CommitJSON,
         CommitMessage,
         CommitsDirectory,
     )
 
-    ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
     if type_ not in _CONVENTIONAL_TYPES:
@@ -335,6 +331,7 @@ commits_app.command(
     help="Re-open a non-DRAFT commit back to DRAFT (the only backward transition).",
 )
 def reopen_command(
+    ctx: typer.Context,
     target: str = typer.Argument(
         ...,
         help="Counter (e.g. `1` or `0001`) or full commit id.",
@@ -353,15 +350,12 @@ def reopen_command(
     fields must be empty when status != COMMITTED+. A DRAFT input is a
     no-op (the engine returns the input unchanged)."""
 
-    import click
-
     from sange.core.lifecycle import (
         CommitsDirectory,
         CommitStatus,
         LifecycleEngine,
     )
 
-    ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
     cd = CommitsDirectory(repo_root)
@@ -406,6 +400,7 @@ def reopen_command(
     help="Submit a DRAFT for review (DRAFT → PENDING_REVIEW).",
 )
 def submit_command(
+    ctx: typer.Context,
     target: str = typer.Argument(
         ...,
         help="Counter (e.g. `1` or `0001`) or full commit id.",
@@ -418,15 +413,12 @@ def submit_command(
 ) -> None:
     """Resolve the commit and run the DRAFT → PENDING_REVIEW transition."""
 
-    import click
-
     from sange.core.lifecycle import (
         CommitsDirectory,
         IllegalTransition,
         LifecycleEngine,
     )
 
-    ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
     cd = CommitsDirectory(repo_root)
@@ -472,6 +464,7 @@ def submit_command(
     help="Reject a PENDING_REVIEW commit (PENDING_REVIEW → REJECTED).",
 )
 def reject_command(
+    ctx: typer.Context,
     target: str = typer.Argument(
         ...,
         help="Counter (e.g. `1` or `0001`) or full commit id.",
@@ -503,8 +496,6 @@ def reject_command(
 
     import os
 
-    import click
-
     from sange.core.lifecycle import (
         CommitsDirectory,
         CommitStatus,
@@ -512,7 +503,6 @@ def reject_command(
         LifecycleEngine,
     )
 
-    ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
     cd = CommitsDirectory(repo_root)
@@ -566,6 +556,7 @@ def reject_command(
 
 @commits_app.command("approve", help="Approve a commit (DRAFT → APPROVED).")
 def approve_command(
+    ctx: typer.Context,
     target: str = typer.Argument(
         ...,
         help="Counter (e.g. `1` or `0001`) or full commit id.",
@@ -598,8 +589,6 @@ def approve_command(
 
     import os
 
-    import click
-
     from sange.core.lifecycle import (
         CommitsDirectory,
         CommitStatus,
@@ -607,7 +596,6 @@ def approve_command(
         LifecycleEngine,
     )
 
-    ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
     cd = CommitsDirectory(repo_root)
@@ -689,6 +677,7 @@ def approve_command(
     help="Land an APPROVED commit locally (git commit, no push).",
 )
 def commit_command(
+    ctx: typer.Context,
     target: str = typer.Argument(
         ...,
         help="Counter (e.g. `1` or `0001`) or full commit id.",
@@ -716,8 +705,6 @@ def commit_command(
 ) -> None:
     """Resolve the commit, run `git commit`, mark COMMITTED. No push."""
 
-    import click
-
     from sange.adapters.vcs._protocol import DriverError
     from sange.adapters.vcs.git import GitDriver, GitRepoNotFound
     from sange.core.lifecycle import (
@@ -727,7 +714,6 @@ def commit_command(
         LifecycleEngine,
     )
 
-    ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
     if bool(author_name) != bool(author_email):
@@ -809,6 +795,7 @@ def commit_command(
     help="Land an APPROVED commit (git commit + optionally git push).",
 )
 def push_command(
+    ctx: typer.Context,
     target: str = typer.Argument(
         ...,
         help="Counter (e.g. `1` or `0001`) or full commit id.",
@@ -853,8 +840,6 @@ def push_command(
     run `git commit`, record the SHA, optionally push, and write
     the updated CommitJSON back to disk."""
 
-    import click
-
     from sange.adapters.vcs._protocol import DriverError
     from sange.adapters.vcs.git import GitDriver, GitRepoNotFound
     from sange.core.lifecycle import (
@@ -864,7 +849,6 @@ def push_command(
         LifecycleEngine,
     )
 
-    ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
     # Pre-flight: author name + email must be both-or-neither.

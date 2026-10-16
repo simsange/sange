@@ -96,9 +96,7 @@ def _actor() -> str:
     return f"{user}@{host}"
 
 
-def _json_mode() -> bool:
-    import click
-    ctx = click.get_current_context()
+def _json_mode(ctx: typer.Context) -> bool:
     return bool(ctx.obj and ctx.obj.get("json"))
 
 
@@ -132,6 +130,7 @@ def _record_verb_event(
 
 @purge_app.command("plan", help="Create a new purge plan + save it.")
 def plan_command(
+    ctx: typer.Context,
     paths: Annotated[
         list[str] | None,
         typer.Option("--path", help="Exact path to purge. Repeat for multiple."),
@@ -197,7 +196,7 @@ def plan_command(
         extra={"target_vcs": vcs, "filter_count": len(paths) + len(globs)},
     )
 
-    if _json_mode():
+    if _json_mode(ctx):
         typer.echo(_json.dumps({"plan_id": plan.plan_id, "state": plan.state.value}))
         return
     typer.echo(f"created plan {plan.plan_id}")
@@ -214,13 +213,14 @@ def plan_command(
 
 @purge_app.command("list", help="Enumerate every saved purge plan.")
 def list_command(
+    ctx: typer.Context,
     repo_root: Annotated[
         Path, typer.Option("--repo"),
     ] = Path("."),
 ) -> None:
     store = PurgePlanStore(repo_root.resolve())
     plan_ids = store.list_plans()
-    if _json_mode():
+    if _json_mode(ctx):
         rows = [
             {
                 "plan_id": pid,
@@ -248,6 +248,7 @@ def list_command(
 
 @purge_app.command("show", help="Print a plan's full JSON.")
 def show_command(
+    ctx: typer.Context,
     plan_id: Annotated[str, typer.Argument(help="Plan id to display.")],
     repo_root: Annotated[
         Path, typer.Option("--repo"),
@@ -255,7 +256,7 @@ def show_command(
 ) -> None:
     store = PurgePlanStore(repo_root.resolve())
     plan = _load_plan(store, plan_id)
-    if _json_mode():
+    if _json_mode(ctx):
         typer.echo(plan.model_dump_json(indent=2))
         return
     # Pretty form: same JSON, with a banner.
@@ -272,6 +273,7 @@ def show_command(
 
 @purge_app.command("mirror", help="Create the mirror clone (§6.11.4 gate 2).")
 def mirror_command(
+    ctx: typer.Context,
     plan_id: Annotated[str, typer.Argument()],
     source_url: Annotated[
         str,
@@ -304,7 +306,7 @@ def mirror_command(
         extra={"mirror_path": str(result.path), "ref_count": result.ref_count},
     )
 
-    if _json_mode():
+    if _json_mode(ctx):
         typer.echo(_json.dumps({
             "plan_id": plan.plan_id,
             "mirror_path": str(result.path),
@@ -325,6 +327,7 @@ def mirror_command(
 
 @purge_app.command("analyze", help="Compute what would be purged (read-only).")
 def analyze_command(
+    ctx: typer.Context,
     plan_id: Annotated[str, typer.Argument()],
     repo_root: Annotated[
         Path, typer.Option("--repo"),
@@ -363,7 +366,7 @@ def analyze_command(
         },
     )
 
-    if _json_mode():
+    if _json_mode(ctx):
         typer.echo(_json.dumps(counts, indent=2))
         return
     typer.echo(f"analysis for {plan.plan_id}:")
@@ -380,6 +383,7 @@ def analyze_command(
 
 @purge_app.command("backup", help="Tarball the mirror + sha256 (§6.11.4 gate 3).")
 def backup_command(
+    ctx: typer.Context,
     plan_id: Annotated[str, typer.Argument()],
     repo_root: Annotated[
         Path, typer.Option("--repo"),
@@ -417,7 +421,7 @@ def backup_command(
         },
     )
 
-    if _json_mode():
+    if _json_mode(ctx):
         typer.echo(_json.dumps({
             "plan_id": plan.plan_id,
             "tarball": str(result.tarball_path),
@@ -437,6 +441,7 @@ def backup_command(
 
 @purge_app.command("scan", help="Run gitleaks + trufflehog (§6.11.4 gate 8).")
 def scan_command(
+    ctx: typer.Context,
     plan_id: Annotated[str, typer.Argument()],
     repo_root: Annotated[
         Path, typer.Option("--repo"),
@@ -478,7 +483,7 @@ def scan_command(
         },
     )
 
-    if _json_mode():
+    if _json_mode(ctx):
         typer.echo(_json.dumps({
             "plan_id": plan.plan_id,
             "gitleaks": {
@@ -508,6 +513,7 @@ def scan_command(
 
 @purge_app.command("abort", help="Transition the plan to `aborted`.")
 def abort_command(
+    ctx: typer.Context,
     plan_id: Annotated[str, typer.Argument()],
     reason: Annotated[
         str,
@@ -535,7 +541,7 @@ def abort_command(
         extra={"reason": reason or "(none)"},
     )
 
-    if _json_mode():
+    if _json_mode(ctx):
         typer.echo(_json.dumps({
             "plan_id": plan.plan_id, "state": "aborted", "reason": reason,
         }))

@@ -33,6 +33,7 @@ if TYPE_CHECKING:
 
 
 def commit_command(
+    ctx: typer.Context,
     diff_path: Path | None = typer.Option(
         None,
         "--diff",
@@ -80,15 +81,12 @@ def commit_command(
 ) -> None:
     import datetime as _dt
 
-    import click
-
     from sange.core.enhancer.tasks.commit_message import (
         CommitMessageRequest,
         generate_commit_message,
     )
     from sange.core.telemetry import CollectorPolicy, TelemetryCollector
 
-    ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
     collector = TelemetryCollector(

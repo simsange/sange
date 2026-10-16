@@ -65,18 +65,17 @@ classifiers = [
 dependencies = [
     # CLI surface (ADR-019)
     #
-    # The typer ceiling and the click floor are one decision, not two. Ten modules
-    # under src/sange/cli/ call `click.get_current_context()` -- 32 call sites -- to
-    # reach the command context, and that works only while typer itself runs on
-    # click. typer 0.26.0 dropped click outright (its requires_dist is
-    # shellingham / rich / annotated-doc / colorama), so `pip install -e .` stopped
-    # bringing click in and both mypy and pytest failed with "No module named
-    # 'click'". Declaring click on its own would fix the import and leave all 32
-    # calls raising against a context typer no longer populates, so the cap travels
-    # with it. 0.25.x is the last click-backed line, verified against
-    # pypi.org/pypi/typer/<version>/json on 2026-10-05. Lifting the cap means
-    # migrating those call sites onto typer's own Context first.
-    "typer>=0.12,<0.26",
+    # Commands reach the context through a `ctx: typer.Context` parameter, never
+    # `click.get_current_context()`. typer 0.26.0 dropped click (its requires_dist
+    # is shellingham / rich / annotated-doc / colorama) and runs on a private copy,
+    # so a click lookup raises "There is no active click context." on 0.26+. The
+    # parameter form works on every typer from the 0.12 floor up, and
+    # tests/unit/test_declared_dependencies.py keeps the click lookup out of
+    # src/sange/cli for as long as the typer range admits 0.26+.
+    "typer>=0.12,<0.28",
+    # Nothing under src/ imports click any more. The declaration stays until its
+    # removal is decided on its own, since dropping a dependency changes what
+    # `pip install sange` puts in a consumer's environment.
     "click>=8.1",
     "rich>=13.7",
     "questionary>=2.0",

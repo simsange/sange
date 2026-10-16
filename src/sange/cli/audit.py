@@ -42,6 +42,7 @@ audit_app = typer.Typer(
     help="Walk the chain + recompute every hash. Exit 0 clean / 1 tampered.",
 )
 def verify_command(
+    ctx: typer.Context,
     repo_root: Path = typer.Option(
         Path("."),
         "--repo",
@@ -50,11 +51,8 @@ def verify_command(
 ) -> None:
     """Invoke `verify_repo` + format the report."""
 
-    import click
-
     from sange.core.audit import verify_repo
 
-    ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
     report = verify_repo(repo_root.resolve())
@@ -96,6 +94,7 @@ def verify_command(
     help="List audit records (every shard, or filtered).",
 )
 def list_command(
+    ctx: typer.Context,
     week: str = typer.Option(
         "",
         "--week",
@@ -114,11 +113,8 @@ def list_command(
 ) -> None:
     """Walk the chain + print rows matching the filters."""
 
-    import click
-
     from sange.core.audit import AuditChain
 
-    ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
     chain = AuditChain(repo_root.resolve())
@@ -178,6 +174,7 @@ def _iso_week_prefix(week: str) -> str:
     help="Print the most recent N audit records.",
 )
 def tail_command(
+    ctx: typer.Context,
     n: int = typer.Option(
         10,
         "--n",
@@ -191,11 +188,8 @@ def tail_command(
 ) -> None:
     """Print the last N records in chronological order."""
 
-    import click
-
     from sange.core.audit import AuditChain
 
-    ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
     if n < 0:
@@ -232,6 +226,7 @@ def tail_command(
     help="Append a record (mainly for plugins + manual testing).",
 )
 def append_command(
+    ctx: typer.Context,
     kind: str = typer.Argument(
         ...,
         help="Event kind (`ai-call` / `commit-push` / `generic` / etc.).",
@@ -254,11 +249,8 @@ def append_command(
 ) -> None:
     """Build + append one event onto the chain."""
 
-    import click
-
     from sange.core.audit import AuditChain, AuditChainError
 
-    ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
     payload_dict: dict[str, object] = {}

@@ -43,6 +43,7 @@ def _version_callback(value: bool) -> None:
 
 @app.callback()
 def _root(
+    ctx: typer.Context,
     version: bool = typer.Option(
         False,
         "--version",
@@ -61,9 +62,6 @@ def _root(
     # `json_output` is read by individual commands via the typer
     # context. Stored on the app's user-data slot when a real command
     # runs; not needed for `--version`.
-    import click
-
-    ctx = click.get_current_context()
     ctx.obj = {"json": json_output}
 
 

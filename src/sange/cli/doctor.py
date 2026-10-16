@@ -229,6 +229,7 @@ def _container_check_to_result(check: object) -> CheckResult:
 
 
 def doctor_command(
+    ctx: typer.Context,
     container: bool = typer.Option(
         False,
         "--container",
@@ -247,8 +248,6 @@ def doctor_command(
     (so misruns on the host produce a precise error, not noise).
     """
 
-    import click
-
     from sange.core.doctor import (
         check_in_container,
         check_leaky_env_vars,
@@ -257,7 +256,6 @@ def doctor_command(
         check_ssh_key_perms,
     )
 
-    ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
     checks: list[CheckResult] = [
