@@ -41,6 +41,7 @@ _TEMPLATES_DIR = _REPO_ROOT / "templates"
 
 
 def init_command(
+    ctx: typer.Context,
     repo_root: Path = typer.Option(
         Path("."),
         "--repo",
@@ -70,9 +71,6 @@ def init_command(
 ) -> None:
     """Materialize `.sange/` skeleton + (optionally) the Makefile shim."""
 
-    import click
-
-    ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
     actions: list[_Action] = []

@@ -42,6 +42,7 @@ hooks_app = typer.Typer(
     help="Run every hook for EVENT in priority order.",
 )
 def run_command(
+    ctx: typer.Context,
     event: str = typer.Argument(
         ...,
         help="Lifecycle event (`pre-commit` / `pre-push` / etc.).",
@@ -64,11 +65,8 @@ def run_command(
 ) -> None:
     """Invoke `HookEngine.run_event` + format the report."""
 
-    import click
-
     from sange.core.hooks import HookEngine, HookError
 
-    ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
     try:
@@ -129,6 +127,7 @@ def run_command(
     help="Show discovered hooks (every event, or a specific one).",
 )
 def list_command(
+    ctx: typer.Context,
     event: str = typer.Option(
         "",
         "--event",
@@ -142,11 +141,8 @@ def list_command(
 ) -> None:
     """Discover every hook (or hooks for one event) + print."""
 
-    import click
-
     from sange.core.hooks import GIT_HOOK_EVENTS, HookEngine
 
-    ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
     engine = HookEngine(repo_root.resolve())
@@ -201,6 +197,7 @@ def list_command(
     help="Write .git/hooks/<event> shims that delegate to `sange hooks run`.",
 )
 def install_command(
+    ctx: typer.Context,
     events: list[str] = typer.Option(
         [],
         "--event",
@@ -219,11 +216,8 @@ def install_command(
 ) -> None:
     """Write a shim per event that has any executable hooks."""
 
-    import click
-
     from sange.core.hooks import ShimError, install_git_shims
 
-    ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
     try:
@@ -274,6 +268,7 @@ def install_command(
     help="Remove Sange-managed .git/hooks/<event> shims (foreign hooks untouched).",
 )
 def uninstall_command(
+    ctx: typer.Context,
     events: list[str] = typer.Option(
         [],
         "--event",
@@ -287,11 +282,8 @@ def uninstall_command(
 ) -> None:
     """Remove Sange shims; leave foreign hook files alone."""
 
-    import click
-
     from sange.core.hooks import ShimError, uninstall_git_shims
 
-    ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
     try:
@@ -334,6 +326,7 @@ def uninstall_command(
     help="Per-event summary: hook count + shim install state.",
 )
 def status_command(
+    ctx: typer.Context,
     repo_root: Path = typer.Option(
         Path("."),
         "--repo",
@@ -342,11 +335,8 @@ def status_command(
 ) -> None:
     """Cross-table of (event → hook count, shim installed?, foreign hook?)."""
 
-    import click
-
     from sange.core.hooks import GIT_HOOK_EVENTS, SHIM_MARKER, HookEngine
 
-    ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
     engine = HookEngine(repo_root.resolve())
@@ -400,6 +390,7 @@ def status_command(
     help="List available named gates (gitleaks / trufflehog / make-test / etc.).",
 )
 def gates_command(
+    ctx: typer.Context,
     repo_root: Path = typer.Option(
         Path("."),
         "--repo",
@@ -408,11 +399,8 @@ def gates_command(
 ) -> None:
     """Print every discoverable gate (per-repo > per-user > shipped)."""
 
-    import click
-
     from sange.core.hooks import GateRegistry, default_gate_roots
 
-    ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
     registry = GateRegistry(default_gate_roots(repo_root))
@@ -460,6 +448,7 @@ def gates_command(
     help="Install a named gate's scripts into .sange/hooks/.",
 )
 def add_command(
+    ctx: typer.Context,
     gate: str = typer.Argument(
         ...,
         metavar="GATE",
@@ -479,8 +468,6 @@ def add_command(
 ) -> None:
     """Copy the gate's hook scripts into the repo's .sange/hooks/ tree."""
 
-    import click
-
     from sange.core.hooks import (
         GateError,
         GateRegistry,
@@ -488,7 +475,6 @@ def add_command(
         default_gate_roots,
     )
 
-    ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
     registry = GateRegistry(default_gate_roots(repo_root))
@@ -540,6 +526,7 @@ def add_command(
     help="Remove a named gate's scripts from .sange/hooks/.",
 )
 def remove_command(
+    ctx: typer.Context,
     gate: str = typer.Argument(
         ...,
         metavar="GATE",
@@ -558,8 +545,6 @@ def remove_command(
 ) -> None:
     """Remove the gate's hook scripts from the repo's .sange/hooks/ tree."""
 
-    import click
-
     from sange.core.hooks import (
         GateError,
         GateRegistry,
@@ -567,7 +552,6 @@ def remove_command(
         remove_gate,
     )
 
-    ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
     registry = GateRegistry(default_gate_roots(repo_root))

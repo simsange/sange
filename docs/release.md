@@ -232,8 +232,8 @@ The pipeline runs four jobs in sequence: `build` → `pypi` →
 
 **`build` fails:**
 - Most common: wheel doesn't build because a dep is missing.
-- Fix: bump the missing dep in `pyproject.toml`, push to main,
-  delete + re-tag at the new HEAD.
+- Fix: bump the missing dep in `pyproject.toml` through a pull
+  request, merge it, then delete + re-tag at the new HEAD.
 
 **`pypi` fails:**
 - Most common: trusted-publisher record not yet active.

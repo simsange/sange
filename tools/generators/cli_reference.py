@@ -99,11 +99,19 @@ def _format_flags(param: click.Option) -> tuple[str, ...]:
     return tuple(sorted(flags, key=lambda s: (not s.startswith("--"), s)))
 
 
+# typer 0.26+ builds its tree from a private copy of click, so its options are
+# not `click.Option` instances and an isinstance() check silently drops every
+# one. Both copies set `param_type_name` and give groups a `commands` mapping,
+# which holds for every typer from the 0.12 floor up.
+def _is_group(node: click.Command) -> bool:
+    return isinstance(getattr(node, "commands", None), dict)
+
+
 def _walk(node: click.Command, invocation: str) -> _CommandNode:
     options: list[_Option] = []
     arguments: list[_Argument] = []
     for p in node.params:
-        if isinstance(p, click.Option):
+        if p.param_type_name == "option":
             options.append(
                 _Option(
                     flags=_format_flags(p),
@@ -113,7 +121,7 @@ def _walk(node: click.Command, invocation: str) -> _CommandNode:
                     required=bool(p.required),
                 )
             )
-        elif isinstance(p, click.Argument):
+        elif p.param_type_name == "argument":
             arguments.append(
                 _Argument(name=p.name or "", required=bool(p.required))
             )
@@ -122,7 +130,7 @@ def _walk(node: click.Command, invocation: str) -> _CommandNode:
     arguments.sort(key=lambda a: a.name)
 
     children: list[_CommandNode] = []
-    if isinstance(node, click.Group):
+    if _is_group(node):
         for sub_name in sorted(node.commands.keys()):
             sub = node.commands[sub_name]
             children.append(_walk(sub, f"{invocation} {sub_name}"))
@@ -130,7 +138,7 @@ def _walk(node: click.Command, invocation: str) -> _CommandNode:
     return _CommandNode(
         invocation=invocation,
         help=(node.help or "").strip(),
-        is_group=isinstance(node, click.Group),
+        is_group=_is_group(node),
         options=tuple(options),
         arguments=tuple(arguments),
         children=tuple(children),

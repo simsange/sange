@@ -203,7 +203,11 @@ def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any
 # --------------------------------------------------------------------------- #
 
 
-_ENV_KEY_RE = re.compile(r"^SANGE(?:__[A-Z][A-Z0-9_]*)+$")
+# One `__` segment is enough to describe the whole key: every later
+# `__SEGMENT` is already inside `[A-Z0-9_]*`. The older form repeated the
+# segment group, which accepts the same keys but backtracks exponentially on
+# a near-miss such as `SANGE__A__A...__A!` (CodeQL py/redos).
+_ENV_KEY_RE = re.compile(r"^SANGE__[A-Z][A-Z0-9_]*$")
 
 
 def _env_value_cast(value: str) -> Any:

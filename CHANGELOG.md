@@ -19,6 +19,17 @@ dogfoods its own lifecycle. Until then, this file is maintained by hand.
   v0.1.0.post1 shipped on 2026-05-16; `_version.py` had been left
   at the release version since. Local builds now produce
   `sange-0.1.1.dev0` wheels until the next tag.
+- **The macOS test leg moves from `macos-14` to `macos-15`.** GitHub retires the
+  `macos-14` image on 2026-11-02 and fails its jobs during scheduled brownouts
+  until then. Both images are arm64, so the matrix is unchanged.
+- **`ci.yml` no longer runs on pushes to `main`.** A branch push runs after the
+  change has landed and repeats the pull request's run on every merge. CI now
+  runs on `pull_request`, on `workflow_dispatch`, and on a weekly Monday
+  schedule against `main`. The scheduled run catches breakage that reaches
+  `main` from unpinned dependencies or from two green PRs that interact, and it
+  keeps the CI badge and the pip cache current.
+  `tests/unit/test_github_workflows.py` now asserts no `push` trigger and a
+  weekly schedule.
 
 ### Added
 
@@ -1009,6 +1020,29 @@ dogfoods its own lifecycle. Until then, this file is maintained by hand.
   imports behind `try/except ImportError` are declared in some extra. Both the
   number of files parsed and the number of third-party modules found carry
   floors, so a glob that stops matching fails rather than reporting a clean tree.
+- **The CLI runs on typer 0.26 and later; the typer ceiling moves from `<0.26`
+  to `<0.28`.** All 32 `click.get_current_context()` calls are now a
+  `ctx: typer.Context` command parameter (40 commands, counting the eight purge
+  commands that read it through `_json_mode`). The parameter is typer's
+  documented API and works from the 0.12 floor up, so no observable CLI behaviour
+  changes. `tools/generators/cli_reference.py` identified options, arguments and
+  groups with `isinstance` checks against `click`, which are false for typer
+  0.26+'s private click copy, so the generated reference would have lost every
+  option. It now reads `param_type_name` and the group's `commands` mapping,
+  which both copies provide. The ceiling test in
+  `tests/unit/test_declared_dependencies.py` became a guard that fails if any
+  module under `src/sange/cli/` calls `get_current_context` while the typer
+  range admits 0.26+. `click>=8.1` stays declared, though `src/` no longer
+  imports it; whether to drop it is a separate decision.
+- **Environment-key matching no longer backtracks exponentially.**
+  `_ENV_KEY_RE` in `sange.core.config.loader` repeated a group whose tail
+  already admits the next segment, so a near-miss key such as
+  `SANGE__A__A…__A!` took exponential time (CodeQL `py/redos`, 13.9 s at 28
+  repeats). It is now `^SANGE__[A-Z][A-Z0-9_]*$`, which accepts exactly the same
+  keys: `TestEnvKeyPattern` checks it against a walker of the old grammar (not
+  the old regex, which CodeQL would flag again) over every string up to
+  length 8 on a four-character alphabet and bounds the near-miss case at 0.5 s.
+
 
 ## [0.1.0.post1] — 2026-05-16
 

@@ -203,24 +203,42 @@ class TestClickIsPinnedToATyperThatProvidesIt:
     """`click.get_current_context()` only works while typer runs on click.
 
     typer 0.26.0 dropped click, so an uncapped typer satisfies the click import
-    while breaking the 32 calls that import exists for -- a green install with a
-    runtime failure, which is worse than the build break it replaces.
+    while breaking every `click.get_current_context()` call -- a green install
+    with a runtime failure, which is worse than the build break it replaces.
+    The 32 calls were migrated to a `ctx: typer.Context` parameter, which lifted
+    the `<0.26` ceiling; the guard below holds the migration in place for as
+    long as the declared range admits a click-free typer.
     """
+
+    _CLI = _PYPROJECT.parent / "src" / "sange" / "cli"
 
     def test_click_is_declared(self) -> None:
         runtime, _ = _declared()
         assert "click" in runtime
 
-    def test_typer_is_capped_below_the_click_free_release(self) -> None:
+    def _typer_spec(self) -> str:
         data = tomllib.loads(_PYPROJECT.read_text(encoding="utf-8"))
         specs = [
             s for s in data["project"]["dependencies"]
             if _normalise(re.split(r"[\[<>=!~ ]", s, maxsplit=1)[0]) == "typer"
         ]
         assert len(specs) == 1, f"expected exactly one typer requirement, got {specs}"
-        assert "<0.26" in specs[0].replace(" ", ""), (
-            f"typer is declared as {specs[0]!r} with no ceiling below 0.26. "
-            "typer 0.26.0 removed click, so src/sange/cli/'s "
-            "click.get_current_context() calls would import a click that no longer "
-            "drives the CLI. Migrate them to typer.Context before lifting this."
+        return str(specs[0]).replace(" ", "")
+
+    def test_cli_reads_no_click_context_once_typer_may_drop_click(self) -> None:
+        if "<0.26" in self._typer_spec():
+            pytest.skip("typer is capped below the click-free release")
+        sources = sorted(self._CLI.glob("*.py"))
+        # A glob that stops matching would pass the check below vacuously.
+        assert len(sources) >= 10, f"only {len(sources)} files under {self._CLI}"
+        offenders = [
+            f"{path.name}:{lineno}"
+            for path in sources
+            for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1)
+            if "get_current_context" in line
+        ]
+        assert offenders == [], (
+            "typer 0.26+ runs on a private copy of click, so these lookups raise "
+            "'There is no active click context.' Take `ctx: typer.Context` as a "
+            "command parameter instead: " + ", ".join(offenders)
         )

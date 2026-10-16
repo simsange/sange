@@ -42,6 +42,7 @@ gitignore_app = typer.Typer(
     help="Atomic swap to a new gitignore composition.",
 )
 def swap_command(
+    ctx: typer.Context,
     profiles: list[str] = typer.Argument(
         ...,
         metavar="PROFILES...",
@@ -61,8 +62,6 @@ def swap_command(
 ) -> None:
     """Compose `profiles` + `stage` and atomically replace `.gitignore`."""
 
-    import click
-
     from sange.core.gitignore import (
         GitignoreSwap,
         ProfileError,
@@ -72,7 +71,6 @@ def swap_command(
     )
     from sange.core.gitignore.compose import CompositionError
 
-    ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
     registry = ProfileRegistry(default_registry_roots(repo_root))
@@ -116,6 +114,7 @@ def swap_command(
     help="List discoverable gitignore profiles.",
 )
 def list_command(
+    ctx: typer.Context,
     category: str = typer.Option(
         "",
         "--category",
@@ -130,11 +129,8 @@ def list_command(
 ) -> None:
     """Print every profile the registry sees, optionally filtered by category."""
 
-    import click
-
     from sange.core.gitignore import ProfileRegistry, default_registry_roots
 
-    ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
     registry = ProfileRegistry(default_registry_roots(repo_root))
@@ -176,6 +172,7 @@ def list_command(
     help="Show the currently active gitignore profile.",
 )
 def current_command(
+    ctx: typer.Context,
     repo_root: Path = typer.Option(
         Path("."),
         "--repo",
@@ -184,9 +181,6 @@ def current_command(
 ) -> None:
     """Read `.sange/.active-profile` and surface its content."""
 
-    import click
-
-    ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
     active_path = repo_root.resolve() / ".sange" / ".active-profile"
@@ -236,6 +230,7 @@ def current_command(
     help="Auto-detect profile candidates for the repo.",
 )
 def detect_command(
+    ctx: typer.Context,
     repo_root: Path = typer.Option(
         Path("."),
         "--repo",
@@ -249,15 +244,12 @@ def detect_command(
 ) -> None:
     """Walk `repo` looking for files that match each profile's `required_any`."""
 
-    import click
-
     from sange.core.gitignore import (
         ProfileRegistry,
         default_registry_roots,
         detect_profiles,
     )
 
-    ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
     registry = ProfileRegistry(default_registry_roots(repo_root))
@@ -305,6 +297,7 @@ def detect_command(
     help="Roll forward any crashed-in-progress swap journals.",
 )
 def recover_command(
+    ctx: typer.Context,
     repo_root: Path = typer.Option(
         Path("."),
         "--repo",
@@ -313,8 +306,6 @@ def recover_command(
 ) -> None:
     """Walk `.sange/.recovery/` and complete any pending swap."""
 
-    import click
-
     from sange.core.gitignore import (
         GitignoreSwap,
         ProfileRegistry,
@@ -322,7 +313,6 @@ def recover_command(
         default_registry_roots,
     )
 
-    ctx = click.get_current_context()
     json_mode = bool(ctx.obj and ctx.obj.get("json"))
 
     registry = ProfileRegistry(default_registry_roots(repo_root))
