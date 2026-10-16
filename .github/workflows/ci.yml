@@ -23,7 +23,7 @@ jobs:
         # Per ADR-033: every CI run must cover linux/amd64 + linux/arm64
         # natively. ubuntu-24.04-arm is the GitHub Actions native-ARM
         # runner (no QEMU emulation).
-        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-14]
+        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-15]
         # Project floor is Python 3.12 (pyproject.toml::requires-python).
         # 3.13 is the current supported ceiling. py3.10 / py3.11 were in
         # the matrix until 2026-05-16 but never installed because the
@@ -32,7 +32,7 @@ jobs:
         # macOS runners are slow + paid; only test the floor + ceiling
         # versions there. Linux covers the full matrix.
         exclude:
-          - os: macos-14
+          - os: macos-15
             python: "3.13"
     steps:
       - name: Checkout repo
