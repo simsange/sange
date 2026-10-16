@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import itertools
-import re
+import string
 import time
 from pathlib import Path
 
@@ -63,18 +63,38 @@ class TestEnvKeyPattern:
 
     The old pattern, `^SANGE(?:__[A-Z][A-Z0-9_]*)+$`, backtracked exponentially
     on a near-miss key (CodeQL py/redos). The replacement must not change which
-    keys are overrides, so it is checked against the old pattern exhaustively
-    over a small alphabet.
+    keys are overrides, so it is checked exhaustively over a small alphabet
+    against `_old_grammar`, which walks the old pattern's grammar position by
+    position. Compiling the old pattern here would reintroduce the alert.
     """
 
-    _OLD = re.compile(r"^SANGE(?:__[A-Z][A-Z0-9_]*)+$")
+    @staticmethod
+    def _old_grammar(key: str) -> bool:
+        """`SANGE` then one or more `__` + `[A-Z]` + `[A-Z0-9_]*` segments."""
+        if not key.startswith("SANGE"):
+            return False
+        rest = key[len("SANGE"):]
+        tail = set(string.ascii_uppercase + string.digits + "_")
+        # ends[i]: rest[:i] is one or more complete segments.
+        ends = [False] * (len(rest) + 1)
+        starts = {0}
+        for i in range(len(rest) + 1):
+            if i in starts and rest[i:i + 2] == "__" and rest[i + 2:i + 3].isupper():
+                j = i + 3
+                ends[j] = True
+                while j < len(rest) and rest[j] in tail:
+                    j += 1
+                    ends[j] = True
+            if ends[i]:
+                starts.add(i)
+        return ends[len(rest)]
 
     def test_accepts_the_same_keys_as_the_old_pattern(self) -> None:
         checked = 0
         for length in range(9):
             for tail in itertools.product("_A1x", repeat=length):
                 key = "SANGE" + "".join(tail)
-                assert bool(_ENV_KEY_RE.match(key)) == bool(self._OLD.match(key)), key
+                assert bool(_ENV_KEY_RE.match(key)) == self._old_grammar(key), key
                 checked += 1
         assert checked == sum(4**n for n in range(9))
 

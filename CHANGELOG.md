@@ -1039,7 +1039,8 @@ dogfoods its own lifecycle. Until then, this file is maintained by hand.
   already admits the next segment, so a near-miss key such as
   `SANGE__A__A…__A!` took exponential time (CodeQL `py/redos`, 13.9 s at 28
   repeats). It is now `^SANGE__[A-Z][A-Z0-9_]*$`, which accepts exactly the same
-  keys: `TestEnvKeyPattern` compares the two patterns over every string up to
+  keys: `TestEnvKeyPattern` checks it against a walker of the old grammar (not
+  the old regex, which CodeQL would flag again) over every string up to
   length 8 on a four-character alphabet and bounds the near-miss case at 0.5 s.
 
 
