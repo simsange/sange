@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import itertools
+import re
+import time
 from pathlib import Path
 
 import pytest
@@ -12,6 +15,7 @@ from sange.core.config import (
     load_config,
 )
 from sange.core.config.loader import (
+    _ENV_KEY_RE,
     ConfigError,
     EnvOverrideError,
     SchemaVersionError,
@@ -52,6 +56,34 @@ class TestDeepMerge:
 # --------------------------------------------------------------------------- #
 # env_overrides
 # --------------------------------------------------------------------------- #
+
+
+class TestEnvKeyPattern:
+    """`_ENV_KEY_RE` must accept exactly the keys the old repeated-group form did.
+
+    The old pattern, `^SANGE(?:__[A-Z][A-Z0-9_]*)+$`, backtracked exponentially
+    on a near-miss key (CodeQL py/redos). The replacement must not change which
+    keys are overrides, so it is checked against the old pattern exhaustively
+    over a small alphabet.
+    """
+
+    _OLD = re.compile(r"^SANGE(?:__[A-Z][A-Z0-9_]*)+$")
+
+    def test_accepts_the_same_keys_as_the_old_pattern(self) -> None:
+        checked = 0
+        for length in range(9):
+            for tail in itertools.product("_A1x", repeat=length):
+                key = "SANGE" + "".join(tail)
+                assert bool(_ENV_KEY_RE.match(key)) == bool(self._OLD.match(key)), key
+                checked += 1
+        assert checked == sum(4**n for n in range(9))
+
+    def test_near_miss_is_rejected_in_linear_time(self) -> None:
+        # 28 repeats take seconds under the old pattern and microseconds now.
+        key = "SANGE" + "__A" * 28 + "!"
+        started = time.perf_counter()
+        assert _ENV_KEY_RE.match(key) is None
+        assert time.perf_counter() - started < 0.5
 
 
 class TestEnvOverrides:

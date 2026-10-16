@@ -1034,6 +1034,13 @@ dogfoods its own lifecycle. Until then, this file is maintained by hand.
   module under `src/sange/cli/` calls `get_current_context` while the typer
   range admits 0.26+. `click>=8.1` stays declared, though `src/` no longer
   imports it; whether to drop it is a separate decision.
+- **Environment-key matching no longer backtracks exponentially.**
+  `_ENV_KEY_RE` in `sange.core.config.loader` repeated a group whose tail
+  already admits the next segment, so a near-miss key such as
+  `SANGE__A__A…__A!` took exponential time (CodeQL `py/redos`, 13.9 s at 28
+  repeats). It is now `^SANGE__[A-Z][A-Z0-9_]*$`, which accepts exactly the same
+  keys: `TestEnvKeyPattern` compares the two patterns over every string up to
+  length 8 on a four-character alphabet and bounds the near-miss case at 0.5 s.
 
 
 ## [0.1.0.post1] — 2026-05-16
