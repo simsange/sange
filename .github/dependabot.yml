@@ -54,3 +54,14 @@ updates:
     labels:
       - dependencies
       - docker
+  - package-ecosystem: pip
+    directory: /documentation
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/New_York
+    groups:
+      minor-and-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
